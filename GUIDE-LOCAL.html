@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HelpDesk — Guide démarrage local & tests</title>
+  <style>
+    :root {
+      --blue:       #185FA5;
+      --blue-dark:  #0f3d6e;
+      --blue-mid:   #2d78c8;
+      --blue-light: #e8f1fb;
+      --blue-xlight:#f0f6fd;
+      --green:      #16a34a;
+      --green-bg:   #f0fdf4;
+      --green-dark: #14532d;
+      --red:        #dc2626;
+      --red-bg:     #fef2f2;
+      --yellow:     #d97706;
+      --yellow-bg:  #fffbeb;
+      --purple:     #7c3aed;
+      --purple-bg:  #f5f3ff;
+      --gray-50:    #f9fafb;
+      --gray-100:   #f3f4f6;
+      --gray-200:   #e5e7eb;
+      --gray-300:   #d1d5db;
+      --gray-400:   #9ca3af;
+      --gray-500:   #6b7280;
+      --gray-600:   #4b5563;
+      --gray-700:   #374151;
+      --gray-900:   #111827;
+      --radius:     8px;
+      --radius-lg:  14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.65;
+      color: var(--gray-900);
+      background: #fff;
+    }
+
+    /* ── Screen wrapper ──────────────────────────────── */
+    @media screen {
+      body { background: #e8edf2; }
+      .page {
+        max-width: 860px;
+        margin: 40px auto;
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 8px 40px rgba(0,0,0,0.14);
+        overflow: hidden;
+      }
+      .print-btn {
+        position: fixed;
+        bottom: 24px; right: 24px;
+        background: var(--blue);
+        color: white;
+        border: none;
+        padding: 12px 22px;
+        border-radius: 40px;
+        font-size: 9pt;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(24,95,165,.4);
+        z-index: 99;
+      }
+      .print-btn:hover { background: var(--blue-dark); }
+    }
+
+    /* ── Print ───────────────────────────────────────── */
+    @page { size: A4; margin: 0; }
+    @media print {
+      body { font-size: 9.5pt; }
+      .print-btn { display: none; }
+      .page { box-shadow: none; border-radius: 0; }
+      .cover { min-height: 297mm; }
+      pre, .step-card, .check-item { page-break-inside: avoid; }
+      .pb { page-break-before: always; }
+    }
+
+    /* ── Cover ───────────────────────────────────────── */
+    .cover {
+      background: linear-gradient(150deg, var(--blue-dark) 0%, var(--blue) 60%, var(--blue-mid) 100%);
+      color: white;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 48px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+    }
+
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.05);
+    }
+
+    .cover-icon {
+      width: 72px; height: 72px;
+      background: rgba(255,255,255,.15);
+      border: 1.5px solid rgba(255,255,255,.3);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 28px;
+      backdrop-filter: blur(4px);
+    }
+
+    .cover-icon svg { width: 40px; height: 40px; fill: white; }
+
+    .cover h1 { font-size: 32pt; font-weight: 800; letter-spacing: -.5px; }
+    .cover h2 { font-size: 13pt; font-weight: 400; opacity: .8; margin-top: 6px; margin-bottom: 36px; }
+
+    .cover-pills {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+      margin-bottom: 40px;
+    }
+
+    .pill {
+      background: rgba(255,255,255,.13);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 40px;
+      padding: 6px 16px;
+      font-size: 9pt; font-weight: 500;
+    }
+
+    .cover-progress {
+      display: flex; gap: 0; border-radius: 40px; overflow: hidden;
+      border: 1.5px solid rgba(255,255,255,.3);
+    }
+
+    .cover-step {
+      padding: 8px 18px;
+      font-size: 8.5pt; font-weight: 600;
+      border-right: 1px solid rgba(255,255,255,.2);
+    }
+
+    .cover-step:last-child { border-right: none; }
+    .cover-step.active { background: rgba(255,255,255,.2); }
+
+    .cover-footer {
+      position: absolute; bottom: 20px;
+      font-size: 8pt; opacity: .45;
+    }
+
+    /* ── Section layout ──────────────────────────────── */
+    .section {
+      padding: 44px 48px 36px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .section-head {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .num {
+      min-width: 42px; height: 42px;
+      background: var(--blue);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14pt;
+      box-shadow: 0 3px 10px rgba(24,95,165,.35);
+    }
+
+    .section-head h2 { font-size: 14pt; font-weight: 700; color: var(--blue-dark); }
+    .section-head .sub { font-size: 9pt; color: var(--gray-500); margin-top: 2px; }
+
+    h3 {
+      font-size: 10.5pt; font-weight: 700;
+      color: var(--gray-700);
+      margin: 22px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    p { color: var(--gray-600); margin-bottom: 10px; line-height: 1.6; }
+
+    /* ── Step cards ──────────────────────────────────── */
+    .steps { display: flex; flex-direction: column; gap: 10px; }
+
+    .step-card {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 14px 16px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      counter-increment: step-ctr;
+    }
+
+    .steps { counter-reset: step-ctr; }
+
+    .step-num {
+      min-width: 28px; height: 28px;
+      background: var(--blue);
+      color: white; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 9pt;
+      flex-shrink: 0; margin-top: 1px;
+    }
+
+    .step-card .title { font-weight: 600; color: var(--gray-900); margin-bottom: 3px; font-size: 10pt; }
+    .step-card .desc  { color: var(--gray-600); font-size: 9.5pt; }
+
+    /* ── Code blocks ─────────────────────────────────── */
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 8.5pt;
+      line-height: 1.65;
+      margin: 10px 0 14px;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+
+    .c  { color: #475569; }  /* comment */
+    .cmd{ color: #7dd3fc; }  /* command */
+    .v  { color: #86efac; }  /* value/string */
+    .k  { color: #fca5a5; }  /* key */
+    .p  { color: #64748b; }  /* prompt */
+    .w  { color: #fde68a; }  /* warning */
+
+    code {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 8.5pt;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── Callouts ────────────────────────────────────── */
+    .note {
+      display: flex; gap: 12px;
+      padding: 13px 15px;
+      border-radius: var(--radius);
+      margin: 12px 0;
+      font-size: 9.5pt;
+      line-height: 1.55;
+    }
+
+    .note-icon { font-size: 13pt; flex-shrink: 0; margin-top: 1px; }
+    .note strong { display: block; margin-bottom: 3px; font-size: 10pt; }
+
+    .note.info    { background: var(--blue-xlight); border-left: 4px solid var(--blue); }
+    .note.ok      { background: var(--green-bg);    border-left: 4px solid var(--green); }
+    .note.warn    { background: var(--yellow-bg);   border-left: 4px solid var(--yellow); }
+    .note.danger  { background: var(--red-bg);      border-left: 4px solid var(--red); }
+    .note.tip     { background: var(--purple-bg);   border-left: 4px solid var(--purple); }
+
+    /* ── URL banner ──────────────────────────────────── */
+    .url-banner {
+      background: linear-gradient(135deg, var(--blue-dark), var(--blue));
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      margin: 18px 0;
+      display: flex; align-items: center; gap: 20px;
+    }
+
+    .url-banner .url-icon {
+      width: 48px; height: 48px;
+      background: rgba(255,255,255,.15);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20pt;
+      flex-shrink: 0;
+    }
+
+    .url-banner .url-text { flex: 1; }
+    .url-banner .url-label { font-size: 8.5pt; opacity: .7; margin-bottom: 3px; }
+    .url-banner .url-value {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 14pt; font-weight: 700;
+    }
+
+    .url-banner .url-sub { font-size: 8.5pt; opacity: .65; margin-top: 4px; }
+
+    /* ── Cred table ──────────────────────────────────── */
+    .cred-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 14px 0; }
+
+    .cred-card {
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .cred-head {
+      padding: 9px 14px;
+      font-size: 8.5pt; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .cred-head.admin  { background: var(--blue);   color: white; }
+    .cred-head.agent  { background: #0ea5e9;        color: white; }
+    .cred-head.agent2 { background: #6366f1;        color: white; }
+
+    .cred-body { padding: 10px 14px; background: var(--gray-50); }
+
+    .cred-row {
+      display: flex; justify-content: space-between;
+      padding: 4px 0; font-size: 9pt;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .cred-row:last-child { border-bottom: none; }
+    .cred-row .lbl { color: var(--gray-500); }
+    .cred-row .val { font-weight: 600; font-family: 'Cascadia Code', 'Consolas', monospace; }
+
+    /* ── Checklist ───────────────────────────────────── */
+    .checklist { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+
+    .check-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 11px 14px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      background: var(--gray-50);
+    }
+
+    .check-item .chk {
+      width: 20px; height: 20px;
+      border: 2px solid var(--gray-300);
+      border-radius: 4px;
+      flex-shrink: 0; margin-top: 1px;
+      background: white;
+    }
+
+    .check-item .ch-title { font-weight: 600; font-size: 10pt; color: var(--gray-900); margin-bottom: 2px; }
+    .check-item .ch-desc  { font-size: 9pt; color: var(--gray-500); }
+    .check-item .ch-url   {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 8.5pt; color: var(--blue);
+      margin-top: 3px; display: block;
+    }
+
+    /* ── Feature grid ────────────────────────────────── */
+    .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+
+    .feat-card {
+      padding: 14px 16px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      background: var(--gray-50);
+    }
+
+    .feat-card .f-head {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 700; font-size: 10pt; color: var(--gray-900);
+      margin-bottom: 8px;
+    }
+
+    .feat-card .f-icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12pt;
+      flex-shrink: 0;
+    }
+
+    .feat-card ul { list-style: none; }
+    .feat-card li { font-size: 9pt; color: var(--gray-600); padding: 3px 0; display: flex; align-items: baseline; gap: 6px; }
+    .feat-card li::before { content: '–'; color: var(--blue); font-weight: 700; flex-shrink: 0; }
+
+    /* ── Status pills ────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 40px;
+      font-size: 8.5pt; font-weight: 600;
+    }
+
+    .badge.open   { background: #fef9c3; color: #854d0e; }
+    .badge.prog   { background: #dbeafe; color: #1e40af; }
+    .badge.pend   { background: #ede9fe; color: #5b21b6; }
+    .badge.res    { background: #dcfce7; color: #14532d; }
+    .badge.clos   { background: #f3f4f6; color: #374151; }
+
+    .badge.crit   { background: #fee2e2; color: #991b1b; }
+    .badge.high   { background: #fed7aa; color: #9a3412; }
+    .badge.med    { background: #fef9c3; color: #854d0e; }
+    .badge.low    { background: #dcfce7; color: #14532d; }
+
+    /* ── Divider ─────────────────────────────────────── */
+    hr { border: none; border-top: 1px solid var(--gray-200); margin: 20px 0; }
+
+    /* ── Table ───────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 12px 0; }
+    thead tr { background: var(--blue); color: white; }
+    thead th { padding: 9px 13px; text-align: left; font-weight: 600; }
+    thead th:first-child { border-radius: 6px 0 0 0; }
+    thead th:last-child  { border-radius: 0 6px 0 0; }
+    tbody tr:nth-child(even) { background: var(--gray-50); }
+    tbody td { padding: 8px 13px; border-bottom: 1px solid var(--gray-200); color: var(--gray-700); }
+    tbody td strong { color: var(--gray-900); }
+
+    /* ── Footer ──────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 24px 48px;
+      font-size: 8.5pt;
+      color: var(--gray-400);
+      border-top: 1px solid var(--gray-100);
+    }
+  </style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">🖨 Exporter en PDF</button>
+
+<div class="page">
+
+<!-- ═══════════════════════════════════════════
+     COVER
+═══════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-icon">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
+  </div>
+
+  <h1>HelpDesk</h1>
+  <h2>Démarrage local &amp; guide de test complet</h2>
+
+  <div class="cover-pills">
+    <div class="pill">🪟 Windows 10 / 11</div>
+    <div class="pill">⚡ Node.js 24 LTS</div>
+    <div class="pill">🐘 PostgreSQL 15</div>
+    <div class="pill">🌐 localhost:5173</div>
+  </div>
+
+  <div class="cover-progress">
+    <div class="cover-step active">1 · Prérequis</div>
+    <div class="cover-step active">2 · Base de données</div>
+    <div class="cover-step active">3 · Setup</div>
+    <div class="cover-step active">4 · Démarrage</div>
+    <div class="cover-step active">5 · Tests</div>
+  </div>
+
+  <div class="cover-footer">Version 1.0 · Mars 2026 · Usage interne</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 1 — PRÉREQUIS
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">1</div>
+    <div>
+      <h2>Prérequis</h2>
+      <div class="sub">Vérifications avant de commencer</div>
+    </div>
+  </div>
+
+  <div class="note info">
+    <span class="note-icon">ℹ️</span>
+    <div>
+      <strong>Node.js déjà installé sur cette machine</strong>
+      Node.js v24.14.0 et npm v11.9.0 ont été installés lors du dernier audit.
+      La commande <code>node --version</code> doit répondre depuis un terminal PowerShell.
+    </div>
+  </div>
+
+  <h3>1.1 Vérifier Node.js et npm</h3>
+  <p>Ouvrez un terminal PowerShell (<code>Win + X → Terminal Windows</code>) et exécutez :</p>
+
+  <pre><span class="cmd">node</span> <span class="v">--version</span>    <span class="c"># Attendu : v20.x.x ou v24.x.x</span>
+<span class="cmd">npm</span>  <span class="v">--version</span>    <span class="c"># Attendu : 10.x.x ou 11.x.x</span></pre>
+
+  <div class="note warn">
+    <span class="note-icon">⚠️</span>
+    <div>
+      <strong>Si node est introuvable dans PowerShell</strong>
+      Node.js est installé mais pas dans le PATH système. Fermez et rouvrez le terminal, ou redémarrez Windows.
+      Si le problème persiste, lancez <code>local-prereqs.bat</code> en administrateur depuis le dossier du projet.
+    </div>
+  </div>
+
+  <h3>1.2 Vérifier PostgreSQL</h3>
+  <pre><span class="cmd">psql</span> <span class="v">--version</span>    <span class="c"># Attendu : psql (PostgreSQL) 15.x</span></pre>
+
+  <div class="note warn">
+    <span class="note-icon">⚠️</span>
+    <div>
+      <strong>Si psql est introuvable</strong>
+      Ajoutez le dossier bin de PostgreSQL au PATH :
+      <code>C:\Program Files\PostgreSQL\15\bin</code>
+      (Variables d'environnement système → Path → Nouveau)
+    </div>
+  </div>
+
+  <h3>1.3 S'assurer que le service PostgreSQL est démarré</h3>
+  <pre><span class="c"># PowerShell (admin) :</span>
+<span class="cmd">Get-Service</span> <span class="v">postgresql*</span>    <span class="c"># Vérifier le statut</span>
+<span class="cmd">Start-Service</span> <span class="v">postgresql-x64-15</span>    <span class="c"># Démarrer si nécessaire</span>
+
+<span class="c"># Ou depuis les Services Windows (services.msc) :</span>
+<span class="c"># Chercher "postgresql-x64-15" → clic droit → Démarrer</span></pre>
+
+  <table>
+    <thead><tr><th>Logiciel</th><th>Version</th><th>Statut requis</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Node.js</strong></td><td>≥ 20 LTS</td><td>✅ Installé (v24.14.0)</td></tr>
+      <tr><td><strong>npm</strong></td><td>≥ 10</td><td>✅ Installé (v11.9.0)</td></tr>
+      <tr><td><strong>PostgreSQL</strong></td><td>15</td><td>🔄 Vérifier démarrage</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 2 — BASE DE DONNÉES
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">2</div>
+    <div>
+      <h2>Base de données</h2>
+      <div class="sub">Création de la base et du fichier .env</div>
+    </div>
+  </div>
+
+  <p>Si c'est la <strong>première fois</strong> que vous lancez le projet, vous devez créer la base de données et configurer le fichier <code>server/.env</code>.</p>
+  <p>Si vous avez déjà fait ce setup, <strong>passez directement à la section 3</strong>.</p>
+
+  <h3>2.1 Créer la base de données</h3>
+
+  <pre><span class="c"># Ouvrir psql :</span>
+<span class="cmd">psql</span> <span class="v">-U postgres</span>
+
+<span class="c"># Dans le prompt psql :</span>
+<span class="p">postgres=#</span> <span class="cmd">CREATE DATABASE</span> <span class="v">helpdesk_dev;</span>
+<span class="p">postgres=#</span> <span class="cmd">\q</span></pre>
+
+  <h3>2.2 Créer le fichier <code>server/.env</code></h3>
+  <p>Créez un fichier nommé <code>.env</code> dans le dossier <code>server/</code> :</p>
+
+  <pre><span class="c"># ── Remplacez VOTRE_MOT_DE_PASSE par celui de votre compte postgres ──</span>
+<span class="k">DATABASE_URL</span>=<span class="v">postgresql://postgres:VOTRE_MOT_DE_PASSE@localhost:5432/helpdesk_dev</span>
+<span class="k">JWT_SECRET</span>=<span class="v">un-secret-fort-et-aleatoire-min-32-chars</span>
+<span class="k">PORT</span>=<span class="v">3001</span>
+<span class="k">NODE_ENV</span>=<span class="v">development</span>
+<span class="k">APP_URL</span>=<span class="v">http://localhost:5173</span>
+<span class="k">UPLOADS_PATH</span>=<span class="v">./uploads</span>
+<span class="k">COMPANY_NAME</span>=<span class="v">Mon Helpdesk</span>
+<span class="k">SMTP_HOST</span>=
+<span class="k">SMTP_PORT</span>=<span class="v">587</span>
+<span class="k">SMTP_USER</span>=
+<span class="k">SMTP_PASS</span>=
+<span class="k">SMTP_FROM</span>=<span class="v">noreply@helpdesk.local</span></pre>
+
+  <div class="note tip">
+    <span class="note-icon">⚡</span>
+    <div>
+      <strong>Astuce — Script automatique</strong>
+      Vous pouvez aussi double-cliquer sur <code>local-setup.bat</code> à la racine du projet.
+      Il crée la base, génère le <code>.env</code>, installe les dépendances et lance les migrations en une seule commande.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 3 — SETUP
+═══════════════════════════════════════════ -->
+<div class="section pb">
+  <div class="section-head">
+    <div class="num">3</div>
+    <div>
+      <h2>Setup du projet</h2>
+      <div class="sub">Dépendances, migrations, seed</div>
+    </div>
+  </div>
+
+  <p>Ces étapes s'exécutent <strong>une seule fois</strong> (ou après un <code>git pull</code> majeur).</p>
+
+  <h3>Option A — Script automatique (recommandé)</h3>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <div>
+        <div class="title">Double-cliquer sur <code>local-setup.bat</code></div>
+        <div class="desc">À la racine du projet. Pas besoin de droits admin. Répond aux questions avec les valeurs par défaut (touche Entrée).</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <div>
+        <div class="title">Attendre la fin du script</div>
+        <div class="desc">Le script installe les dépendances npm, applique les migrations Prisma et charge les données de test. Durée : 2 à 5 minutes.</div>
+      </div>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <div>
+        <div class="title">Vérifier le message de fin</div>
+        <div class="desc">Le script doit afficher : <em>"Setup terminé ! Lancez local-start.bat pour démarrer"</em> avec les identifiants de test.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Option B — Manuellement (terminal)</h3>
+  <p>Si le script automatique échoue, exécutez ces commandes depuis la racine du projet :</p>
+
+  <pre><span class="c"># 1 — Installer les dépendances</span>
+<span class="cmd">npm install</span>                        <span class="c"># Racine</span>
+<span class="cmd">npm install</span> <span class="v">--prefix server</span>       <span class="c"># Backend</span>
+<span class="cmd">npm install</span> <span class="v">--prefix client</span>       <span class="c"># Frontend</span>
+
+<span class="c"># 2 — Générer le client Prisma</span>
+<span class="cmd">cd</span> <span class="v">server</span>
+<span class="cmd">npx prisma generate</span>
+
+<span class="c"># 3 — Migrations + seed</span>
+<span class="cmd">npx prisma migrate deploy</span>          <span class="c"># Créer les tables</span>
+<span class="cmd">npx prisma db seed</span>                 <span class="c"># Charger les données de test</span>
+<span class="cmd">cd</span> <span class="v">..</span></pre>
+
+  <div class="note ok">
+    <span class="note-icon">✅</span>
+    <div>
+      <strong>Seed réussi — données chargées</strong>
+      Le seed crée automatiquement : 2 rôles (Admin, Agent), 4 utilisateurs, des catégories de tickets,
+      des clients de démonstration et un modèle d'enquête de satisfaction.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 4 — DÉMARRAGE
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">4</div>
+    <div>
+      <h2>Démarrer l'application</h2>
+      <div class="sub">Backend + Frontend en parallèle</div>
+    </div>
+  </div>
+
+  <h3>Méthode rapide</h3>
+  <p>Double-cliquez sur <code>local-start.bat</code> à la racine du projet. Il démarre le backend et le frontend dans la même fenêtre.</p>
+
+  <pre><span class="c"># Ou depuis un terminal :</span>
+<span class="cmd">.\local-start.bat</span>
+
+<span class="c"># Ce que vous devez voir en quelques secondes :</span>
+<span class="p">  [server]</span> <span class="v">Server running on port 3001</span>
+<span class="p">  [vite]</span>   <span class="v">Local: http://localhost:5173/</span></pre>
+
+  <div class="url-banner">
+    <div class="url-icon">🌐</div>
+    <div class="url-text">
+      <div class="url-label">Application disponible à</div>
+      <div class="url-value">http://localhost:5173</div>
+      <div class="url-sub">Backend API : http://localhost:3001 &nbsp;·&nbsp; Ctrl+C pour arrêter</div>
+    </div>
+  </div>
+
+  <h3>Méthode deux terminaux (alternative)</h3>
+
+  <pre><span class="c"># Terminal 1 — Backend :</span>
+<span class="cmd">cd</span> <span class="v">server</span>  <span class="v">&amp;&amp;</span>  <span class="cmd">npm run dev</span>
+
+<span class="c"># Terminal 2 — Frontend :</span>
+<span class="cmd">cd</span> <span class="v">client</span>  <span class="v">&amp;&amp;</span>  <span class="cmd">npm run dev</span></pre>
+
+  <div class="note warn">
+    <span class="note-icon">⚠️</span>
+    <div>
+      <strong>Si les ports 3001 ou 5173 sont déjà utilisés</strong>
+      <code>netstat -ano | findstr :3001</code> pour identifier le processus.
+      Modifiez <code>PORT=3002</code> dans <code>server/.env</code> si nécessaire.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 5 — CONNEXION
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">5</div>
+    <div>
+      <h2>Connexion</h2>
+      <div class="sub">Comptes de test disponibles</div>
+    </div>
+  </div>
+
+  <p>Ouvrez <code>http://localhost:5173</code> dans Chrome ou Edge. Utilisez l'un des comptes suivants :</p>
+
+  <div class="cred-grid">
+    <div class="cred-card">
+      <div class="cred-head admin">👑 Administrateur</div>
+      <div class="cred-body">
+        <div class="cred-row"><span class="lbl">Email</span><span class="val">admin@helpdesk.com</span></div>
+        <div class="cred-row"><span class="lbl">Mot de passe</span><span class="val">admin123</span></div>
+        <div class="cred-row"><span class="lbl">Accès</span><span class="val">Complet</span></div>
+      </div>
+    </div>
+    <div class="cred-card">
+      <div class="cred-head agent">🎧 Agent 1 (Marie Dupont)</div>
+      <div class="cred-body">
+        <div class="cred-row"><span class="lbl">Email</span><span class="val">agent1@helpdesk.com</span></div>
+        <div class="cred-row"><span class="lbl">Mot de passe</span><span class="val">agent123</span></div>
+        <div class="cred-row"><span class="lbl">Accès</span><span class="val">Tickets, Clients</span></div>
+      </div>
+    </div>
+    <div class="cred-card">
+      <div class="cred-head agent2">🎧 Agents 2 &amp; 3</div>
+      <div class="cred-body">
+        <div class="cred-row"><span class="lbl">Email</span><span class="val">agent2@helpdesk.com</span></div>
+        <div class="cred-row"><span class="lbl">Email</span><span class="val">agent3@helpdesk.com</span></div>
+        <div class="cred-row"><span class="lbl">Mot de passe</span><span class="val">agent123</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note danger">
+    <span class="note-icon">🔐</span>
+    <div>
+      <strong>Changez ces mots de passe avant tout usage réel</strong>
+      Ces identifiants sont publics. Allez dans <em>Profil → Changer le mot de passe</em> après votre première connexion.
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 6 — PARCOURS DE TEST
+═══════════════════════════════════════════ -->
+<div class="section pb">
+  <div class="section-head">
+    <div class="num">6</div>
+    <div>
+      <h2>Parcours de test complet</h2>
+      <div class="sub">Vérifier toutes les fonctionnalités de l'application</div>
+    </div>
+  </div>
+
+  <p>Suivez ces parcours dans l'ordre pour valider l'ensemble des fonctionnalités. Cochez chaque point au fur et à mesure.</p>
+
+  <h3>🔐 Authentification</h3>
+  <div class="checklist">
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Connexion admin</div>
+        <div class="ch-desc">Connectez-vous avec <code>admin@helpdesk.com / admin123</code>. Vous devez atterrir sur le Dashboard.</div>
+        <span class="ch-url">→ http://localhost:5173/login</span>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Dashboard visible</div>
+        <div class="ch-desc">Vérifier que les KPI (tickets ouverts, en cours, CSAT), les graphiques et l'activité récente s'affichent sans erreur.</div>
+        <span class="ch-url">→ http://localhost:5173/dashboard</span>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Déconnexion et reconnexion</div>
+        <div class="ch-desc">Cliquez sur votre profil → Déconnexion. Reconnectez-vous avec un compte agent.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Accès refusé</div>
+        <div class="ch-desc">Connecté en tant qu'agent, tentez d'accéder à <code>/admin/settings</code> — vous devez voir la page 403 Accès refusé.</div>
+        <span class="ch-url">→ http://localhost:5173/admin/settings</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>🎫 Gestion des tickets</h3>
+  <div class="checklist">
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Créer un ticket</div>
+        <div class="ch-desc">Cliquez sur "Nouveau ticket". Remplissez : titre, description, priorité <span class="badge high">HAUTE</span>, catégorie, et assignez à Marie Dupont. Soumettez.</div>
+        <span class="ch-url">→ http://localhost:5173/tickets/new</span>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Liste des tickets</div>
+        <div class="ch-desc">Vérifier que le ticket créé apparaît avec le bon numéro (format VG2026XXXX), le bon statut <span class="badge open">OUVERT</span> et la bonne priorité.</div>
+        <span class="ch-url">→ http://localhost:5173/tickets</span>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Détail du ticket — Changer le statut</div>
+        <div class="ch-desc">Ouvrez le ticket. Changez le statut en <span class="badge prog">EN COURS</span>. Vérifier que le journal d'activité se met à jour.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Ajouter un commentaire public</div>
+        <div class="ch-desc">Tapez un commentaire dans la zone de texte, laissez "Public" sélectionné, et envoyez. Il doit apparaître dans le fil de discussion.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Ajouter une note interne</div>
+        <div class="ch-desc">Cochez "Note interne" et envoyez un deuxième commentaire. La note doit apparaître avec un fond distinct (non visible par le client).</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Pièce jointe</div>
+        <div class="ch-desc">Téléversez un fichier depuis le détail du ticket (formats : PDF, PNG, JPG, max 10 MB). Vérifiez qu'il apparaît dans la liste des pièces jointes et peut être téléchargé.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Résoudre le ticket</div>
+        <div class="ch-desc">Changez le statut en <span class="badge res">RÉSOLU</span>. Vérifier la mise à jour du compteur "Résolus aujourd'hui" sur le Dashboard.</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>👥 Gestion des clients</h3>
+  <div class="checklist">
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Liste des clients</div>
+        <div class="ch-desc">Naviguez vers Clients. Vérifier que la liste s'affiche avec le nombre de tickets par client.</div>
+        <span class="ch-url">→ http://localhost:5173/clients</span>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Créer un client</div>
+        <div class="ch-desc">Cliquez sur "Nouveau client". Remplissez : prénom, nom, email ou téléphone. Enregistrez. Le client doit apparaître dans la liste.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Fiche client</div>
+        <div class="ch-desc">Ouvrez la fiche d'un client. Vérifier les statistiques (total tickets, ouverts, résolus, temps moyen) et l'historique des tickets.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Panneau client dans un ticket</div>
+        <div class="ch-desc">Dans le détail d'un ticket ayant un client associé, vérifier que le panneau latéral affiche bien les infos du client.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 7 — TESTS ADMIN
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">7</div>
+    <div>
+      <h2>Tests Administration</h2>
+      <div class="sub">Fonctionnalités réservées à l'Admin — connectez-vous avec admin@helpdesk.com</div>
+    </div>
+  </div>
+
+  <div class="feat-grid">
+
+    <div class="feat-card">
+      <div class="f-head">
+        <div class="f-icon" style="background:#e8f1fb">⚙️</div>
+        Paramètres
+      </div>
+      <ul>
+        <li>Modifier le nom de l'entreprise</li>
+        <li>Téléverser un logo (PNG/JPG, max 2 MB)</li>
+        <li>Configurer délai d'envoi des enquêtes</li>
+        <li>Définir la priorité et l'agent par défaut</li>
+      </ul>
+      <div style="margin-top:8px"><span class="ch-url" style="font-family:monospace;font-size:8.5pt;color:var(--blue)">→ /admin/settings</span></div>
+    </div>
+
+    <div class="feat-card">
+      <div class="f-head">
+        <div class="f-icon" style="background:#f0fdf4">🏷️</div>
+        Catégories
+      </div>
+      <ul>
+        <li>Créer une catégorie (nom, couleur, icône)</li>
+        <li>Vérifier l'aperçu en temps réel</li>
+        <li>Réordonner par glisser-déposer</li>
+        <li>Activer / désactiver une catégorie</li>
+      </ul>
+      <div style="margin-top:8px"><span class="ch-url" style="font-family:monospace;font-size:8.5pt;color:var(--blue)">→ /admin/categories</span></div>
+    </div>
+
+    <div class="feat-card">
+      <div class="f-head">
+        <div class="f-icon" style="background:#ede9fe">🔑</div>
+        Rôles &amp; permissions
+      </div>
+      <ul>
+        <li>Voir les rôles système (Admin, Agent)</li>
+        <li>Créer un rôle personnalisé</li>
+        <li>Cocher/décocher les permissions</li>
+        <li>Vérifier que le rôle est dans la liste</li>
+      </ul>
+      <div style="margin-top:8px"><span class="ch-url" style="font-family:monospace;font-size:8.5pt;color:var(--blue)">→ /admin/roles</span></div>
+    </div>
+
+    <div class="feat-card">
+      <div class="f-head">
+        <div class="f-icon" style="background:#fef9c3">👤</div>
+        Utilisateurs
+      </div>
+      <ul>
+        <li>Créer un nouvel utilisateur</li>
+        <li>Assigner un rôle</li>
+        <li>Activer / désactiver un compte</li>
+        <li>Réinitialiser le mot de passe</li>
+      </ul>
+      <div style="margin-top:8px"><span class="ch-url" style="font-family:monospace;font-size:8.5pt;color:var(--blue)">→ /admin/users</span></div>
+    </div>
+
+    <div class="feat-card">
+      <div class="f-head">
+        <div class="f-icon" style="background:#fff7ed">🏢</div>
+        Rôles clients
+      </div>
+      <ul>
+        <li>Créer un rôle client (ex : VIP, Standard)</li>
+        <li>Réordonner les rôles</li>
+        <li>Assigner un rôle à un client</li>
+      </ul>
+      <div style="margin-top:8px"><span class="ch-url" style="font-family:monospace;font-size:8.5pt;color:var(--blue)">→ /admin/client-roles</span></div>
+    </div>
+
+    <div class="feat-card">
+      <div class="f-head">
+        <div class="f-icon" style="background:#fdf2f8">📊</div>
+        Enquêtes satisfaction
+      </div>
+      <ul>
+        <li>Voir les résultats CSAT / NPS</li>
+        <li>Vérifier les graphiques de tendance</li>
+        <li>Lire les réponses détaillées</li>
+      </ul>
+      <div style="margin-top:8px"><span class="ch-url" style="font-family:monospace;font-size:8.5pt;color:var(--blue)">→ /admin/surveys</span></div>
+    </div>
+
+  </div>
+
+  <h3>📊 Statuts et priorités disponibles</h3>
+  <p>Vérifiez que tous ces statuts et priorités sont sélectionnables lors de la création ou modification d'un ticket :</p>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px">
+    <span class="badge open">OUVERT</span>
+    <span class="badge prog">EN COURS</span>
+    <span class="badge pend">EN ATTENTE</span>
+    <span class="badge res">RÉSOLU</span>
+    <span class="badge clos">FERMÉ</span>
+    <span style="margin-left:12px"></span>
+    <span class="badge crit">CRITIQUE</span>
+    <span class="badge high">HAUTE</span>
+    <span class="badge med">MOYENNE</span>
+    <span class="badge low">BASSE</span>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     SECTION 8 — DÉPANNAGE
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">8</div>
+    <div>
+      <h2>Résolution des problèmes</h2>
+      <div class="sub">Erreurs courantes et solutions rapides</div>
+    </div>
+  </div>
+
+  <h3>❌ Page blanche ou "Cannot GET /"</h3>
+  <p>Le frontend n'est pas démarré. Vérifiez que Vite tourne dans le terminal. Si le terminal est fermé, relancez <code>local-start.bat</code>.</p>
+
+  <h3>❌ Erreur "connect ECONNREFUSED 127.0.0.1:3001"</h3>
+  <p>Le backend est arrêté. Relancez le terminal et vérifiez que le message "Server running on port 3001" apparaît.</p>
+
+  <h3>❌ Erreur de connexion — "Identifiants incorrects"</h3>
+  <p>Le seed n'a pas été lancé ou a échoué. Relancez manuellement :</p>
+  <pre><span class="cmd">cd</span> <span class="v">server</span>
+<span class="cmd">npx prisma db seed</span></pre>
+
+  <h3>❌ "DATABASE_URL must start with postgresql://"</h3>
+  <p>Le fichier <code>server/.env</code> est absent ou mal configuré. Vérifiez que <code>DATABASE_URL</code> est bien renseigné et que le service PostgreSQL est démarré.</p>
+
+  <h3>❌ "P1001 Can't reach database server"</h3>
+  <pre><span class="c"># Démarrer PostgreSQL :</span>
+<span class="cmd">Start-Service</span> <span class="v">postgresql-x64-15</span>    <span class="c"># PowerShell admin</span></pre>
+
+  <h3>❌ Erreur TypeScript au démarrage du backend</h3>
+  <p>Le client Prisma n'est pas généré. Lancez :</p>
+  <pre><span class="cmd">cd</span> <span class="v">server</span>
+<span class="cmd">npx prisma generate</span>
+<span class="cmd">cd</span> <span class="v">..</span></pre>
+
+  <h3>❌ Upload de fichier échoue (erreur 500)</h3>
+  <p>Le dossier <code>server/uploads/</code> n'existe pas. Créez-le manuellement, ou vérifiez que <code>UPLOADS_PATH=./uploads</code> est bien dans <code>server/.env</code>.</p>
+
+  <hr />
+
+  <div class="note ok">
+    <span class="note-icon">🎉</span>
+    <div>
+      <strong>Application opérationnelle !</strong>
+      Si tous les points de la section 6 et 7 sont cochés, votre instance HelpDesk est
+      entièrement fonctionnelle. Bonne utilisation !
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  HelpDesk v1.0 &nbsp;·&nbsp; Guide démarrage local &nbsp;·&nbsp; Mars 2026 &nbsp;·&nbsp; Usage interne
+</div>
+
+</div><!-- /page -->
+</body>
+</html>

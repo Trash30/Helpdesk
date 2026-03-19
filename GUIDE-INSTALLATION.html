@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HelpDesk — Guide d'installation</title>
+  <style>
+    /* ── Variables ───────────────────────────────────────────── */
+    :root {
+      --blue:        #185FA5;
+      --blue-dark:   #0f3d6e;
+      --blue-light:  #e8f1fb;
+      --blue-mid:    #2d78c8;
+      --accent:      #f0a500;
+      --green:       #16a34a;
+      --green-bg:    #f0fdf4;
+      --red:         #dc2626;
+      --red-bg:      #fef2f2;
+      --yellow-bg:   #fffbeb;
+      --yellow:      #d97706;
+      --gray-50:     #f9fafb;
+      --gray-100:    #f3f4f6;
+      --gray-200:    #e5e7eb;
+      --gray-400:    #9ca3af;
+      --gray-600:    #4b5563;
+      --gray-700:    #374151;
+      --gray-900:    #111827;
+      --radius:      8px;
+      --radius-lg:   12px;
+    }
+
+    /* ── Reset & base ────────────────────────────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.65;
+      color: var(--gray-900);
+      background: #fff;
+    }
+
+    /* ── Page layout ─────────────────────────────────────────── */
+    .page {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 0 48px;
+    }
+
+    /* ── Cover page ──────────────────────────────────────────── */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(145deg, var(--blue-dark) 0%, var(--blue) 55%, var(--blue-mid) 100%);
+      color: white;
+      padding: 60px 40px;
+      page-break-after: always;
+    }
+
+    .cover-logo {
+      width: 80px;
+      height: 80px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 32px;
+      backdrop-filter: blur(4px);
+      border: 1.5px solid rgba(255,255,255,0.25);
+    }
+
+    .cover-logo svg {
+      width: 44px;
+      height: 44px;
+      fill: white;
+    }
+
+    .cover h1 {
+      font-size: 36pt;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .cover .subtitle {
+      font-size: 14pt;
+      opacity: 0.85;
+      margin-bottom: 48px;
+      font-weight: 400;
+    }
+
+    .cover-divider {
+      width: 60px;
+      height: 3px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 2px;
+      margin: 0 auto 40px;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .cover-badge {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 40px;
+      padding: 8px 20px;
+      font-size: 9.5pt;
+      font-weight: 500;
+      backdrop-filter: blur(4px);
+    }
+
+    .cover-footer {
+      margin-top: auto;
+      padding-top: 60px;
+      font-size: 8.5pt;
+      opacity: 0.55;
+    }
+
+    /* ── TOC page ────────────────────────────────────────────── */
+    .toc-page {
+      padding: 60px 48px 48px;
+      page-break-after: always;
+    }
+
+    .toc-title {
+      font-size: 16pt;
+      font-weight: 700;
+      color: var(--blue);
+      border-bottom: 2px solid var(--blue-light);
+      padding-bottom: 12px;
+      margin-bottom: 28px;
+    }
+
+    .toc-item {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px dotted var(--gray-200);
+    }
+
+    .toc-num {
+      font-weight: 700;
+      color: var(--blue);
+      min-width: 28px;
+      font-size: 10pt;
+    }
+
+    .toc-label {
+      flex: 1;
+      font-size: 10.5pt;
+      color: var(--gray-700);
+    }
+
+    .toc-sub {
+      padding-left: 36px;
+      border-bottom: 1px dotted var(--gray-100);
+    }
+
+    .toc-sub .toc-label {
+      font-size: 9.5pt;
+      color: var(--gray-600);
+    }
+
+    /* ── Content sections ────────────────────────────────────── */
+    .section {
+      padding: 48px 48px 32px;
+    }
+
+    .section + .section {
+      border-top: 1px solid var(--gray-100);
+    }
+
+    /* ── Section header ──────────────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .step-badge {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      background: var(--blue);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13pt;
+      box-shadow: 0 2px 8px rgba(24,95,165,0.35);
+    }
+
+    .section h2 {
+      font-size: 15pt;
+      font-weight: 700;
+      color: var(--blue-dark);
+    }
+
+    .section h3 {
+      font-size: 11pt;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin: 20px 0 10px;
+    }
+
+    .section p {
+      color: var(--gray-700);
+      margin-bottom: 12px;
+    }
+
+    /* ── Steps list ──────────────────────────────────────────── */
+    .steps {
+      counter-reset: step-counter;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .steps li {
+      counter-increment: step-counter;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      background: var(--gray-50);
+      border-radius: var(--radius);
+      border: 1px solid var(--gray-200);
+    }
+
+    .steps li::before {
+      content: counter(step-counter);
+      min-width: 26px;
+      height: 26px;
+      background: var(--blue);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 9pt;
+      margin-top: 1px;
+    }
+
+    .steps li .step-content {
+      flex: 1;
+    }
+
+    .steps li strong {
+      display: block;
+      color: var(--gray-900);
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .steps li span {
+      color: var(--gray-600);
+      font-size: 9.5pt;
+    }
+
+    /* ── Code blocks ─────────────────────────────────────────── */
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+      font-size: 9pt;
+      line-height: 1.6;
+      overflow: hidden;
+      margin: 12px 0 16px;
+      position: relative;
+      border: 1px solid #334155;
+    }
+
+    pre .comment { color: #64748b; }
+    pre .cmd     { color: #7dd3fc; }
+    pre .value   { color: #86efac; }
+    pre .key     { color: #fca5a5; }
+    pre .prompt  { color: #475569; }
+
+    code {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 9pt;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    /* ── Callout boxes ───────────────────────────────────────── */
+    .callout {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      margin: 16px 0;
+      font-size: 9.5pt;
+      line-height: 1.55;
+    }
+
+    .callout-icon {
+      font-size: 14pt;
+      min-width: 22px;
+      margin-top: 1px;
+    }
+
+    .callout.info    { background: var(--blue-light);  border-left: 4px solid var(--blue); }
+    .callout.success { background: var(--green-bg);    border-left: 4px solid var(--green); }
+    .callout.warning { background: var(--yellow-bg);   border-left: 4px solid var(--yellow); }
+    .callout.danger  { background: var(--red-bg);      border-left: 4px solid var(--red); }
+
+    .callout.info    .callout-icon { color: var(--blue); }
+    .callout.success .callout-icon { color: var(--green); }
+    .callout.warning .callout-icon { color: var(--yellow); }
+    .callout.danger  .callout-icon { color: var(--red); }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 10pt;
+    }
+
+    /* ── Requirements table ──────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.5pt;
+      margin: 12px 0 20px;
+    }
+
+    thead tr {
+      background: var(--blue);
+      color: white;
+    }
+
+    thead th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    thead th:first-child { border-radius: 6px 0 0 0; }
+    thead th:last-child  { border-radius: 0 6px 0 0; }
+
+    tbody tr:nth-child(even) { background: var(--gray-50); }
+    tbody tr:nth-child(odd)  { background: #fff; }
+
+    tbody td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--gray-200);
+      color: var(--gray-700);
+    }
+
+    tbody td strong { color: var(--gray-900); }
+
+    .check { color: var(--green); font-weight: 700; }
+    .opt   { color: var(--gray-400); font-size: 8.5pt; }
+
+    /* ── File/config blocks ──────────────────────────────────── */
+    .file-block {
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 14px 0;
+    }
+
+    .file-block-header {
+      background: var(--gray-100);
+      padding: 8px 14px;
+      font-size: 9pt;
+      font-weight: 600;
+      color: var(--gray-600);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .file-block-header .file-icon { color: var(--blue); }
+
+    .file-block pre {
+      margin: 0;
+      border-radius: 0;
+      border: none;
+      font-size: 8.5pt;
+    }
+
+    /* ── Credential cards ────────────────────────────────────── */
+    .cred-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 16px 0;
+    }
+
+    .cred-card {
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 16px;
+      background: var(--gray-50);
+    }
+
+    .cred-card .role {
+      font-size: 8.5pt;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .cred-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 9pt;
+    }
+
+    .cred-row:last-child { border-bottom: none; }
+    .cred-row .label { color: var(--gray-500); }
+    .cred-row .value { font-weight: 600; font-family: 'Cascadia Code', 'Consolas', monospace; }
+
+    /* ── Summary box ─────────────────────────────────────────── */
+    .summary-box {
+      background: linear-gradient(135deg, var(--blue-dark), var(--blue));
+      color: white;
+      border-radius: var(--radius-lg);
+      padding: 28px 32px;
+      margin: 24px 0;
+    }
+
+    .summary-box h3 {
+      color: white;
+      font-size: 13pt;
+      margin-bottom: 16px;
+    }
+
+    .summary-url {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 40px;
+      padding: 10px 22px;
+      font-size: 13pt;
+      font-weight: 700;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      margin-bottom: 16px;
+    }
+
+    .summary-row {
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+      font-size: 9.5pt;
+      padding: 4px 0;
+      opacity: 0.9;
+    }
+
+    .summary-row strong { opacity: 1; }
+
+    /* ── Tags / pills ────────────────────────────────────────── */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 40px;
+      font-size: 8.5pt;
+      font-weight: 600;
+    }
+
+    .tag.blue   { background: var(--blue-light);  color: var(--blue-dark); }
+    .tag.green  { background: var(--green-bg);     color: var(--green); }
+    .tag.yellow { background: var(--yellow-bg);    color: var(--yellow); }
+
+    /* ── Horizontal rule ─────────────────────────────────────── */
+    hr {
+      border: none;
+      border-top: 1px solid var(--gray-200);
+      margin: 24px 0;
+    }
+
+    /* ── Print styles ────────────────────────────────────────── */
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    @media print {
+      body { font-size: 9.5pt; }
+
+      .cover { min-height: 297mm; }
+
+      .no-break { page-break-inside: avoid; }
+
+      .page-break { page-break-before: always; }
+
+      pre { page-break-inside: avoid; }
+
+      .section { page-break-inside: avoid; }
+
+      a { color: inherit; text-decoration: none; }
+
+      /* Header banner on each printed page except cover */
+      .page-header {
+        position: running(pageHeader);
+        display: block;
+      }
+
+      @top-center {
+        content: element(pageHeader);
+      }
+    }
+
+    /* ── Screen helpers ──────────────────────────────────────── */
+    @media screen {
+      body { background: var(--gray-100); }
+
+      .page {
+        background: white;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+        margin: 40px auto;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        max-width: 860px;
+        padding: 0;
+      }
+
+      .cover {
+        min-height: 600px;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      }
+
+      .print-hint {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: var(--blue);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 40px;
+        font-size: 9pt;
+        font-weight: 600;
+        box-shadow: 0 4px 16px rgba(24,95,165,0.4);
+        cursor: pointer;
+        z-index: 9999;
+      }
+
+      .print-hint:hover { background: var(--blue-dark); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Print hint (screen only) -->
+<div class="print-hint" onclick="window.print()">🖨 Imprimer / Exporter en PDF</div>
+
+<div class="page">
+
+  <!-- ══════════════════════════════════════
+       COVER
+  ══════════════════════════════════════ -->
+  <div class="cover">
+    <div class="cover-logo">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+      </svg>
+    </div>
+
+    <h1>HelpDesk</h1>
+    <p class="subtitle">Guide d'installation &amp; démarrage local</p>
+    <div class="cover-divider"></div>
+
+    <div class="cover-meta">
+      <div class="cover-badge">📦 Node.js 20 LTS</div>
+      <div class="cover-badge">🐘 PostgreSQL 15</div>
+      <div class="cover-badge">🪟 Windows 10 / 11</div>
+      <div class="cover-badge">⚡ React 18 + Vite</div>
+    </div>
+
+    <div class="cover-footer">
+      Version 1.0 &nbsp;·&nbsp; Mars 2026 &nbsp;·&nbsp; Usage interne
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TABLE DES MATIÈRES
+  ══════════════════════════════════════ -->
+  <div class="toc-page">
+    <div class="toc-title">Table des matières</div>
+
+    <div class="toc-item">
+      <span class="toc-num">1</span>
+      <span class="toc-label">Prérequis système</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">1.1</span>
+      <span class="toc-label">Configuration matérielle minimale</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">1.2</span>
+      <span class="toc-label">Logiciels requis</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="toc-num">2</span>
+      <span class="toc-label">Installation automatique (recommandée)</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">2.1</span>
+      <span class="toc-label">Installer Node.js et PostgreSQL</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">2.2</span>
+      <span class="toc-label">Configurer et initialiser le projet</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="toc-num">3</span>
+      <span class="toc-label">Installation manuelle (étape par étape)</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">3.1</span>
+      <span class="toc-label">Installer Node.js 20 LTS</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">3.2</span>
+      <span class="toc-label">Installer PostgreSQL 15</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">3.3</span>
+      <span class="toc-label">Configurer la base de données</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">3.4</span>
+      <span class="toc-label">Créer le fichier .env</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">3.5</span>
+      <span class="toc-label">Installer les dépendances</span>
+    </div>
+    <div class="toc-item toc-sub">
+      <span class="toc-num">3.6</span>
+      <span class="toc-label">Appliquer les migrations et charger les données</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="toc-num">4</span>
+      <span class="toc-label">Démarrer l'application</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="toc-num">5</span>
+      <span class="toc-label">Premiers pas — Connexion et configuration</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="toc-num">6</span>
+      <span class="toc-label">Configuration optionnelle — Emails SMTP</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="toc-num">7</span>
+      <span class="toc-label">Résolution des problèmes courants</span>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECTION 1 — PRÉREQUIS
+  ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="step-badge">1</div>
+      <h2>Prérequis système</h2>
+    </div>
+
+    <h3>1.1 &nbsp; Configuration matérielle minimale</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Composant</th>
+          <th>Minimum</th>
+          <th>Recommandé</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Système d'exploitation</strong></td>
+          <td>Windows 10 (64-bit)</td>
+          <td>Windows 11 (64-bit)</td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td><strong>RAM</strong></td>
+          <td>2 Go</td>
+          <td>4 Go ou plus</td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td><strong>Espace disque</strong></td>
+          <td>2 Go libres</td>
+          <td>5 Go libres</td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td><strong>Connexion Internet</strong></td>
+          <td colspan="2">Requise lors de l'installation (téléchargements)</td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td><strong>Droits administrateur</strong></td>
+          <td colspan="2">Requis pour l'installation des logiciels</td>
+          <td><span class="check">✓</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>1.2 &nbsp; Logiciels requis</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Logiciel</th>
+          <th>Version</th>
+          <th>Rôle</th>
+          <th>Installé par</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Node.js</strong></td>
+          <td>20 LTS (≥ 20.x)</td>
+          <td>Exécution du serveur backend &amp; outils npm</td>
+          <td><span class="tag blue">Script auto</span></td>
+        </tr>
+        <tr>
+          <td><strong>PostgreSQL</strong></td>
+          <td>15</td>
+          <td>Base de données relationnelle</td>
+          <td><span class="tag blue">Script auto</span></td>
+        </tr>
+        <tr>
+          <td><strong>npm</strong></td>
+          <td>10+ (inclus avec Node.js)</td>
+          <td>Gestionnaire de paquets</td>
+          <td><span class="tag green">Avec Node.js</span></td>
+        </tr>
+        <tr>
+          <td><strong>Git</strong></td>
+          <td>Toute version récente</td>
+          <td>Cloner le dépôt source</td>
+          <td><span class="tag yellow">Manuel</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <span class="callout-icon">ℹ️</span>
+      <div>
+        <strong>Vérifier vos versions actuelles</strong>
+        Ouvrez un terminal PowerShell et tapez <code>node -v</code>, <code>npm -v</code> et <code>psql --version</code>.
+        Si les commandes répondent avec les bonnes versions, vous pouvez sauter la section 2.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECTION 2 — INSTALLATION AUTO
+  ══════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <div class="step-badge">2</div>
+      <h2>Installation automatique (recommandée)</h2>
+    </div>
+
+    <p>
+      Le projet inclut deux scripts qui automatisent l'installation des prérequis
+      et la configuration complète en quelques minutes.
+    </p>
+
+    <div class="callout warning">
+      <span class="callout-icon">⚠️</span>
+      <div>
+        <strong>Droits administrateur requis</strong>
+        Les deux scripts ci-dessous doivent être exécutés en tant qu'administrateur
+        (clic droit → "Exécuter en tant qu'administrateur").
+      </div>
+    </div>
+
+    <h3>2.1 &nbsp; Étape 1 — Installer Node.js et PostgreSQL</h3>
+    <p>Ce script télécharge et installe silencieusement Node.js 20 LTS et PostgreSQL 15.</p>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <strong>Ouvrir un terminal en tant qu'administrateur</strong>
+          <span>Appuyer sur <code>Win + X</code> → "Terminal Windows (admin)" ou rechercher "cmd" → clic droit → "Exécuter en tant qu'administrateur".</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Se placer dans le dossier du projet</strong>
+          <span>Remplacez le chemin par l'emplacement réel du projet sur votre machine.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Lancer le script d'installation des prérequis</strong>
+          <span>Double-clic sur <code>local-prereqs.bat</code> ou l'exécuter depuis le terminal. Durée estimée : 3 à 8 minutes selon la connexion.</span>
+        </div>
+      </li>
+    </ul>
+
+    <pre><span class="comment"># Depuis un terminal administrateur dans le dossier du projet :</span>
+<span class="cmd">.\local-prereqs.bat</span>
+
+<span class="comment"># Le script installe automatiquement :</span>
+<span class="comment">#   ✓ Node.js 20.14.0 LTS (MSI silencieux)</span>
+<span class="comment">#   ✓ PostgreSQL 15 (installateur EDB silencieux)</span>
+<span class="comment">#   ✓ Mise à jour du PATH système</span></pre>
+
+    <h3>2.2 &nbsp; Étape 2 — Configurer et initialiser le projet</h3>
+    <p>Ce script configure la base de données, crée le fichier <code>.env</code>, installe les dépendances npm et charge les données de démarrage.</p>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <strong>Fermer et rouvrir le terminal</strong>
+          <span>Nécessaire pour que les nouvelles variables PATH (node, psql) soient prises en compte.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Double-cliquer sur <code>local-setup.bat</code></strong>
+          <span>Ce script n'a pas besoin de droits admin. Il peut être exécuté en simple double-clic.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Répondre aux questions de configuration</strong>
+          <span>Hôte PostgreSQL, port, utilisateur, mot de passe, nom de la base de données, nom de l'entreprise. Appuyez sur Entrée pour accepter les valeurs par défaut.</span>
+        </div>
+      </li>
+    </ul>
+
+    <pre><span class="comment"># Le script vous demande :</span>
+  Hote PostgreSQL <span class="value">[localhost]</span>    → Entrée (défaut)
+  Port PostgreSQL <span class="value">[5432]</span>        → Entrée (défaut)
+  Utilisateur     <span class="value">[postgres]</span>     → Entrée (défaut)
+  Mot de passe    <span class="value"></span>              → Votre mot de passe PostgreSQL
+  Nom base        <span class="value">[helpdesk_dev]</span> → Entrée (défaut)
+  Nom société     <span class="value">[Mon Helpdesk]</span> → Votre nom (optionnel)
+
+<span class="comment"># Puis automatiquement :</span>
+<span class="comment">#   ✓ Création de la base helpdesk_dev</span>
+<span class="comment">#   ✓ Génération d'un JWT_SECRET aléatoire</span>
+<span class="comment">#   ✓ Écriture de server/.env</span>
+<span class="comment">#   ✓ npm install (server + client + racine)</span>
+<span class="comment">#   ✓ prisma migrate deploy</span>
+<span class="comment">#   ✓ prisma db seed (comptes de test)</span></pre>
+
+    <div class="callout success">
+      <span class="callout-icon">✅</span>
+      <div>
+        <strong>Setup terminé !</strong>
+        Quand le script affiche "Setup terminé ! Lancez local-start.bat pour démarrer",
+        passez directement à la section 4.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECTION 3 — INSTALLATION MANUELLE
+  ══════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <div class="step-badge">3</div>
+      <h2>Installation manuelle (étape par étape)</h2>
+    </div>
+
+    <p>Suivez cette section si vous préférez contrôler chaque étape ou si les scripts automatiques ont échoué.</p>
+
+    <h3>3.1 &nbsp; Installer Node.js 20 LTS</h3>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <strong>Télécharger l'installateur</strong>
+          <span>Rendez-vous sur <code>nodejs.org</code> → "Downloads" → sélectionnez la version <strong>20.x LTS</strong> pour Windows (x64).</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Exécuter l'installateur .msi</strong>
+          <span>Acceptez les conditions. Laissez toutes les options par défaut cochées — notamment "Add to PATH" et "npm package manager".</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Vérifier l'installation</strong>
+          <span>Ouvrez un nouveau terminal et exécutez les commandes suivantes :</span>
+        </div>
+      </li>
+    </ul>
+
+    <pre><span class="cmd">node</span> <span class="value">-v</span>     <span class="comment"># Attendu : v20.x.x</span>
+<span class="cmd">npm</span>  <span class="value">-v</span>     <span class="comment"># Attendu : 10.x.x ou plus</span></pre>
+
+    <h3>3.2 &nbsp; Installer PostgreSQL 15</h3>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <strong>Télécharger l'installateur EDB</strong>
+          <span>Rendez-vous sur <code>postgresql.org/download/windows</code> et téléchargez <strong>PostgreSQL 15</strong> (EDB installer, Windows x86-64).</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Lancer l'installation</strong>
+          <span>Exécutez l'installateur. Conservez le répertoire par défaut. Choisissez un mot de passe pour le super-utilisateur <code>postgres</code> — <strong>notez-le précieusement</strong>.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Ajouter PostgreSQL au PATH</strong>
+          <span>Ouvrez "Variables d'environnement système" → Path → Nouveau → ajoutez : <code>C:\Program Files\PostgreSQL\15\bin</code></span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Vérifier l'installation</strong>
+          <span>Dans un nouveau terminal :</span>
+        </div>
+      </li>
+    </ul>
+
+    <pre><span class="cmd">psql</span> <span class="value">--version</span>   <span class="comment"># Attendu : psql (PostgreSQL) 15.x</span></pre>
+
+    <h3>3.3 &nbsp; Créer la base de données</h3>
+
+    <pre><span class="comment"># Se connecter à PostgreSQL en tant que superuser :</span>
+<span class="cmd">psql</span> <span class="value">-U postgres</span>
+
+<span class="comment"># Dans le prompt psql, créer la base :</span>
+<span class="prompt">postgres=#</span> <span class="cmd">CREATE DATABASE</span> <span class="value">helpdesk_dev;</span>
+<span class="prompt">postgres=#</span> <span class="cmd">\q</span>    <span class="comment">-- quitter psql</span></pre>
+
+    <h3>3.4 &nbsp; Créer le fichier <code>server/.env</code></h3>
+
+    <p>Créez un fichier nommé <code>.env</code> dans le dossier <code>server/</code> avec le contenu suivant :</p>
+
+    <div class="file-block">
+      <div class="file-block-header">
+        <span class="file-icon">📄</span> server/.env
+      </div>
+      <pre><span class="comment"># ── Base de données ───────────────────────────</span>
+<span class="key">DATABASE_URL</span>=<span class="value">postgresql://postgres:VOTRE_MOT_DE_PASSE@localhost:5432/helpdesk_dev</span>
+
+<span class="comment"># ── Authentification ──────────────────────────</span>
+<span class="comment"># Générer un secret fort : openssl rand -base64 32</span>
+<span class="key">JWT_SECRET</span>=<span class="value">remplacez-par-un-secret-aleatoire-fort</span>
+
+<span class="comment"># ── Serveur ───────────────────────────────────</span>
+<span class="key">PORT</span>=<span class="value">3001</span>
+<span class="key">NODE_ENV</span>=<span class="value">development</span>
+<span class="key">APP_URL</span>=<span class="value">http://localhost:5173</span>
+
+<span class="comment"># ── Uploads ───────────────────────────────────</span>
+<span class="key">UPLOADS_PATH</span>=<span class="value">./uploads</span>
+
+<span class="comment"># ── SMTP (optionnel — voir section 6) ─────────</span>
+<span class="key">SMTP_HOST</span>=
+<span class="key">SMTP_PORT</span>=<span class="value">587</span>
+<span class="key">SMTP_USER</span>=
+<span class="key">SMTP_PASS</span>=
+<span class="key">SMTP_FROM</span>=<span class="value">noreply@helpdesk.local</span>
+<span class="key">COMPANY_NAME</span>=<span class="value">Mon Helpdesk</span></pre>
+    </div>
+
+    <div class="callout danger">
+      <span class="callout-icon">🔐</span>
+      <div>
+        <strong>Remplacez VOTRE_MOT_DE_PASSE et JWT_SECRET</strong>
+        Ne laissez jamais les valeurs d'exemple en place. Le <code>JWT_SECRET</code> doit être une chaîne aléatoire d'au moins 32 caractères.
+      </div>
+    </div>
+
+    <h3>3.5 &nbsp; Installer les dépendances npm</h3>
+
+    <pre><span class="comment"># Depuis la racine du projet :</span>
+<span class="cmd">npm install</span>                       <span class="comment"># Racine (concurrently)</span>
+<span class="cmd">npm install</span> <span class="value">--prefix server</span>      <span class="comment"># Backend</span>
+<span class="cmd">npm install</span> <span class="value">--prefix client</span>      <span class="comment"># Frontend</span></pre>
+
+    <h3>3.6 &nbsp; Migrations et données initiales</h3>
+
+    <pre><span class="comment"># Depuis le dossier server/ :</span>
+<span class="cmd">cd</span> <span class="value">server</span>
+<span class="cmd">npx prisma generate</span>              <span class="comment"># Générer le client Prisma</span>
+<span class="cmd">npx prisma migrate deploy</span>        <span class="comment"># Appliquer les migrations</span>
+<span class="cmd">npx prisma db seed</span>               <span class="comment"># Charger les données de test</span>
+<span class="cmd">cd</span> <span class="value">..</span></pre>
+
+    <div class="callout info">
+      <span class="callout-icon">ℹ️</span>
+      <div>
+        <strong>En cas d'erreur sur migrate deploy</strong>
+        Si <code>migrate deploy</code> échoue (base vide, première fois), essayez
+        <code>npx prisma migrate dev --name init</code> à la place.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECTION 4 — DÉMARRER
+  ══════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <div class="step-badge">4</div>
+      <h2>Démarrer l'application</h2>
+    </div>
+
+    <h3>Démarrage automatique (recommandé)</h3>
+    <p>Double-cliquez sur <code>local-start.bat</code> à la racine du projet. Ce script lance le backend et le frontend en parallèle dans la même fenêtre.</p>
+
+    <pre><span class="comment"># Ou depuis un terminal :</span>
+<span class="cmd">.\local-start.bat</span>
+
+<span class="comment"># Ce qui démarre :</span>
+<span class="comment">#   Backend  (Express + Prisma) → http://localhost:3001</span>
+<span class="comment">#   Frontend (Vite + React)    → http://localhost:5173</span></pre>
+
+    <h3>Démarrage manuel</h3>
+    <p>Si vous préférez deux terminaux séparés :</p>
+
+    <div class="file-block">
+      <div class="file-block-header">
+        <span class="file-icon">💻</span> Terminal 1 — Backend
+      </div>
+      <pre><span class="cmd">cd</span> <span class="value">server</span>
+<span class="cmd">npm run dev</span>
+<span class="comment"># Attendu : "Server running on port 3001"</span></pre>
+    </div>
+
+    <div class="file-block">
+      <div class="file-block-header">
+        <span class="file-icon">💻</span> Terminal 2 — Frontend
+      </div>
+      <pre><span class="cmd">cd</span> <span class="value">client</span>
+<span class="cmd">npm run dev</span>
+<span class="comment"># Attendu : "Local: http://localhost:5173/"</span></pre>
+    </div>
+
+    <div class="summary-box">
+      <h3>🚀 Application démarrée</h3>
+      <div class="summary-url">🌐 http://localhost:5173</div>
+      <div class="summary-row"><strong>Backend API :</strong> http://localhost:3001</div>
+      <div class="summary-row"><strong>Fermer :</strong> Ctrl + C dans le terminal pour arrêter les serveurs</div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECTION 5 — PREMIERS PAS
+  ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="step-badge">5</div>
+      <h2>Premiers pas — Connexion et configuration</h2>
+    </div>
+
+    <p>
+      Le script de seed a créé des comptes de test prêts à l'emploi.
+      Ouvrez <code>http://localhost:5173</code> dans votre navigateur.
+    </p>
+
+    <div class="cred-grid">
+      <div class="cred-card">
+        <div class="role">👑 Administrateur</div>
+        <div class="cred-row">
+          <span class="label">Email</span>
+          <span class="value">admin@helpdesk.com</span>
+        </div>
+        <div class="cred-row">
+          <span class="label">Mot de passe</span>
+          <span class="value">admin123</span>
+        </div>
+        <div class="cred-row">
+          <span class="label">Accès</span>
+          <span class="value">Complet</span>
+        </div>
+      </div>
+
+      <div class="cred-card">
+        <div class="role">🎧 Agent support</div>
+        <div class="cred-row">
+          <span class="label">Email</span>
+          <span class="value">agent1@helpdesk.com</span>
+        </div>
+        <div class="cred-row">
+          <span class="label">Mot de passe</span>
+          <span class="value">agent123</span>
+        </div>
+        <div class="cred-row">
+          <span class="label">Accès</span>
+          <span class="value">Tickets, Clients</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <span class="callout-icon">⚠️</span>
+      <div>
+        <strong>Changez ces mots de passe immédiatement</strong>
+        Ces identifiants sont publics. Connectez-vous en tant qu'admin et modifiez les mots de passe
+        depuis <em>Profil → Changer le mot de passe</em> avant tout usage réel.
+      </div>
+    </div>
+
+    <h3>Configuration initiale recommandée</h3>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <strong>Personnaliser l'interface</strong>
+          <span>Allez dans <em>Administration → Paramètres</em> pour configurer le nom de l'entreprise et téléverser votre logo.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Créer les catégories de tickets</strong>
+          <span>Dans <em>Administration → Catégories</em>, définissez vos catégories (ex : Matériel, Logiciel, Réseau).</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Configurer les rôles et permissions</strong>
+          <span>Dans <em>Administration → Rôles</em>, ajustez les permissions selon votre organisation.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Créer les comptes utilisateurs</strong>
+          <span>Dans <em>Administration → Utilisateurs</em>, créez les comptes de vos agents et assignez-leur un rôle.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Ajouter vos clients</strong>
+          <span>Dans la section <em>Clients</em>, créez les fiches de vos clients et associez-leur un rôle client.</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECTION 6 — SMTP
+  ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="step-badge">6</div>
+      <h2>Configuration optionnelle — Emails SMTP</h2>
+    </div>
+
+    <p>
+      La configuration SMTP permet l'envoi automatique d'emails : réinitialisation de mot de passe et envoi d'enquêtes de satisfaction.
+      Sans SMTP, ces fonctionnalités sont silencieusement désactivées.
+    </p>
+
+    <p>Modifiez les variables suivantes dans <code>server/.env</code> :</p>
+
+    <div class="file-block">
+      <div class="file-block-header">
+        <span class="file-icon">📄</span> server/.env — Variables SMTP
+      </div>
+      <pre><span class="key">SMTP_HOST</span>=<span class="value">smtp.votredomaine.com</span>
+<span class="key">SMTP_PORT</span>=<span class="value">587</span>                   <span class="comment"># 587 (STARTTLS) ou 465 (SSL)</span>
+<span class="key">SMTP_USER</span>=<span class="value">noreply@votredomaine.com</span>
+<span class="key">SMTP_PASS</span>=<span class="value">votre-mot-de-passe-smtp</span>
+<span class="key">SMTP_FROM</span>=<span class="value">"HelpDesk &lt;noreply@votredomaine.com&gt;"</span></pre>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">💡</span>
+      <div>
+        <strong>Tester avec Mailtrap (développement)</strong>
+        Pour tester les emails sans envoyer de vrais messages, créez un compte gratuit sur
+        <code>mailtrap.io</code> et copiez les identifiants SMTP de votre boîte de réception fictive.
+      </div>
+    </div>
+
+    <p>Après modification du <code>.env</code>, redémarrez le backend pour appliquer les changements.</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECTION 7 — TROUBLESHOOTING
+  ══════════════════════════════════════ -->
+  <div class="section page-break">
+    <div class="section-header">
+      <div class="step-badge">7</div>
+      <h2>Résolution des problèmes courants</h2>
+    </div>
+
+    <h3>❌ <code>node</code> ou <code>npm</code> introuvable après installation</h3>
+    <p>Le PATH n'a pas été mis à jour. Fermez et rouvrez votre terminal, ou redémarrez Windows.</p>
+    <pre><span class="comment"># Vérifier manuellement :</span>
+<span class="cmd">where node</span>   <span class="comment"># Doit afficher C:\Program Files\nodejs\node.exe</span></pre>
+
+    <h3>❌ <code>psql</code> introuvable</h3>
+    <p>Le dossier bin de PostgreSQL n'est pas dans le PATH. Ajoutez manuellement :</p>
+    <pre><span class="comment"># Ajouter temporairement au PATH de session :</span>
+<span class="cmd">$env:Path</span> <span class="value">+= ";C:\Program Files\PostgreSQL\15\bin"</span>
+<span class="comment"># Ou ajoutez définitivement via les Variables d'environnement système</span></pre>
+
+    <h3>❌ Erreur de connexion PostgreSQL (<code>ECONNREFUSED</code>)</h3>
+    <p>Le service PostgreSQL n'est pas démarré. Démarrez-le :</p>
+    <pre><span class="comment"># Via les Services Windows (services.msc) :</span>
+<span class="comment"># Chercher "postgresql-x64-15" → clic droit → Démarrer</span>
+
+<span class="comment"># Ou via PowerShell (admin) :</span>
+<span class="cmd">Start-Service</span> <span class="value">postgresql-x64-15</span></pre>
+
+    <h3>❌ Erreur d'authentification PostgreSQL (<code>password authentication failed</code>)</h3>
+    <p>Le mot de passe dans <code>DATABASE_URL</code> ne correspond pas à celui du compte <code>postgres</code>.
+    Vérifiez ou réinitialisez le mot de passe :</p>
+    <pre><span class="comment"># Réinitialiser le mot de passe postgres :</span>
+<span class="cmd">psql</span> <span class="value">-U postgres</span>
+<span class="prompt">postgres=#</span> <span class="cmd">ALTER USER</span> <span class="value">postgres PASSWORD</span> <span class="value">'nouveau-mot-de-passe'</span><span class="value">;</span>
+<span class="comment"># Puis mettre à jour DATABASE_URL dans server/.env</span></pre>
+
+    <h3>❌ Port 3001 ou 5173 déjà utilisé</h3>
+    <pre><span class="comment"># Trouver quel processus utilise le port :</span>
+<span class="cmd">netstat</span> <span class="value">-ano | findstr :3001</span>
+<span class="cmd">taskkill</span> <span class="value">/PID &lt;PID&gt; /F</span>
+
+<span class="comment"># Ou modifier le port dans server/.env (PORT=3002)</span>
+<span class="comment"># et dans client/.env.local (VITE_API_URL=http://localhost:3002)</span></pre>
+
+    <h3>❌ Erreur Prisma <code>P1001</code> — Impossible de se connecter</h3>
+    <pre><span class="comment"># Vérifier que la DATABASE_URL est correcte dans server/.env</span>
+<span class="comment"># Format : postgresql://USER:PASSWORD@HOST:PORT/DBNAME</span>
+<span class="cmd">cd</span> <span class="value">server</span>
+<span class="cmd">npx prisma db pull</span>    <span class="comment"># Test de connexion</span></pre>
+
+    <h3>❌ Page blanche ou erreur CORS dans le navigateur</h3>
+    <p>Le backend n'est pas démarré ou n'est pas accessible. Vérifiez que les deux terminaux tournent sans erreur et que <code>http://localhost:3001/api/auth/me</code> répond (devrait renvoyer 401).</p>
+
+    <hr />
+
+    <div class="callout success">
+      <span class="callout-icon">🎉</span>
+      <div>
+        <strong>Installation réussie</strong>
+        Votre instance HelpDesk est opérationnelle sur <code>http://localhost:5173</code>.
+        Pour toute question ou anomalie, consultez les logs dans le terminal de démarrage.
+      </div>
+    </div>
+
+    <br />
+
+    <div style="text-align:center; color: var(--gray-400); font-size: 9pt; padding-bottom: 32px;">
+      HelpDesk v1.0 &nbsp;·&nbsp; Guide d'installation &nbsp;·&nbsp; Mars 2026 &nbsp;·&nbsp; Usage interne
+    </div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>

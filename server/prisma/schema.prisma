@@ -1,0 +1,234 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["omitApi"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Status {
+  OPEN
+  IN_PROGRESS
+  PENDING
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum SurveySendStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum QuestionType {
+  nps
+  csat
+  rating
+  text
+  textarea
+  select
+  multiselect
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model Role {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  description   String?
+  isSystem      Boolean  @default(false)
+  permissions   String[]
+  roleUpdatedAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users User[]
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  firstName           String
+  lastName            String
+  email               String    @unique
+  password            String
+  roleId              String
+  role                Role      @relation(fields: [roleId], references: [id])
+  isActive            Boolean   @default(true)
+  mustChangePassword  Boolean   @default(true)
+  passwordResetToken  String?
+  passwordResetExpiry DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  assignedTickets Ticket[]     @relation("AssignedTickets")
+  createdTickets  Ticket[]     @relation("CreatedTickets")
+  comments        Comment[]
+  attachments     Attachment[]
+  activityLogs    ActivityLog[]
+}
+
+model ClientRole {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  color       String
+  isActive    Boolean  @default(true)
+  position    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clients Client[]
+}
+
+model Client {
+  id           String      @id @default(uuid())
+  firstName    String
+  lastName     String
+  email        String?
+  phone        String?
+  company      String?
+  roleId       String?
+  role         ClientRole? @relation(fields: [roleId], references: [id])
+  isSurveyable Boolean     @default(true)
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  tickets Ticket[]
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  color       String
+  icon        String
+  description String?
+  isActive    Boolean  @default(true)
+  position    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tickets Ticket[]
+}
+
+model Ticket {
+  id           String    @id @default(uuid())
+  ticketNumber String    @unique
+  title        String
+  description  String
+  status       Status    @default(OPEN)
+  priority     Priority  @default(MEDIUM)
+  categoryId   String?
+  category     Category? @relation(fields: [categoryId], references: [id])
+  clientId     String
+  client       Client    @relation(fields: [clientId], references: [id])
+  assignedToId String?
+  assignedTo   User?     @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  createdById  String
+  createdBy    User      @relation("CreatedTickets", fields: [createdById], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  resolvedAt   DateTime?
+  closedAt     DateTime?
+  deletedAt    DateTime?
+
+  comments     Comment[]
+  attachments  Attachment[]
+  activityLogs ActivityLog[]
+  surveySends  SurveySend[]
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id])
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  content    String
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Attachment {
+  id           String   @id @default(uuid())
+  ticketId     String
+  ticket       Ticket   @relation(fields: [ticketId], references: [id])
+  filename     String
+  originalName String
+  mimetype     String
+  size         Int
+  path         String
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model SurveyTemplate {
+  id        String   @id @default(uuid())
+  name      String
+  isActive  Boolean  @default(false)
+  questions Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SurveySend {
+  id          String           @id @default(uuid())
+  ticketId    String
+  ticket      Ticket           @relation(fields: [ticketId], references: [id])
+  clientEmail String
+  sentAt      DateTime?
+  status      SurveySendStatus @default(PENDING)
+  token       String           @unique
+  createdAt   DateTime         @default(now())
+
+  response SurveyResponse?
+}
+
+model SurveyResponse {
+  id           String     @id @default(uuid())
+  surveySendId String     @unique
+  surveySend   SurveySend @relation(fields: [surveySendId], references: [id])
+  ticketId     String
+  clientEmail  String
+  answers      Json
+  npsScore     Int?
+  vocScore     Float?
+  completedAt  DateTime   @default(now())
+  createdAt    DateTime   @default(now())
+}
