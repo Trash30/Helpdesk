@@ -552,12 +552,12 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1.5 py-1 rounded hover:bg-muted"
-            title="Ajouter des pièces jointes"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1.5 py-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+            title={files.length >= 5 ? '5 fichiers maximum atteint' : 'Ajouter des pièces jointes'}
             disabled={files.length >= 5}
           >
             <Paperclip className="h-3.5 w-3.5" />
-            Joindre
+            {files.length >= 5 ? 'Max atteint' : 'Joindre'}
           </button>
           <input
             ref={fileInputRef}
