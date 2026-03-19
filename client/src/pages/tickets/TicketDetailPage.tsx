@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import {
   Phone, Mail, ExternalLink, Paperclip, Download, Trash2,
-  CheckCircle, XCircle, RefreshCw, Upload, Bold, Italic, Code,
+  CheckCircle, XCircle, RefreshCw, Upload, Bold, Italic, Code, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -98,6 +98,7 @@ interface Comment {
   isInternal: boolean;
   createdAt: string;
   author: { id: string; firstName: string; lastName: string };
+  attachments: Attachment[];
 }
 
 interface Attachment {
@@ -383,6 +384,30 @@ function Timeline({
               <div className="prose prose-sm max-w-none text-sm ml-10">
                 <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{comment.content}</ReactMarkdown>
               </div>
+              {comment.attachments && comment.attachments.length > 0 && (
+                <div className="ml-10 mt-2 flex flex-wrap gap-2">
+                  {comment.attachments.map(att => (
+                    <a
+                      key={att.id}
+                      href={`/api/attachments/${att.id}/download`}
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-md border bg-muted/50 text-xs hover:bg-muted transition-colors"
+                      title={`${att.originalName} (${formatBytes(att.size)})`}
+                    >
+                      {att.mimeType.startsWith('image/') ? (
+                        <img
+                          src={`/api/attachments/${att.id}/download`}
+                          alt={att.originalName}
+                          className="h-4 w-4 object-cover rounded"
+                        />
+                      ) : (
+                        <Paperclip className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      )}
+                      <span className="max-w-[120px] truncate">{att.originalName}</span>
+                      <Download className="h-3 w-3 text-muted-foreground shrink-0" />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
@@ -408,6 +433,8 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
   const [content, setContent] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const insertMarkdown = (prefix: string, suffix = prefix) => {
@@ -425,12 +452,29 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
     }, 0);
   };
 
+  const addFiles = (newFiles: FileList | null) => {
+    if (!newFiles) return;
+    const added = Array.from(newFiles).slice(0, 5 - files.length);
+    setFiles(prev => [...prev, ...added]);
+  };
+
+  const removeFile = (i: number) => setFiles(prev => prev.filter((_, idx) => idx !== i));
+
+  const canSubmit = content.trim().length > 0 || files.length > 0;
+
   const submit = async () => {
-    if (!content.trim()) return;
+    if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await api.post(`/tickets/${ticketId}/comments`, { content: content.trim(), isInternal });
+      const formData = new FormData();
+      formData.append('content', content.trim());
+      formData.append('isInternal', String(isInternal));
+      files.forEach(f => formData.append('files', f));
+      await api.post(`/tickets/${ticketId}/comments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setContent('');
+      setFiles([]);
       onAdded();
     } catch {
       toast.error('Erreur lors de l\'ajout du commentaire');
@@ -476,8 +520,23 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
         className="w-full px-3 py-2 text-sm focus:outline-none resize-y bg-background"
       />
 
+      {/* File list */}
+      {files.length > 0 && (
+        <div className="px-3 py-2 border-t flex flex-wrap gap-2 bg-muted/10">
+          {files.map((f, i) => (
+            <span key={i} className="flex items-center gap-1 text-xs px-2 py-1 rounded-md border bg-muted/50 max-w-[160px]">
+              <Paperclip className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <span className="truncate">{f.name}</span>
+              <button type="button" onClick={() => removeFile(i)} className="shrink-0 text-muted-foreground hover:text-destructive">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/20">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Switch
             id="internal-toggle"
             checked={isInternal}
@@ -490,11 +549,27 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
           >
             Note interne
           </label>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted"
+            title="Ajouter des pièces jointes"
+            disabled={files.length >= 5}
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={e => { addFiles(e.target.files); e.target.value = ''; }}
+          />
         </div>
         <Button
           size="sm"
           onClick={submit}
-          disabled={submitting || !content.trim()}
+          disabled={submitting || !canSubmit}
         >
           {submitting ? 'Envoi...' : 'Ajouter un commentaire'}
         </Button>
