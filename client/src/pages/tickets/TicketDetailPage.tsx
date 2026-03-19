@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import {
   Phone, Mail, ExternalLink, Paperclip, Download, Trash2,
-  CheckCircle, XCircle, RefreshCw, Upload, Bold, Italic, Code, X,
+  CheckCircle, XCircle, RefreshCw, Bold, Italic, Code, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -552,11 +552,12 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-muted"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1.5 py-1 rounded hover:bg-muted"
             title="Ajouter des pièces jointes"
             disabled={files.length >= 5}
           >
-            <Paperclip className="h-4 w-4" />
+            <Paperclip className="h-3.5 w-3.5" />
+            Joindre
           </button>
           <input
             ref={fileInputRef}
@@ -606,8 +607,6 @@ export function TicketDetailPage() {
 
   const [confirmAction, setConfirmAction] = useState<'resolve' | 'close' | 'reopen' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const attachmentInputRef = useRef<HTMLInputElement>(null);
-
   const { data: ticket, isLoading, error } = useQuery<Ticket>({
     queryKey: ['ticket', id],
     queryFn: async () => (await api.get(`/tickets/${id}`)).data?.data,
@@ -679,38 +678,6 @@ export function TicketDetailPage() {
     }
   }, [confirmAction, id, invalidate]);
 
-  const handleUploadAttachment = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const formData = new FormData();
-    Array.from(files).forEach(f => formData.append('attachments', f));
-    try {
-      await api.post(`/tickets/${id}/attachments`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      invalidate();
-      toast.success('Fichier(s) ajouté(s)');
-    } catch {
-      toast.error('Erreur lors du téléversement');
-    }
-  };
-
-  const [deleteAttachId, setDeleteAttachId] = useState<string | null>(null);
-  const [deletingAttach, setDeletingAttach] = useState(false);
-
-  const handleDeleteAttachment = async () => {
-    if (!deleteAttachId) return;
-    setDeletingAttach(true);
-    try {
-      await api.delete(`/attachments/${deleteAttachId}`);
-      invalidate();
-      toast.success('Pièce jointe supprimée');
-    } catch {
-      toast.error('Erreur lors de la suppression');
-    } finally {
-      setDeletingAttach(false);
-      setDeleteAttachId(null);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -975,83 +942,6 @@ export function TicketDetailPage() {
             )}
           </div>
 
-          <Separator />
-
-          {/* Attachments */}
-          <div className="border rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Paperclip className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Pièces jointes</span>
-                {ticket.attachments.length > 0 && (
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs">
-                    {ticket.attachments.length}
-                  </span>
-                )}
-              </div>
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={() => attachmentInputRef.current?.click()}
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                >
-                  <Upload className="h-3 w-3" />
-                  Ajouter
-                </button>
-              )}
-              <input
-                ref={attachmentInputRef}
-                type="file"
-                multiple
-                className="hidden"
-                onChange={e => handleUploadAttachment(e.target.files)}
-              />
-            </div>
-
-            {ticket.attachments.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Aucune pièce jointe</p>
-            ) : (
-              <ul className="space-y-2">
-                {ticket.attachments.map(att => (
-                  <li key={att.id} className="flex items-center gap-2 text-sm group">
-                    {att.mimetype.startsWith('image/') ? (
-                      <img
-                        src={`/uploads/attachments/${att.id}`}
-                        alt={att.originalName}
-                        className="h-8 w-8 object-cover rounded border"
-                      />
-                    ) : (
-                      <Paperclip className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate font-medium">{att.originalName}</div>
-                      <div className="text-xs text-muted-foreground">{formatBytes(att.size)}</div>
-                    </div>
-                    <a
-                      href={`/api/attachments/${att.id}/download`}
-                      className="text-muted-foreground hover:text-primary"
-                      title="Télécharger"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                    </a>
-                    {canEdit && (
-                      <button
-                        type="button"
-                        onClick={() => setDeleteAttachId(att.id)}
-                        className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <Separator />
-
           {/* Action buttons */}
           <div className="space-y-2">
             {canClose && ['OPEN', 'IN_PROGRESS'].includes(ticket.status) && (
@@ -1101,17 +991,6 @@ export function TicketDetailPage() {
         />
       )}
 
-      {/* Delete attachment confirm */}
-      <ConfirmDialog
-        open={!!deleteAttachId}
-        onOpenChange={open => !open && setDeleteAttachId(null)}
-        title="Supprimer la pièce jointe"
-        description="Cette action est irréversible."
-        confirmLabel="Supprimer"
-        variant="destructive"
-        loading={deletingAttach}
-        onConfirm={handleDeleteAttachment}
-      />
     </TooltipProvider>
   );
 }
