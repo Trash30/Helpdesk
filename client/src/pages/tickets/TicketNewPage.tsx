@@ -531,11 +531,13 @@ export function TicketNewPage() {
       });
       const ticket = res.data.data;
 
-      // Step 2 — upload attachments if any
+      // Step 2 — upload attachments as first comment if any
       if (vars.attachments.length > 0) {
         const formData = new FormData();
+        formData.append('content', '');
+        formData.append('isInternal', 'false');
         vars.attachments.forEach(f => formData.append('files', f));
-        await api.post(`/tickets/${ticket.id}/attachments`, formData, {
+        await api.post(`/tickets/${ticket.id}/comments`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       }
