@@ -101,9 +101,15 @@ model Client {
   email        String?
   phone        String?
   company      String?
-  roleId       String?
-  role         ClientRole? @relation(fields: [roleId], references: [id])
-  isSurveyable Boolean     @default(true)
+  roleId         String?
+  role           ClientRole?         @relation(fields: [roleId], references: [id])
+  organisationId String?
+  organisation   ClientOrganisation? @relation(fields: [organisationId], references: [id])
+  clubId         String?
+  club           ClientClub?         @relation(fields: [clubId], references: [id])
+  poleId         String?
+  pole           ClientPole?         @relation(fields: [poleId], references: [id])
+  isSurveyable   Boolean             @default(true)
   notes        String?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -134,7 +140,9 @@ model Ticket {
   status       Status    @default(OPEN)
   priority     Priority  @default(MEDIUM)
   categoryId   String?
-  category     Category? @relation(fields: [categoryId], references: [id])
+  category     Category?   @relation(fields: [categoryId], references: [id])
+  typeId       String?
+  type         TicketType? @relation(fields: [typeId], references: [id])
   clientId     String
   client       Client    @relation(fields: [clientId], references: [id])
   assignedToId String?
@@ -234,4 +242,53 @@ model SurveyResponse {
   vocScore     Float?
   completedAt  DateTime   @default(now())
   createdAt    DateTime   @default(now())
+}
+
+model ClientOrganisation {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clubs   ClientClub[]
+  clients Client[]
+}
+
+model ClientClub {
+  id             String             @id @default(uuid())
+  name           String
+  organisationId String
+  organisation   ClientOrganisation @relation(fields: [organisationId], references: [id])
+  isActive       Boolean            @default(true)
+  position       Int                @default(0)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  clients Client[]
+
+  @@unique([name, organisationId])
+}
+
+model ClientPole {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clients Client[]
+}
+
+model TicketType {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tickets Ticket[]
 }
