@@ -105,7 +105,7 @@ interface Attachment {
   id: string;
   originalName: string;
   size: number;
-  mimeType: string;
+  mimetype: string;
   createdAt: string;
   uploadedBy: { firstName: string; lastName: string } | null;
 }
@@ -393,7 +393,7 @@ function Timeline({
                       className="flex items-center gap-1.5 px-2 py-1 rounded-md border bg-muted/50 text-xs hover:bg-muted transition-colors"
                       title={`${att.originalName} (${formatBytes(att.size)})`}
                     >
-                      {att.mimeType.startsWith('image/') ? (
+                      {att.mimetype.startsWith('image/') ? (
                         <img
                           src={`/api/attachments/${att.id}/download`}
                           alt={att.originalName}
@@ -1014,7 +1014,7 @@ export function TicketDetailPage() {
               <ul className="space-y-2">
                 {ticket.attachments.map(att => (
                   <li key={att.id} className="flex items-center gap-2 text-sm group">
-                    {att.mimeType.startsWith('image/') ? (
+                    {att.mimetype.startsWith('image/') ? (
                       <img
                         src={`/uploads/attachments/${att.id}`}
                         alt={att.originalName}
