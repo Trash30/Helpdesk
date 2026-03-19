@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
 import { requirePermission, hasPermission } from '../middleware/permissions';
+import { attachmentUpload } from '../utils/upload';
 
 const router = Router();
 
@@ -25,15 +26,15 @@ router.use(authMiddleware);
 router.post(
   '/tickets/:id/comments',
   requirePermission('comments.create'),
+  attachmentUpload.array('files', 5),
   async (req: Request, res: Response) => {
-    const schema = z.object({
-      content: z.string().min(1, 'Le contenu est requis'),
-      isInternal: z.boolean().default(false),
-    });
+    const files = (req.files as Express.Multer.File[]) || [];
+    const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+    const isInternal = req.body.isInternal === 'true' || req.body.isInternal === true;
 
-    const parse = schema.safeParse(req.body);
-    if (!parse.success) {
-      res.status(400).json({ error: parse.error.errors[0].message });
+    // Validate: content non-empty OR at least 1 file
+    if (content.length === 0 && files.length === 0) {
+      res.status(400).json({ error: 'Le contenu ou au moins un fichier est requis' });
       return;
     }
 
@@ -49,21 +50,51 @@ router.post(
       data: {
         ticketId: ticket.id,
         authorId: req.user!.id,
-        content: parse.data.content,
-        isInternal: parse.data.isInternal,
+        content,
+        isInternal,
       },
-      include: { author: { select: userSelect } },
+    });
+
+    // Create attachments linked to both the ticket and the comment
+    if (files.length > 0) {
+      await prisma.$transaction(
+        files.map((file) =>
+          prisma.attachment.create({
+            data: {
+              ticketId: ticket.id,
+              commentId: comment.id,
+              filename: file.filename,
+              originalName: file.originalname,
+              mimetype: file.mimetype,
+              size: file.size,
+              path: file.path,
+              uploadedById: req.user!.id,
+            },
+          })
+        )
+      );
+    }
+
+    // Re-fetch comment with all relations
+    const fullComment = await prisma.comment.findUnique({
+      where: { id: comment.id },
+      include: {
+        author: { select: userSelect },
+        attachments: {
+          include: { uploadedBy: { select: userSelect } },
+        },
+      },
     });
 
     await prisma.activityLog.create({
       data: {
         ticketId: ticket.id,
         userId: req.user!.id,
-        action: parse.data.isInternal ? 'Note interne ajoutée' : 'Commentaire ajouté',
+        action: isInternal ? 'Note interne ajoutée' : 'Commentaire ajouté',
       },
     });
 
-    res.status(201).json({ data: comment });
+    res.status(201).json({ data: fullComment });
   }
 );
 

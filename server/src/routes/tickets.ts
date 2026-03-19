@@ -204,10 +204,17 @@ router.get(
         category: true,
         createdBy: { select: userSelect },
         comments: {
-          include: { author: { select: userSelect } },
+          include: {
+            author: { select: userSelect },
+            attachments: {
+              include: { uploadedBy: { select: userSelect } },
+              orderBy: { createdAt: 'asc' },
+            },
+          },
           orderBy: { createdAt: 'asc' },
         },
         attachments: {
+          where: { commentId: null },
           include: { uploadedBy: { select: userSelect } },
           orderBy: { createdAt: 'asc' },
         },
