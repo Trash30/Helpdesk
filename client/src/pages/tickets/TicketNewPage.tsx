@@ -508,9 +508,16 @@ export function TicketNewPage() {
     queryFn: async () => (await api.get('/categories')).data?.data ?? [],
   });
 
-  const { data: agentsData } = useQuery<{ data: Agent[] }>({
+  const { data: agents } = useQuery<Agent[]>({
     queryKey: ['agents'],
-    queryFn: async () => (await api.get('/admin/users')).data,
+    queryFn: async () => {
+      try {
+        const res = await api.get('/admin/users');
+        return res.data?.data ?? [];
+      } catch {
+        return [];
+      }
+    },
   });
 
   const queryClient = useQueryClient();
@@ -675,7 +682,7 @@ export function TicketNewPage() {
               className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Non assigné</option>
-              {agentsData?.data?.map(a => (
+              {agents?.map(a => (
                 <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
               ))}
             </select>

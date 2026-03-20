@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Search, Plus, UserPlus, BellOff, Eye, Pencil, Ticket,
-  ChevronLeft, ChevronRight, ChevronDown,
+  ChevronLeft, ChevronRight, ChevronDown, RotateCcw,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useClientPanel } from '@/contexts/ClientPanelContext';
@@ -219,7 +219,7 @@ export function ClientListPage() {
   // Reset page on filter change
   useEffect(() => { setPage(1); }, [debouncedSearch, roleIds, openOnly]);
 
-  const { data, isLoading } = useQuery<ClientsResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<ClientsResponse>({
     queryKey: ['clients', debouncedSearch, roleIds, openOnly, page],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -288,6 +288,16 @@ export function ClientListPage() {
         {/* Table */}
         {isLoading ? (
           <TableSkeleton />
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center border rounded-lg">
+            <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-1">Impossible de charger les clients</h3>
+            <p className="text-muted-foreground text-sm mb-4">Une erreur est survenue lors du chargement.</p>
+            <Button variant="outline" onClick={() => refetch()}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reessayer
+            </Button>
+          </div>
         ) : !data || data.data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center border rounded-lg">
             <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />

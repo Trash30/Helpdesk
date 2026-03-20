@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { ClientPanelProvider } from '@/contexts/ClientPanelContext';
 import { ClientSlideOver } from '@/components/clients/ClientSlideOver';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { MainLayout } from '@/layouts/MainLayout';
 
 // Public pages
@@ -68,7 +69,9 @@ export default function App() {
             <Route
               element={
                 <ProtectedRoute>
-                  <MainLayout />
+                  <ErrorBoundary>
+                    <MainLayout />
+                  </ErrorBoundary>
                 </ProtectedRoute>
               }
             >

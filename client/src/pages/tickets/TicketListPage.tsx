@@ -298,7 +298,14 @@ export function TicketListPage() {
 
   const { data: agents } = useQuery<{ id: string; firstName: string; lastName: string }[]>({
     queryKey: ['agents'],
-    queryFn: async () => (await api.get('/admin/users')).data?.data ?? [],
+    queryFn: async () => {
+      try {
+        const res = await api.get('/admin/users');
+        return res.data?.data ?? [];
+      } catch {
+        return [];
+      }
+    },
     enabled: can('tickets.assign'),
   });
 
