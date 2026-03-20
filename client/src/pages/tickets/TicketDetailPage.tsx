@@ -89,10 +89,10 @@ interface Ticket {
     role: { id: string; name: string; color: string } | null;
     organisation: { id: string; name: string } | null;
     club: { id: string; name: string } | null;
-    pole: { id: string; name: string } | null;
   } | null;
   assignedTo: { id: string; firstName: string; lastName: string } | null;
   category: { id: string; name: string; slug?: string; color: string } | null;
+  pole: { id: string; name: string } | null;
   createdBy: { id: string; firstName: string; lastName: string } | null;
   comments: Comment[];
   attachments: Attachment[];
@@ -133,6 +133,7 @@ interface TimelineItem {
 
 interface Category { id: string; name: string; slug?: string; color: string }
 interface Agent { id: string; firstName: string; lastName: string }
+interface Pole { id: string; name: string }
 
 // ── Inline editable title ────────────────────────────────────────────────────
 
@@ -643,6 +644,11 @@ export function TicketDetailPage() {
     enabled: can('tickets.assign'),
   });
 
+  const { data: poles } = useQuery<Pole[]>({
+    queryKey: ['poles'],
+    queryFn: async () => (await api.get('/poles')).data?.data ?? [],
+  });
+
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['ticket', id] });
   }, [id, queryClient]);
@@ -915,6 +921,20 @@ export function TicketDetailPage() {
               );
             })()}
 
+            <FieldRow label="Pôle">
+              <select
+                value={ticket.pole?.id ?? ''}
+                onChange={e => updateField({ poleId: e.target.value || null })}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Aucun pôle</option>
+                {poles?.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </FieldRow>
+
             <FieldRow label="Assigné à">
               <select
                 value={ticket.assignedTo?.id ?? ''}
@@ -972,7 +992,7 @@ export function TicketDetailPage() {
                     </a>
                   )}
                 </div>
-                {(ticket.client.organisation || ticket.client.club || ticket.client.pole) && (
+                {(ticket.client.organisation || ticket.client.club) && (
                   <div className="space-y-1 text-sm border-t pt-2">
                     {ticket.client.organisation && (
                       <div className="flex justify-between">
@@ -984,12 +1004,6 @@ export function TicketDetailPage() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Club / Ville</span>
                         <span className="font-medium">{ticket.client.club.name}</span>
-                      </div>
-                    )}
-                    {ticket.client.pole && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Pole</span>
-                        <span className="font-medium">{ticket.client.pole.name}</span>
                       </div>
                     )}
                   </div>

@@ -501,6 +501,7 @@ export function TicketNewPage() {
   const [categoryId, setCategoryId] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
   const [assignedToId, setAssignedToId] = useState('');
+  const [poleId, setPoleId] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
 
   const { data: categories } = useQuery<Category[]>({
@@ -520,11 +521,16 @@ export function TicketNewPage() {
     },
   });
 
+  const { data: poles } = useQuery<{ id: string; name: string }[]>({
+    queryKey: ['poles'],
+    queryFn: async () => (await api.get('/poles')).data?.data ?? [],
+  });
+
   const queryClient = useQueryClient();
   const createMutation = useMutation({
     mutationFn: async (vars: {
       clientId: string; title: string; description: string;
-      categoryId: string; priority: string; assignedToId: string;
+      categoryId: string; priority: string; assignedToId: string; poleId: string;
       attachments: File[];
     }) => {
       // Step 1 — create ticket with JSON
@@ -535,6 +541,7 @@ export function TicketNewPage() {
         categoryId: vars.categoryId || undefined,
         priority: vars.priority,
         assignedToId: vars.assignedToId || undefined,
+        poleId: vars.poleId || undefined,
       });
       const ticket = res.data.data;
 
@@ -577,6 +584,7 @@ export function TicketNewPage() {
       categoryId,
       priority,
       assignedToId,
+      poleId,
       attachments,
     });
   };
@@ -673,19 +681,35 @@ export function TicketNewPage() {
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="assignedTo">Assigner à</Label>
-            <select
-              id="assignedTo"
-              value={assignedToId}
-              onChange={e => setAssignedToId(e.target.value)}
-              className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Non assigné</option>
-              {agents?.map(a => (
-                <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="assignedTo">Assigner à</Label>
+              <select
+                id="assignedTo"
+                value={assignedToId}
+                onChange={e => setAssignedToId(e.target.value)}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Non assigné</option>
+                {agents?.map(a => (
+                  <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="pole">Pôle</Label>
+              <select
+                id="pole"
+                value={poleId}
+                onChange={e => setPoleId(e.target.value)}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Aucun pôle</option>
+                {poles?.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>

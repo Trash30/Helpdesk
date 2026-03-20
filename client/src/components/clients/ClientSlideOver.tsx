@@ -33,7 +33,6 @@ interface ClientFormData {
   roleId: string;
   organisationId: string;
   clubId: string;
-  poleId: string;
   isSurveyable: boolean;
   notes: string;
 }
@@ -49,11 +48,6 @@ interface Club {
   organisationId: string;
 }
 
-interface Pole {
-  id: string;
-  name: string;
-}
-
 const EMPTY_FORM: ClientFormData = {
   firstName: '',
   lastName: '',
@@ -63,7 +57,6 @@ const EMPTY_FORM: ClientFormData = {
   roleId: '',
   organisationId: '',
   clubId: '',
-  poleId: '',
   isSurveyable: true,
   notes: '',
 };
@@ -108,12 +101,6 @@ export function ClientSlideOver() {
     enabled: isOpen,
   });
 
-  const { data: poles } = useQuery<Pole[]>({
-    queryKey: ['poles'],
-    queryFn: async () => (await api.get('/poles')).data?.data,
-    enabled: isOpen,
-  });
-
   // Populate form when client data loads (edit mode)
   useEffect(() => {
     if (clientData) {
@@ -127,7 +114,6 @@ export function ClientSlideOver() {
         roleId: c.roleId ?? '',
         organisationId: c.organisationId ?? '',
         clubId: c.clubId ?? '',
-        poleId: c.poleId ?? '',
         isSurveyable: c.isSurveyable ?? true,
         notes: c.notes ?? '',
       };
@@ -190,7 +176,6 @@ export function ClientSlideOver() {
     roleId: f.roleId || null,
     organisationId: f.organisationId || null,
     clubId: f.clubId || null,
-    poleId: f.poleId || null,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -356,22 +341,6 @@ export function ClientSlideOver() {
                   <option value="">Aucun club</option>
                   {clubs?.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Pole */}
-              <div className="space-y-1.5">
-                <Label htmlFor="sf-pole">Pole</Label>
-                <select
-                  id="sf-pole"
-                  value={form.poleId}
-                  onChange={e => setForm(f => ({ ...f, poleId: e.target.value }))}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">Aucun pole</option>
-                  {poles?.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
               </div>
