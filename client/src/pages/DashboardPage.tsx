@@ -267,7 +267,7 @@ export function DashboardPage() {
             <KpiCard
               label="Tickets ouverts"
               value={stats?.openTickets ?? 0}
-              color="#185FA5"
+              color="#0070C1"
               icon={<TicketIcon size={20} />}
             />
 
@@ -419,10 +419,10 @@ export function DashboardPage() {
                   <Line
                     type="monotone"
                     dataKey="count"
-                    stroke="#185FA5"
+                    stroke="#0070C1"
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 4, fill: '#185FA5' }}
+                    activeDot={{ r: 4, fill: '#0070C1' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -517,7 +517,7 @@ export function DashboardPage() {
                     contentStyle={{ fontSize: 12, borderRadius: 6 }}
                     formatter={(v: number) => [v, 'Tickets']}
                   />
-                  <Bar dataKey="count" fill="#185FA5" radius={[0, 4, 4, 0]} maxBarSize={18} />
+                  <Bar dataKey="count" fill="#0070C1" radius={[0, 4, 4, 0]} maxBarSize={18} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -587,6 +587,92 @@ export function DashboardPage() {
 
       {/* ── ROW 4 — Urgent tickets table ────────────────────────────────── */}
       <UrgentTicketsTable tickets={urgentData ?? []} loading={urgentLoading} />
+
+      {/* ── ROW 5 — Tickets by Organisation (admin only) ────────────────── */}
+      {can('tickets.viewAll') && (stats?.ticketsByOrganisation ?? []).length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Tickets par Organisation</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 pb-2">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/30">
+                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Organisation</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Total</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Ouverts</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En cours</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En attente</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Fermés</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...stats.ticketsByOrganisation]
+                    .sort((a: any, b: any) => b.total - a.total)
+                    .map((org: any) => (
+                      <tr
+                        key={org.organisationId}
+                        className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/tickets?organisationId=${org.organisationId}`)}
+                      >
+                        <td className="px-4 py-3 font-medium">{org.organisationName}</td>
+                        <td className="px-4 py-3 text-right font-semibold">{org.total}</td>
+                        <td className="px-4 py-3 text-right text-blue-600">{org.open}</td>
+                        <td className="px-4 py-3 text-right text-orange-600">{org.inProgress}</td>
+                        <td className="px-4 py-3 text-right text-pink-600">{org.pending}</td>
+                        <td className="px-4 py-3 text-right text-muted-foreground">{org.closed}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── ROW 6 — Tickets by Club (admin only) ─────────────────────────── */}
+      {can('tickets.viewAll') && (stats?.ticketsByClub ?? []).length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Tickets par Club</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 pb-2">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/30">
+                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Club</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Total</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Ouverts</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En cours</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En attente</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Fermés</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...stats.ticketsByClub]
+                    .sort((a: any, b: any) => b.total - a.total)
+                    .map((club: any) => (
+                      <tr
+                        key={club.clubId}
+                        className="border-b last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/tickets?clubId=${club.clubId}`)}
+                      >
+                        <td className="px-4 py-3 font-medium">{club.clubName}</td>
+                        <td className="px-4 py-3 text-right font-semibold">{club.total}</td>
+                        <td className="px-4 py-3 text-right text-blue-600">{club.open}</td>
+                        <td className="px-4 py-3 text-right text-orange-600">{club.inProgress}</td>
+                        <td className="px-4 py-3 text-right text-pink-600">{club.pending}</td>
+                        <td className="px-4 py-3 text-right text-muted-foreground">{club.closed}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
