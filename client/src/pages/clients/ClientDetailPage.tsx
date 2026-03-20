@@ -68,7 +68,6 @@ interface ClientDetail {
   role: { id: string; name: string; color: string } | null;
   organisation: { id: string; name: string } | null;
   club: { id: string; name: string } | null;
-  pole: { id: string; name: string } | null;
   tickets: TicketRow[];
   _count: {
     tickets: number;
@@ -247,10 +246,6 @@ export function ClientDetailPage() {
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Club / Ville</p>
             <p>{client.club?.name || '—'}</p>
-          </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Pole</p>
-            <p>{client.pole?.name || '—'}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Enquêtes</p>
