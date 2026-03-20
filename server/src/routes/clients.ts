@@ -17,7 +17,6 @@ const clientSchema = z.object({
   roleId: z.string().uuid().optional().nullable(),
   organisationId: z.string().uuid().optional().nullable(),
   clubId: z.string().uuid().optional().nullable(),
-  poleId: z.string().uuid().optional().nullable(),
   isSurveyable: z.boolean().optional(),
   notes: z.string().optional().nullable(),
 });
@@ -79,7 +78,6 @@ router.get(
           role: true,
           organisation: true,
           club: true,
-          pole: true,
           _count: { select: { tickets: true } },
         },
       }),
@@ -119,11 +117,10 @@ router.post(
         roleId: data.roleId ?? null,
         organisationId: data.organisationId ?? null,
         clubId: data.clubId ?? null,
-        poleId: data.poleId ?? null,
         isSurveyable: data.isSurveyable ?? true,
         notes: data.notes ?? null,
       },
-      include: { role: true, organisation: true, club: true, pole: true },
+      include: { role: true, organisation: true, club: true },
     });
 
     res.status(201).json({ data: client });
@@ -142,7 +139,6 @@ router.get(
         role: true,
         organisation: true,
         club: true,
-        pole: true,
         tickets: {
           where: { deletedAt: null },
           include: { category: true, assignedTo: true },
@@ -223,11 +219,10 @@ router.put(
         roleId: data.roleId ?? null,
         organisationId: data.organisationId ?? null,
         clubId: data.clubId ?? null,
-        poleId: data.poleId ?? null,
         isSurveyable: data.isSurveyable ?? existing.isSurveyable,
         notes: data.notes ?? null,
       },
-      include: { role: true, organisation: true, club: true, pole: true },
+      include: { role: true, organisation: true, club: true },
     });
 
     res.json({ data: client });

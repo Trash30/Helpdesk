@@ -35,7 +35,7 @@ router.get(
   async (_req: Request, res: Response) => {
     const poles = await prisma.clientPole.findMany({
       orderBy: { position: 'asc' },
-      include: { _count: { select: { clients: true } } },
+      include: { _count: { select: { tickets: true } } },
     });
     res.json({ data: poles });
   }
@@ -103,17 +103,17 @@ router.delete(
   async (req: Request, res: Response) => {
     const existing = await prisma.clientPole.findUnique({
       where: { id: req.params.id },
-      include: { _count: { select: { clients: true } } },
+      include: { _count: { select: { tickets: true } } },
     });
     if (!existing) {
       res.status(404).json({ error: 'Pôle introuvable' });
       return;
     }
 
-    if (existing._count.clients > 0) {
+    if (existing._count.tickets > 0) {
       res.status(400).json({
-        error: `Impossible de supprimer : ${existing._count.clients} client(s) utilisent ce pôle`,
-        count: existing._count.clients,
+        error: `Impossible de supprimer : ${existing._count.tickets} ticket(s) utilisent ce pôle`,
+        count: existing._count.tickets,
       });
       return;
     }
