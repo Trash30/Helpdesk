@@ -325,7 +325,10 @@ router.patch(
       return;
     }
 
-    const schema = z.object({ status: z.nativeEnum(Status) });
+    const schema = z.object({
+      status: z.nativeEnum(Status),
+      closingNote: z.string().optional(),
+    });
     const parse = schema.safeParse(req.body);
     if (!parse.success) {
       res.status(400).json({ error: 'Statut invalide' });
@@ -340,7 +343,14 @@ router.patch(
       return;
     }
 
-    const { status } = parse.data;
+    const { status, closingNote } = parse.data;
+
+    // Closing note is mandatory when transitioning to CLOSED
+    if (status === 'CLOSED' && (!closingNote || !closingNote.trim())) {
+      res.status(400).json({ error: 'Une note de fermeture est obligatoire' });
+      return;
+    }
+
     const extra: any = {};
     if (status === 'CLOSED') {
       if (!existing.resolvedAt) extra.resolvedAt = new Date();
@@ -352,6 +362,18 @@ router.patch(
       data: { status, ...extra },
       include: { client: true, assignedTo: { select: userSelect }, category: true },
     });
+
+    // Create internal comment with closing note when closing
+    if (status === 'CLOSED' && closingNote) {
+      await prisma.comment.create({
+        data: {
+          ticketId: existing.id,
+          authorId: req.user!.id,
+          content: closingNote.trim(),
+          isInternal: true,
+        },
+      });
+    }
 
     await prisma.activityLog.create({
       data: {

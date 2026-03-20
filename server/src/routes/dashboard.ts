@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
+import { hasPermission } from '../middleware/permissions';
 
 const router = Router();
 
@@ -8,15 +9,22 @@ router.use(authMiddleware);
 
 // ─── GET /api/dashboard/stats ─────────────────────────────────────────────────
 
-router.get('/stats', async (_req: Request, res: Response) => {
+router.get('/stats', async (req: Request, res: Response) => {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 86400000);
+  const staleCutoff = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
 
   // Current month boundaries
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const staleWhere = {
+    status: { in: ['OPEN', 'IN_PROGRESS', 'PENDING'] as ('OPEN' | 'IN_PROGRESS' | 'PENDING')[] },
+    updatedAt: { lt: staleCutoff },
+    deletedAt: null,
+  };
 
   const [
     openTickets,
@@ -29,6 +37,8 @@ router.get('/stats', async (_req: Request, res: Response) => {
     categoryData,
     agentData,
     recentActivity,
+    staleTickets,
+    myStaleTickets,
   ] = await Promise.all([
     prisma.ticket.count({ where: { status: 'OPEN', deletedAt: null } }),
     prisma.ticket.count({ where: { status: 'IN_PROGRESS', deletedAt: null } }),
@@ -69,6 +79,12 @@ router.get('/stats', async (_req: Request, res: Response) => {
         ticket: { select: { ticketNumber: true } },
       },
     }),
+    // Stale tickets: open tickets not updated in > 5 days
+    prisma.ticket.count({ where: staleWhere }),
+    // My stale tickets (for non-admin agents)
+    !hasPermission(req.user!, 'tickets.viewAll')
+      ? prisma.ticket.count({ where: { ...staleWhere, assignedToId: req.user!.id } })
+      : Promise.resolve(null),
   ]);
 
   // CSAT computation helper
@@ -137,6 +153,8 @@ router.get('/stats', async (_req: Request, res: Response) => {
       openTickets,
       inProgressTickets,
       resolvedToday,
+      staleTickets,
+      ...(myStaleTickets !== null ? { myStaleTickets } : {}),
       csatGlobal: { ...global, vsLastMonth: Math.round(vsLastMonth * 10) / 10 },
       ticketsByPriority: priorityMap,
       ticketsByCategory,
