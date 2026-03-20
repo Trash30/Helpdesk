@@ -17,6 +17,10 @@ import usersRouter from './routes/users';
 import settingsRouter from './routes/settings';
 import dashboardRouter from './routes/dashboard';
 import surveysRouter from './routes/surveys';
+import clubsRouter from './routes/clubs';
+import organisationsRouter from './routes/organisations';
+import polesRouter from './routes/poles';
+import ticketTypesRouter from './routes/ticketTypes';
 
 const app = express();
 
@@ -68,6 +72,10 @@ app.use('/api/admin', rolesRouter);
 app.use('/api/admin', usersRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api', surveysRouter);
+app.use('/api', clubsRouter);
+app.use('/api', organisationsRouter);
+app.use('/api', polesRouter);
+app.use('/api', ticketTypesRouter);
 
 // ─── 404 handler ────────────────────────────────────────────────────────────
 

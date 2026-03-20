@@ -30,6 +30,7 @@ const createTicketSchema = z.object({
   categoryId: z.string().uuid().optional().nullable(),
   priority: z.nativeEnum(Priority).optional(),
   assignedToId: z.string().uuid().optional().nullable(),
+  typeId: z.string().uuid().optional().nullable(),
 });
 
 const updateTicketSchema = z.object({
@@ -38,6 +39,7 @@ const updateTicketSchema = z.object({
   categoryId: z.string().uuid().optional().nullable(),
   priority: z.nativeEnum(Priority).optional(),
   assignedToId: z.string().uuid().optional().nullable(),
+  typeId: z.string().uuid().optional().nullable(),
 });
 
 // ─── GET /api/tickets ─────────────────────────────────────────────────────────
@@ -54,6 +56,9 @@ router.get(
       dateFrom: z.string().optional(),
       dateTo: z.string().optional(),
       search: z.string().optional(),
+      organisationId: z.string().optional(),
+      clubId: z.string().optional(),
+      typeId: z.string().optional(),
       page: z.coerce.number().int().min(1).default(1),
       limit: z.coerce.number().int().min(1).max(100).default(25),
     });
@@ -64,7 +69,7 @@ router.get(
       return;
     }
 
-    const { status, priority, categoryId, assignedToId, dateFrom, dateTo, search, page, limit } =
+    const { status, priority, categoryId, assignedToId, dateFrom, dateTo, search, organisationId, clubId, typeId, page, limit } =
       parse.data;
 
     const where: any = { deletedAt: null };
@@ -87,6 +92,9 @@ router.get(
     }
 
     if (categoryId) where.categoryId = categoryId;
+    if (organisationId) where.client = { ...where.client, organisationId };
+    if (clubId) where.client = { ...where.client, clubId };
+    if (typeId) where.typeId = typeId;
 
     if (dateFrom || dateTo) {
       where.createdAt = {};
@@ -118,7 +126,7 @@ router.get(
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          client: { include: { role: true } },
+          client: { include: { role: true, organisation: true, club: true, pole: true } },
           assignedTo: { select: userSelect },
           category: true,
           createdBy: { select: userSelect },
@@ -148,7 +156,7 @@ router.post(
       return;
     }
 
-    const { title, description, clientId, categoryId, priority, assignedToId } = parse.data;
+    const { title, description, clientId, categoryId, priority, assignedToId, typeId } = parse.data;
 
     // Verify client exists
     const client = await prisma.client.findUnique({ where: { id: clientId } });
@@ -171,7 +179,7 @@ router.post(
         createdById: req.user!.id,
       },
       include: {
-        client: { include: { role: true } },
+        client: { include: { role: true, organisation: true, club: true, pole: true } },
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -199,7 +207,7 @@ router.get(
     const ticket = await prisma.ticket.findFirst({
       where: { id: req.params.id, deletedAt: null },
       include: {
-        client: { include: { role: true } },
+        client: { include: { role: true, organisation: true, club: true, pole: true } },
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -288,7 +296,7 @@ router.put(
       where: { id: req.params.id },
       data: updates,
       include: {
-        client: { include: { role: true } },
+        client: { include: { role: true, organisation: true, club: true, pole: true } },
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -334,8 +342,10 @@ router.patch(
 
     const { status } = parse.data;
     const extra: any = {};
-    if (status === 'RESOLVED' && !existing.resolvedAt) extra.resolvedAt = new Date();
-    if (status === 'CLOSED') extra.closedAt = new Date();
+    if (status === 'CLOSED') {
+      if (!existing.resolvedAt) extra.resolvedAt = new Date();
+      extra.closedAt = new Date();
+    }
 
     const ticket = await prisma.ticket.update({
       where: { id: req.params.id },
