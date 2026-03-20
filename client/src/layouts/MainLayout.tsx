@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Ticket, Users, Settings, Tag, UserCheck,
   Shield, Users2, BarChart2, Plus, Search, LogOut, User,
-  ChevronRight, Moon, Sun, Menu,
+  ChevronRight, Moon, Sun, Menu, Building2, MapPin, Landmark, FileType,
 } from 'lucide-react';
 import { useBranding } from '@/hooks/useBranding';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -311,6 +311,18 @@ export function MainLayout() {
               )}
               {can('surveys.view') && (
                 <NavItem to="/admin/surveys" icon={<BarChart2 size={18} />} label="Enquêtes" collapsed={collapsed} onNavigate={closeMobile} />
+              )}
+              {can('admin.clientRoles') && (
+                <NavItem to="/admin/organisations" icon={<Building2 size={18} />} label="Organisations" collapsed={collapsed} onNavigate={closeMobile} />
+              )}
+              {can('admin.clientRoles') && (
+                <NavItem to="/admin/clubs" icon={<MapPin size={18} />} label="Clubs / Villes" collapsed={collapsed} onNavigate={closeMobile} />
+              )}
+              {can('admin.clientRoles') && (
+                <NavItem to="/admin/poles" icon={<Landmark size={18} />} label="Pôles" collapsed={collapsed} onNavigate={closeMobile} />
+              )}
+              {can('admin.clientRoles') && (
+                <NavItem to="/admin/ticket-types" icon={<FileType size={18} />} label="Types de demande" collapsed={collapsed} onNavigate={closeMobile} />
               )}
             </>
           )}

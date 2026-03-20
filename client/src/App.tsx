@@ -32,6 +32,10 @@ import { AdminClientRolesPage } from '@/pages/admin/AdminClientRolesPage';
 import { AdminRolesPage } from '@/pages/admin/AdminRolesPage';
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage';
 import { AdminSurveysPage } from '@/pages/admin/AdminSurveysPage';
+import { AdminOrganisationsPage } from '@/pages/admin/AdminOrganisationsPage';
+import { AdminClubsPage } from '@/pages/admin/AdminClubsPage';
+import { AdminPolesPage } from '@/pages/admin/AdminPolesPage';
+import { AdminTicketTypesPage } from '@/pages/admin/AdminTicketTypesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -155,6 +159,38 @@ export default function App() {
                 element={
                   <ProtectedRoute requiredPermission="surveys.view">
                     <AdminSurveysPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/organisations"
+                element={
+                  <ProtectedRoute requiredPermission="admin.clientRoles">
+                    <AdminOrganisationsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/clubs"
+                element={
+                  <ProtectedRoute requiredPermission="admin.clientRoles">
+                    <AdminClubsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/poles"
+                element={
+                  <ProtectedRoute requiredPermission="admin.clientRoles">
+                    <AdminPolesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/ticket-types"
+                element={
+                  <ProtectedRoute requiredPermission="admin.clientRoles">
+                    <AdminTicketTypesPage />
                   </ProtectedRoute>
                 }
               />
