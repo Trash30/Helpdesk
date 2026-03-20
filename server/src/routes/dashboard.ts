@@ -148,6 +148,106 @@ router.get('/stats', async (req: Request, res: Response) => {
       count: r._count.assignedToId,
     }));
 
+  // ─── Club & Organisation breakdowns (admin/supervisor only) ───────────────
+  const isAdmin = hasPermission(req.user!, 'tickets.viewAll');
+  let ticketsByClub: {
+    clubId: string;
+    clubName: string;
+    total: number;
+    open: number;
+    inProgress: number;
+    pending: number;
+    closed: number;
+  }[] | undefined;
+  let ticketsByOrganisation: {
+    organisationId: string;
+    organisationName: string;
+    total: number;
+    open: number;
+    inProgress: number;
+    pending: number;
+    closed: number;
+  }[] | undefined;
+
+  if (isAdmin) {
+    const ticketsWithClub = await prisma.ticket.findMany({
+      where: { deletedAt: null },
+      select: {
+        status: true,
+        client: {
+          select: {
+            clubId: true,
+            club: {
+              select: {
+                id: true,
+                name: true,
+                organisationId: true,
+                organisation: { select: { id: true, name: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Aggregate by club
+    const clubMap = new Map<string, {
+      clubName: string;
+      total: number;
+      open: number;
+      inProgress: number;
+      pending: number;
+      closed: number;
+    }>();
+
+    // Aggregate by organisation
+    const orgMap = new Map<string, {
+      organisationName: string;
+      total: number;
+      open: number;
+      inProgress: number;
+      pending: number;
+      closed: number;
+    }>();
+
+    for (const t of ticketsWithClub) {
+      const club = t.client.club;
+      if (club) {
+        const entry = clubMap.get(club.id) ?? {
+          clubName: club.name,
+          total: 0, open: 0, inProgress: 0, pending: 0, closed: 0,
+        };
+        entry.total++;
+        if (t.status === 'OPEN') entry.open++;
+        else if (t.status === 'IN_PROGRESS') entry.inProgress++;
+        else if (t.status === 'PENDING') entry.pending++;
+        else if (t.status === 'CLOSED') entry.closed++;
+        clubMap.set(club.id, entry);
+
+        // Organisation via club
+        const org = club.organisation;
+        const orgEntry = orgMap.get(org.id) ?? {
+          organisationName: org.name,
+          total: 0, open: 0, inProgress: 0, pending: 0, closed: 0,
+        };
+        orgEntry.total++;
+        if (t.status === 'OPEN') orgEntry.open++;
+        else if (t.status === 'IN_PROGRESS') orgEntry.inProgress++;
+        else if (t.status === 'PENDING') orgEntry.pending++;
+        else if (t.status === 'CLOSED') orgEntry.closed++;
+        orgMap.set(org.id, orgEntry);
+      }
+    }
+
+    ticketsByClub = Array.from(clubMap.entries())
+      .map(([clubId, data]) => ({ clubId, ...data }))
+      .sort((a, b) => b.total - a.total);
+
+    ticketsByOrganisation = Array.from(orgMap.entries())
+      .map(([organisationId, data]) => ({ organisationId, ...data }))
+      .sort((a, b) => b.total - a.total);
+  }
+
   res.json({
     data: {
       openTickets,
@@ -160,6 +260,8 @@ router.get('/stats', async (req: Request, res: Response) => {
       ticketsByCategory,
       ticketsByAgent,
       recentActivity,
+      ...(ticketsByClub ? { ticketsByClub } : {}),
+      ...(ticketsByOrganisation ? { ticketsByOrganisation } : {}),
     },
   });
 });
