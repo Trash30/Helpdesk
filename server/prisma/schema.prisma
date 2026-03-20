@@ -106,8 +106,6 @@ model Client {
   organisation   ClientOrganisation? @relation(fields: [organisationId], references: [id])
   clubId         String?
   club           ClientClub?         @relation(fields: [clubId], references: [id])
-  poleId         String?
-  pole           ClientPole?         @relation(fields: [poleId], references: [id])
   isSurveyable   Boolean             @default(true)
   notes        String?
   createdAt    DateTime    @default(now())
@@ -148,6 +146,8 @@ model Ticket {
   assignedTo   User?     @relation("AssignedTickets", fields: [assignedToId], references: [id])
   createdById  String
   createdBy    User      @relation("CreatedTickets", fields: [createdById], references: [id])
+  poleId       String?
+  pole         ClientPole? @relation(fields: [poleId], references: [id])
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   resolvedAt   DateTime?
@@ -278,7 +278,7 @@ model ClientPole {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  clients Client[]
+  tickets Ticket[]
 }
 
 model TicketType {

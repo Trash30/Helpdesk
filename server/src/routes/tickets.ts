@@ -31,6 +31,7 @@ const createTicketSchema = z.object({
   priority: z.nativeEnum(Priority).optional(),
   assignedToId: z.string().uuid().optional().nullable(),
   typeId: z.string().uuid().optional().nullable(),
+  poleId: z.string().uuid().optional().nullable(),
 });
 
 const updateTicketSchema = z.object({
@@ -40,6 +41,7 @@ const updateTicketSchema = z.object({
   priority: z.nativeEnum(Priority).optional(),
   assignedToId: z.string().uuid().optional().nullable(),
   typeId: z.string().uuid().optional().nullable(),
+  poleId: z.string().uuid().optional().nullable(),
 });
 
 // ─── GET /api/tickets ─────────────────────────────────────────────────────────
@@ -126,7 +128,8 @@ router.get(
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          client: { include: { role: true, organisation: true, club: true, pole: true } },
+          client: { include: { role: true, organisation: true, club: true } },
+        pole: true,
           assignedTo: { select: userSelect },
           category: true,
           createdBy: { select: userSelect },
@@ -156,7 +159,7 @@ router.post(
       return;
     }
 
-    const { title, description, clientId, categoryId, priority, assignedToId, typeId } = parse.data;
+    const { title, description, clientId, categoryId, priority, assignedToId, typeId, poleId } = parse.data;
 
     // Verify client exists
     const client = await prisma.client.findUnique({ where: { id: clientId } });
@@ -176,10 +179,12 @@ router.post(
         categoryId: categoryId ?? null,
         priority: priority ?? 'MEDIUM',
         assignedToId: assignedToId ?? null,
+        poleId: poleId ?? null,
         createdById: req.user!.id,
       },
       include: {
-        client: { include: { role: true, organisation: true, club: true, pole: true } },
+        client: { include: { role: true, organisation: true, club: true } },
+        pole: true,
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -207,7 +212,8 @@ router.get(
     const ticket = await prisma.ticket.findFirst({
       where: { id: req.params.id, deletedAt: null },
       include: {
-        client: { include: { role: true, organisation: true, club: true, pole: true } },
+        client: { include: { role: true, organisation: true, club: true } },
+        pole: true,
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -277,6 +283,7 @@ router.put(
       categoryId: 'Catégorie',
       priority: 'Priorité',
       assignedToId: 'Assigné',
+      poleId: 'Pôle',
     };
 
     for (const [key, newVal] of Object.entries(updates)) {
@@ -296,7 +303,8 @@ router.put(
       where: { id: req.params.id },
       data: updates,
       include: {
-        client: { include: { role: true, organisation: true, club: true, pole: true } },
+        client: { include: { role: true, organisation: true, club: true } },
+        pole: true,
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
