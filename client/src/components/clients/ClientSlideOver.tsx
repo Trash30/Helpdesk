@@ -31,8 +31,27 @@ interface ClientFormData {
   phone: string;
   email: string;
   roleId: string;
+  organisationId: string;
+  clubId: string;
+  poleId: string;
   isSurveyable: boolean;
   notes: string;
+}
+
+interface Organisation {
+  id: string;
+  name: string;
+}
+
+interface Club {
+  id: string;
+  name: string;
+  organisationId: string;
+}
+
+interface Pole {
+  id: string;
+  name: string;
 }
 
 const EMPTY_FORM: ClientFormData = {
@@ -42,6 +61,9 @@ const EMPTY_FORM: ClientFormData = {
   phone: '',
   email: '',
   roleId: '',
+  organisationId: '',
+  clubId: '',
+  poleId: '',
   isSurveyable: true,
   notes: '',
 };
@@ -71,18 +93,43 @@ export function ClientSlideOver() {
     enabled: isOpen,
   });
 
+  const { data: organisations } = useQuery<Organisation[]>({
+    queryKey: ['organisations'],
+    queryFn: async () => (await api.get('/organisations')).data?.data,
+    enabled: isOpen,
+  });
+
+  const { data: clubs } = useQuery<Club[]>({
+    queryKey: ['clubs', form.organisationId || null],
+    queryFn: async () => {
+      const params = form.organisationId ? { organisationId: form.organisationId } : {};
+      return (await api.get('/clubs', { params })).data?.data;
+    },
+    enabled: isOpen,
+  });
+
+  const { data: poles } = useQuery<Pole[]>({
+    queryKey: ['poles'],
+    queryFn: async () => (await api.get('/poles')).data?.data,
+    enabled: isOpen,
+  });
+
   // Populate form when client data loads (edit mode)
   useEffect(() => {
     if (clientData) {
+      const c = clientData?.data ?? clientData;
       const f: ClientFormData = {
-        firstName: clientData.firstName ?? '',
-        lastName: clientData.lastName ?? '',
-        company: clientData.company ?? '',
-        phone: clientData.phone ?? '',
-        email: clientData.email ?? '',
-        roleId: clientData.roleId ?? '',
-        isSurveyable: clientData.isSurveyable ?? true,
-        notes: clientData.notes ?? '',
+        firstName: c.firstName ?? '',
+        lastName: c.lastName ?? '',
+        company: c.company ?? '',
+        phone: c.phone ?? '',
+        email: c.email ?? '',
+        roleId: c.roleId ?? '',
+        organisationId: c.organisationId ?? '',
+        clubId: c.clubId ?? '',
+        poleId: c.poleId ?? '',
+        isSurveyable: c.isSurveyable ?? true,
+        notes: c.notes ?? '',
       };
       setForm(f);
       setOriginalForm(f);
@@ -138,13 +185,22 @@ export function ClientSlideOver() {
     return Object.keys(e).length === 0;
   };
 
+  const preparePayload = (f: ClientFormData) => ({
+    ...f,
+    roleId: f.roleId || null,
+    organisationId: f.organisationId || null,
+    clubId: f.clubId || null,
+    poleId: f.poleId || null,
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    const payload = preparePayload(form);
     if (isEditMode) {
-      updateMutation.mutate(form);
+      updateMutation.mutate(payload as ClientFormData);
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate(payload as ClientFormData);
     }
   };
 
@@ -263,6 +319,61 @@ export function ClientSlideOver() {
                     </span>
                   )}
                 </div>
+              </div>
+
+              {/* Organisation */}
+              <div className="space-y-1.5">
+                <Label htmlFor="sf-organisation">Organisation</Label>
+                <select
+                  id="sf-organisation"
+                  value={form.organisationId}
+                  onChange={e => {
+                    const newOrgId = e.target.value;
+                    setForm(f => ({
+                      ...f,
+                      organisationId: newOrgId,
+                      clubId: '',
+                    }));
+                  }}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Aucune organisation</option>
+                  {organisations?.map(o => (
+                    <option key={o.id} value={o.id}>{o.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Club / Ville */}
+              <div className="space-y-1.5">
+                <Label htmlFor="sf-club">Club / Ville</Label>
+                <select
+                  id="sf-club"
+                  value={form.clubId}
+                  onChange={e => setForm(f => ({ ...f, clubId: e.target.value }))}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Aucun club</option>
+                  {clubs?.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Pole */}
+              <div className="space-y-1.5">
+                <Label htmlFor="sf-pole">Pole</Label>
+                <select
+                  id="sf-pole"
+                  value={form.poleId}
+                  onChange={e => setForm(f => ({ ...f, poleId: e.target.value }))}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">Aucun pole</option>
+                  {poles?.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
               </div>
 
               {/* isSurveyable */}

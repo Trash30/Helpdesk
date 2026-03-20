@@ -87,6 +87,9 @@ interface Ticket {
     phone: string | null;
     email: string | null;
     role: { id: string; name: string; color: string } | null;
+    organisation: { id: string; name: string } | null;
+    club: { id: string; name: string } | null;
+    pole: { id: string; name: string } | null;
   } | null;
   assignedTo: { id: string; firstName: string; lastName: string } | null;
   category: { id: string; name: string; slug?: string; color: string } | null;
@@ -969,6 +972,28 @@ export function TicketDetailPage() {
                     </a>
                   )}
                 </div>
+                {(ticket.client.organisation || ticket.client.club || ticket.client.pole) && (
+                  <div className="space-y-1 text-sm border-t pt-2">
+                    {ticket.client.organisation && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Organisation</span>
+                        <span className="font-medium">{ticket.client.organisation.name}</span>
+                      </div>
+                    )}
+                    {ticket.client.club && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Club / Ville</span>
+                        <span className="font-medium">{ticket.client.club.name}</span>
+                      </div>
+                    )}
+                    {ticket.client.pole && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Pole</span>
+                        <span className="font-medium">{ticket.client.pole.name}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <Link
                   to={`/clients/${ticket.client.id}`}
                   className="flex items-center gap-1 text-xs text-primary hover:underline"
