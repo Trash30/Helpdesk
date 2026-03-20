@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -8,8 +8,9 @@ import {
 } from 'recharts';
 import {
   Ticket as TicketIcon, Clock, CheckCircle, Star,
-  ExternalLink,
+  ExternalLink, AlertTriangle,
 } from 'lucide-react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -203,6 +204,10 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 
 export function DashboardPage() {
+  const navigate = useNavigate();
+  const { can } = usePermissions();
+  const isAdmin = can('admin.access');
+
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: () => api.get('/dashboard/stats').then(r => r.data.data),
@@ -254,7 +259,7 @@ export function DashboardPage() {
       <h1 className="text-2xl font-bold">Tableau de bord</h1>
 
       {/* ── ROW 1 — KPI cards ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
         {statsLoading ? (
           [...Array(4)].map((_, i) => <KpiSkeleton key={i} />)
         ) : (
@@ -326,6 +331,56 @@ export function DashboardPage() {
                 )}
               </Tooltip>
             </TooltipProvider>
+
+            {/* Stale tickets card */}
+            {stats?.staleTickets !== undefined && (
+              <Card
+                className={`cursor-pointer transition-colors hover:shadow-md ${
+                  (stats.staleTickets ?? 0) > 0
+                    ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                    : 'hover:bg-muted/40'
+                }`}
+                onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5')}
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-muted-foreground font-medium">Tickets en attente de MAJ</p>
+                    <span className={`opacity-80 ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                      <AlertTriangle size={20} />
+                    </span>
+                  </div>
+                  <p className={`text-3xl font-bold ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-700' : 'text-foreground'}`}>
+                    {stats.staleTickets ?? 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Sans MAJ depuis &gt; 5 jours</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* My stale tickets card (agents only) */}
+            {!isAdmin && stats?.myStaleTickets !== undefined && (
+              <Card
+                className={`cursor-pointer transition-colors hover:shadow-md ${
+                  (stats.myStaleTickets ?? 0) > 0
+                    ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                    : 'hover:bg-muted/40'
+                }`}
+                onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5&assignedToMe=true')}
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-muted-foreground font-medium">Mes tickets en attente de MAJ</p>
+                    <span className={`opacity-80 ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                      <Clock size={20} />
+                    </span>
+                  </div>
+                  <p className={`text-3xl font-bold ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-700' : 'text-foreground'}`}>
+                    {stats.myStaleTickets ?? 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Mes tickets sans MAJ &gt; 5j</p>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
       </div>
