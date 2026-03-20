@@ -211,7 +211,6 @@ const STATUS_OPTIONS = [
   { value: 'OPEN', label: 'Ouvert' },
   { value: 'IN_PROGRESS', label: 'En cours' },
   { value: 'PENDING', label: 'En attente' },
-  { value: 'RESOLVED', label: 'Résolu' },
   { value: 'CLOSED', label: 'Fermé' },
 ];
 

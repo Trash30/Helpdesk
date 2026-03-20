@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import {
   Phone, Mail, ExternalLink, Paperclip, Download, Trash2,
-  CheckCircle, XCircle, RefreshCw, Bold, Italic, Code, X,
+  XCircle, RefreshCw, Bold, Italic, Code, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -605,7 +605,7 @@ export function TicketDetailPage() {
   const currentUser = useAuthStore(s => s.user);
   const queryClient = useQueryClient();
 
-  const [confirmAction, setConfirmAction] = useState<'resolve' | 'close' | 'reopen' | null>(null);
+  const [confirmAction, setConfirmAction] = useState<'close' | 'reopen' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const { data: ticket, isLoading, error } = useQuery<Ticket>({
     queryKey: ['ticket', id],
@@ -673,7 +673,7 @@ export function TicketDetailPage() {
     if (!confirmAction) return;
     setActionLoading(true);
     try {
-      const statusMap = { resolve: 'RESOLVED', close: 'CLOSED', reopen: 'OPEN' };
+      const statusMap = { close: 'CLOSED', reopen: 'OPEN' };
       await api.patch(`/tickets/${id}/status`, { status: statusMap[confirmAction] });
       invalidate();
       toast.success('Statut mis à jour');
@@ -735,7 +735,6 @@ export function TicketDetailPage() {
   const canDeleteAnyComment = can('comments.deleteAny');
 
   const actionLabels = {
-    resolve: { title: 'Résoudre le ticket', description: 'Le ticket sera marqué comme résolu.' },
     close: { title: 'Fermer le ticket', description: 'Le ticket sera fermé définitivement.' },
     reopen: { title: 'Rouvrir le ticket', description: 'Le ticket sera rouvert.' },
   };
@@ -808,12 +807,11 @@ export function TicketDetailPage() {
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                {['OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'].map(s => (
+                {['OPEN', 'IN_PROGRESS', 'PENDING', 'CLOSED'].map(s => (
                   <option key={s} value={s}>
                     {s === 'OPEN' ? 'Ouvert' :
                      s === 'IN_PROGRESS' ? 'En cours' :
-                     s === 'PENDING' ? 'En attente' :
-                     s === 'RESOLVED' ? 'Résolu' : 'Fermé'}
+                     s === 'PENDING' ? 'En attente' : 'Fermé'}
                   </option>
                 ))}
               </select>
@@ -951,17 +949,7 @@ export function TicketDetailPage() {
 
           {/* Action buttons */}
           <div className="space-y-2">
-            {canClose && ['OPEN', 'IN_PROGRESS'].includes(ticket.status) && (
-              <Button
-                variant="outline"
-                className="w-full border-green-500 text-green-700 hover:bg-green-50"
-                onClick={() => setConfirmAction('resolve')}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Résoudre
-              </Button>
-            )}
-            {canClose && ticket.status === 'RESOLVED' && (
+            {canClose && ['OPEN', 'IN_PROGRESS', 'PENDING'].includes(ticket.status) && (
               <Button
                 variant="outline"
                 className="w-full border-gray-400 text-gray-600 hover:bg-gray-50"
@@ -971,7 +959,7 @@ export function TicketDetailPage() {
                 Fermer
               </Button>
             )}
-            {canEdit && ['RESOLVED', 'CLOSED'].includes(ticket.status) && (
+            {canEdit && ticket.status === 'CLOSED' && (
               <Button
                 variant="outline"
                 className="w-full border-blue-500 text-blue-700 hover:bg-blue-50"
