@@ -274,8 +274,8 @@ export function DashboardPage() {
             />
 
             <KpiCard
-              label="Résolus aujourd'hui"
-              value={stats?.resolvedToday ?? 0}
+              label="Fermés aujourd'hui"
+              value={stats?.closedToday ?? stats?.resolvedToday ?? 0}
               color="#639922"
               icon={<CheckCircle size={20} />}
             />
