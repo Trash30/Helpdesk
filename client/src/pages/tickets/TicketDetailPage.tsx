@@ -21,6 +21,10 @@ import { Separator } from '@/components/ui/separator';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -85,7 +89,7 @@ interface Ticket {
     role: { id: string; name: string; color: string } | null;
   } | null;
   assignedTo: { id: string; firstName: string; lastName: string } | null;
-  category: { id: string; name: string; color: string } | null;
+  category: { id: string; name: string; slug?: string; color: string } | null;
   createdBy: { id: string; firstName: string; lastName: string } | null;
   comments: Comment[];
   attachments: Attachment[];
@@ -124,7 +128,7 @@ interface TimelineItem {
   data: Comment | ActivityLog;
 }
 
-interface Category { id: string; name: string; color: string }
+interface Category { id: string; name: string; slug?: string; color: string }
 interface Agent { id: string; firstName: string; lastName: string }
 
 // ── Inline editable title ────────────────────────────────────────────────────
@@ -607,6 +611,10 @@ export function TicketDetailPage() {
 
   const [confirmAction, setConfirmAction] = useState<'close' | 'reopen' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [closingNoteOpen, setClosingNoteOpen] = useState(false);
+  const [closingNote, setClosingNote] = useState('');
+  const [closingLoading, setClosingLoading] = useState(false);
+  const [materialDetail, setMaterialDetail] = useState('');
   const { data: ticket, isLoading, error } = useQuery<Ticket>({
     queryKey: ['ticket', id],
     queryFn: async () => (await api.get(`/tickets/${id}`)).data?.data,
@@ -685,6 +693,21 @@ export function TicketDetailPage() {
     }
   }, [confirmAction, id, invalidate]);
 
+  const handleClosingNote = useCallback(async () => {
+    if (!closingNote.trim()) return;
+    setClosingLoading(true);
+    try {
+      await api.patch(`/tickets/${id}/status`, { status: 'CLOSED', closingNote: closingNote.trim() });
+      invalidate();
+      toast.success('Ticket fermé');
+      setClosingNoteOpen(false);
+      setClosingNote('');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Erreur lors de la fermeture');
+    } finally {
+      setClosingLoading(false);
+    }
+  }, [closingNote, id, invalidate]);
 
   if (isLoading) {
     return (
@@ -803,7 +826,16 @@ export function TicketDetailPage() {
             <FieldRow label="Statut">
               <select
                 value={ticket.status}
-                onChange={e => updateStatus(e.target.value)}
+                onChange={e => {
+                  if (e.target.value === 'CLOSED') {
+                    setClosingNote('');
+                    setClosingNoteOpen(true);
+                    // Reset select to current status (dialog handles it)
+                    e.target.value = ticket.status;
+                  } else {
+                    updateStatus(e.target.value);
+                  }
+                }}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
@@ -844,6 +876,41 @@ export function TicketDetailPage() {
                 ))}
               </select>
             </FieldRow>
+
+            {/* Materiel field for pmateriel category */}
+            {(() => {
+              const selectedCat = categories?.find(c => c.id === ticket.category?.id);
+              const isPmateriel = selectedCat?.slug?.toLowerCase() === 'pmateriel'
+                || ticket.category?.slug?.toLowerCase() === 'pmateriel';
+              if (!isPmateriel || !canEdit) return null;
+              return (
+                <FieldRow label="Materiel concerne (optionnel)">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={materialDetail}
+                      onChange={e => setMaterialDetail(e.target.value)}
+                      placeholder="Ex: Ecran Dell P2422H, Switch HP 1820..."
+                      className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!materialDetail.trim()}
+                      onClick={() => {
+                        if (!materialDetail.trim()) return;
+                        const append = `\n\n**Materiel concerne :** ${materialDetail.trim()}`;
+                        updateField({ description: (ticket.description ?? '') + append });
+                        setMaterialDetail('');
+                        toast.success('Materiel ajoute a la description');
+                      }}
+                    >
+                      Ajouter
+                    </Button>
+                  </div>
+                </FieldRow>
+              );
+            })()}
 
             <FieldRow label="Assigné à">
               <select
@@ -953,7 +1020,7 @@ export function TicketDetailPage() {
               <Button
                 variant="outline"
                 className="w-full border-gray-400 text-gray-600 hover:bg-gray-50"
-                onClick={() => setConfirmAction('close')}
+                onClick={() => { setClosingNote(''); setClosingNoteOpen(true); }}
               >
                 <XCircle className="h-4 w-4 mr-2" />
                 Fermer
@@ -973,7 +1040,7 @@ export function TicketDetailPage() {
         </div>
       </div>
 
-      {/* Action confirm dialog */}
+      {/* Action confirm dialog (reopen only) */}
       {confirmAction && (
         <ConfirmDialog
           open
@@ -985,6 +1052,41 @@ export function TicketDetailPage() {
           onConfirm={handleAction}
         />
       )}
+
+      {/* Closing note dialog */}
+      <Dialog open={closingNoteOpen} onOpenChange={open => { if (!open) { setClosingNoteOpen(false); setClosingNote(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cloture du ticket</DialogTitle>
+            <DialogDescription>
+              Veuillez fournir une note de fermeture avant de clore ce ticket.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Note de fermeture <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              value={closingNote}
+              onChange={e => setClosingNote(e.target.value)}
+              placeholder="Decrivez la resolution ou la raison de la fermeture..."
+              rows={4}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setClosingNoteOpen(false); setClosingNote(''); }}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleClosingNote}
+              disabled={!closingNote.trim() || closingLoading}
+            >
+              {closingLoading ? 'Fermeture...' : 'Confirmer la fermeture'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </TooltipProvider>
   );
