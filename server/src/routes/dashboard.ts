@@ -20,8 +20,9 @@ router.get('/stats', async (req: Request, res: Response) => {
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
 
+  // Stale = tickets not updated for more than 5 days (exclude PENDING: intentionally paused)
   const staleWhere = {
-    status: { in: ['OPEN', 'IN_PROGRESS', 'PENDING'] as ('OPEN' | 'IN_PROGRESS' | 'PENDING')[] },
+    status: { in: ['OPEN', 'IN_PROGRESS'] as ('OPEN' | 'IN_PROGRESS')[] },
     updatedAt: { lt: staleCutoff },
     deletedAt: null,
   };
@@ -30,6 +31,7 @@ router.get('/stats', async (req: Request, res: Response) => {
     openTickets,
     inProgressTickets,
     resolvedToday,
+    staleTickets,
     allResponses,
     currentMonthResponses,
     lastMonthResponses,
@@ -45,6 +47,7 @@ router.get('/stats', async (req: Request, res: Response) => {
     prisma.ticket.count({
       where: { resolvedAt: { gte: todayStart, lt: todayEnd }, deletedAt: null },
     }),
+    prisma.ticket.count({ where: staleWhere }),
     prisma.surveyResponse.findMany({ select: { vocScore: true } }),
     prisma.surveyResponse.findMany({
       where: { createdAt: { gte: currentMonthStart } },
