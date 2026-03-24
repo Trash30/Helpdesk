@@ -341,8 +341,8 @@ router.patch(
 
     const schema = z.object({
       status: z.nativeEnum(Status),
-      closingNote: z.string().optional(),
-      pendingNote: z.string().optional(),
+      closingNote: z.string().max(2000).optional(),
+      pendingNote: z.string().max(2000).optional(),
     });
     const parse = schema.safeParse(req.body);
     if (!parse.success) {
