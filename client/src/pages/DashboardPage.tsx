@@ -124,7 +124,7 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
           <p className="px-6 py-4 text-sm text-muted-foreground">Aucun ticket urgent.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">#</th>
@@ -132,8 +132,8 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Titre</th>
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Priorité</th>
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Statut</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Assigné</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Créé le</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs hidden lg:table-cell">Assigné</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs hidden md:table-cell">Créé le</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,7 +164,7 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
                     <td className="px-4 py-3">
                       <StatusBadge status={ticket.status} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 hidden lg:table-cell">
                       {ticket.assignedTo ? (
                         <div className="flex items-center gap-1.5">
                           <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-semibold shrink-0">
@@ -178,7 +178,7 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 hidden md:table-cell">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -596,14 +596,14 @@ export function DashboardPage() {
           </CardHeader>
           <CardContent className="p-0 pb-2">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30">
                     <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Organisation</th>
                     <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Total</th>
                     <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Ouverts</th>
                     <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En cours</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En attente</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs hidden lg:table-cell">En attente</th>
                     <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Fermés</th>
                   </tr>
                 </thead>
@@ -620,7 +620,7 @@ export function DashboardPage() {
                         <td className="px-4 py-3 text-right font-semibold">{org.total}</td>
                         <td className="px-4 py-3 text-right text-blue-600">{org.open}</td>
                         <td className="px-4 py-3 text-right text-orange-600">{org.inProgress}</td>
-                        <td className="px-4 py-3 text-right text-pink-600">{org.pending}</td>
+                        <td className="px-4 py-3 text-right text-pink-600 hidden lg:table-cell">{org.pending}</td>
                         <td className="px-4 py-3 text-right text-muted-foreground">{org.closed}</td>
                       </tr>
                     ))}
