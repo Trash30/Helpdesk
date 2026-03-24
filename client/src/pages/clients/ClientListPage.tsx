@@ -413,7 +413,7 @@ export function ClientListPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 w-7 p-0"
+                                className="h-8 w-8 p-0"
                                 onClick={() => navigate(`/clients/${client.id}`)}
                               >
                                 <Eye className="h-3.5 w-3.5" />
@@ -427,7 +427,7 @@ export function ClientListPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 w-7 p-0"
+                                  className="h-8 w-8 p-0"
                                   onClick={() => openClientPanel(client.id)}
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
@@ -442,7 +442,7 @@ export function ClientListPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 w-7 p-0"
+                                  className="h-8 w-8 p-0"
                                   onClick={() => navigate(`/tickets/new?clientId=${client.id}`)}
                                 >
                                   <Ticket className="h-3.5 w-3.5" />
