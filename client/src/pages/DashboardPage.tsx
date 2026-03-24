@@ -53,7 +53,8 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, color, icon, children }: KpiCardProps) {
   return (
-    <Card>
+    <Card className="shadow-sm overflow-hidden">
+      <div style={{ height: '3px', backgroundColor: color }} />
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-muted-foreground font-medium">{label}</p>
@@ -81,17 +82,6 @@ function KpiSkeleton() {
   );
 }
 
-// ─── Donut center label ───────────────────────────────────────────────────────
-
-function DonutCenterLabel({ cx, cy, total }: { cx?: number; cy?: number; total: number }) {
-  return (
-    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central">
-      <tspan x={cx} dy="-0.3em" fontSize="22" fontWeight="700" fill="#111827">{total}</tspan>
-      <tspan x={cx} dy="1.4em" fontSize="11" fill="#6b7280">actifs</tspan>
-    </text>
-  );
-}
-
 // ─── Urgent tickets table ─────────────────────────────────────────────────────
 
 interface UrgentTicketsTableProps {
@@ -101,7 +91,7 @@ interface UrgentTicketsTableProps {
 
 function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Tickets urgents</CardTitle>
@@ -124,7 +114,7 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
           <p className="px-6 py-4 text-sm text-muted-foreground">Aucun ticket urgent.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">#</th>
@@ -132,8 +122,8 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Titre</th>
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Priorité</th>
                   <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Statut</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Assigné</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Créé le</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs hidden lg:table-cell">Assigné</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs hidden md:table-cell">Créé le</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,7 +154,7 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
                     <td className="px-4 py-3">
                       <StatusBadge status={ticket.status} />
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 hidden lg:table-cell">
                       {ticket.assignedTo ? (
                         <div className="flex items-center gap-1.5">
                           <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-semibold shrink-0">
@@ -178,7 +168,7 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 hidden md:table-cell">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -298,7 +288,7 @@ export function DashboardPage() {
                     >
                       <div className="mt-2 space-y-1">
                         {/* Progress bar */}
-                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all"
                             style={{ width: `${csatScore}%`, backgroundColor: csatColorVal }}
@@ -337,7 +327,7 @@ export function DashboardPage() {
               <Card
                 className={`cursor-pointer transition-colors hover:shadow-md ${
                   (stats.staleTickets ?? 0) > 0
-                    ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50'
                     : 'hover:bg-muted/40'
                 }`}
                 onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5')}
@@ -345,11 +335,11 @@ export function DashboardPage() {
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-muted-foreground font-medium">Tickets en attente de MAJ</p>
-                    <span className={`opacity-80 ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    <span className={`opacity-80 ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
                       <AlertTriangle size={20} />
                     </span>
                   </div>
-                  <p className={`text-3xl font-bold ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-700' : 'text-foreground'}`}>
+                  <p className={`text-3xl font-bold ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-700 dark:text-amber-200' : 'text-foreground'}`}>
                     {stats.staleTickets ?? 0}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Sans MAJ depuis &gt; 5 jours</p>
@@ -362,7 +352,7 @@ export function DashboardPage() {
               <Card
                 className={`cursor-pointer transition-colors hover:shadow-md ${
                   (stats.myStaleTickets ?? 0) > 0
-                    ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50'
                     : 'hover:bg-muted/40'
                 }`}
                 onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5&assignedToMe=true')}
@@ -370,11 +360,11 @@ export function DashboardPage() {
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-muted-foreground font-medium">Mes tickets en attente de MAJ</p>
-                    <span className={`opacity-80 ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    <span className={`opacity-80 ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
                       <Clock size={20} />
                     </span>
                   </div>
-                  <p className={`text-3xl font-bold ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-700' : 'text-foreground'}`}>
+                  <p className={`text-3xl font-bold ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-700 dark:text-amber-200' : 'text-foreground'}`}>
                     {stats.myStaleTickets ?? 0}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Mes tickets sans MAJ &gt; 5j</p>
@@ -388,7 +378,7 @@ export function DashboardPage() {
       {/* ── ROW 2 — Line chart + Donut ──────────────────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Line chart — 60% */}
-        <Card className="flex-[3]">
+        <Card className="flex-[3] shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Tickets créés — 30 derniers jours</CardTitle>
           </CardHeader>
@@ -431,7 +421,7 @@ export function DashboardPage() {
         </Card>
 
         {/* Donut chart — 40% */}
-        <Card className="flex-[2]">
+        <Card className="flex-[2] shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Par priorité</CardTitle>
           </CardHeader>
@@ -456,11 +446,11 @@ export function DashboardPage() {
                     ))}
                   </Pie>
                   {/* Center label via custom component trick */}
-                  <text x="50%" y="47%" textAnchor="middle" dominantBaseline="central">
-                    <tspan fontSize="22" fontWeight="700" fill="#111827">{donutTotal}</tspan>
+                  <text x="50%" y="47%" textAnchor="middle" dominantBaseline="central" className="text-foreground">
+                    <tspan fontSize="22" fontWeight="700" fill="currentColor">{donutTotal}</tspan>
                   </text>
-                  <text x="50%" y="56%" textAnchor="middle" dominantBaseline="central">
-                    <tspan fontSize="11" fill="#6b7280">actifs</tspan>
+                  <text x="50%" y="56%" textAnchor="middle" dominantBaseline="central" className="text-muted-foreground">
+                    <tspan fontSize="11" fill="currentColor">actifs</tspan>
                   </text>
                   <RechartsTooltip
                     contentStyle={{ fontSize: 12, borderRadius: 6 }}
@@ -487,7 +477,7 @@ export function DashboardPage() {
       {/* ── ROW 3 — Bar chart + Recent activity ─────────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Horizontal bar chart — 50% */}
-        <Card className="flex-1">
+        <Card className="flex-1 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Tickets par agent</CardTitle>
           </CardHeader>
@@ -525,7 +515,7 @@ export function DashboardPage() {
         </Card>
 
         {/* Recent activity — 50% */}
-        <Card className="flex-1">
+        <Card className="flex-1 shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Activité récente</CardTitle>
@@ -590,20 +580,20 @@ export function DashboardPage() {
 
       {/* ── ROW 5 — Tickets by Organisation (admin only) ────────────────── */}
       {can('tickets.viewAll') && (stats?.ticketsByOrganisation ?? []).length > 0 && (
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Tickets par Organisation</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pb-2">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30">
                     <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Organisation</th>
                     <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Total</th>
                     <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Ouverts</th>
                     <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En cours</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En attente</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs hidden lg:table-cell">En attente</th>
                     <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Fermés</th>
                   </tr>
                 </thead>
@@ -620,7 +610,7 @@ export function DashboardPage() {
                         <td className="px-4 py-3 text-right font-semibold">{org.total}</td>
                         <td className="px-4 py-3 text-right text-blue-600">{org.open}</td>
                         <td className="px-4 py-3 text-right text-orange-600">{org.inProgress}</td>
-                        <td className="px-4 py-3 text-right text-pink-600">{org.pending}</td>
+                        <td className="px-4 py-3 text-right text-pink-600 hidden lg:table-cell">{org.pending}</td>
                         <td className="px-4 py-3 text-right text-muted-foreground">{org.closed}</td>
                       </tr>
                     ))}
@@ -633,7 +623,7 @@ export function DashboardPage() {
 
       {/* ── ROW 6 — Tickets by Club (admin only) ─────────────────────────── */}
       {can('tickets.viewAll') && (stats?.ticketsByClub ?? []).length > 0 && (
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Tickets par Club</CardTitle>
           </CardHeader>

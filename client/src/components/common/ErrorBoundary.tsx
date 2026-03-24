@@ -41,12 +41,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <AlertTriangle className="h-12 w-12 text-orange-500 mb-4" />
           <h2 className="text-lg font-semibold mb-2">Une erreur inattendue est survenue</h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-md">
-            Un probleme est survenu lors de l'affichage de cette page. Veuillez reessayer.
+            Un problème est survenu lors de l'affichage de cette page. Veuillez réessayer.
           </p>
           <div className="flex gap-3">
             <Button variant="outline" onClick={this.handleReset}>
               <RotateCcw className="h-4 w-4 mr-2" />
-              Reessayer
+              Réessayer
             </Button>
             <Button
               variant="ghost"
