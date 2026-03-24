@@ -130,6 +130,7 @@ router.get(
         include: {
           client: { include: { role: true, organisation: true, club: true } },
         pole: true,
+          type: true,
           assignedTo: { select: userSelect },
           category: true,
           createdBy: { select: userSelect },
@@ -180,11 +181,13 @@ router.post(
         priority: priority ?? 'MEDIUM',
         assignedToId: assignedToId ?? null,
         poleId: poleId ?? null,
+        typeId: typeId ?? null,
         createdById: req.user!.id,
       },
       include: {
         client: { include: { role: true, organisation: true, club: true } },
         pole: true,
+        type: true,
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -214,6 +217,7 @@ router.get(
       include: {
         client: { include: { role: true, organisation: true, club: true } },
         pole: true,
+        type: true,
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -284,6 +288,7 @@ router.put(
       priority: 'Priorité',
       assignedToId: 'Assigné',
       poleId: 'Pôle',
+      typeId: 'Type de ticket',
     };
 
     for (const [key, newVal] of Object.entries(updates)) {
@@ -305,6 +310,7 @@ router.put(
       include: {
         client: { include: { role: true, organisation: true, club: true } },
         pole: true,
+        type: true,
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
