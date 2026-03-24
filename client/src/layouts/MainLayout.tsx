@@ -13,6 +13,14 @@ import { getInitials, timeAgo } from '@/lib/utils';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -110,7 +118,7 @@ function GlobalSearch() {
   };
 
   return (
-    <div ref={containerRef} className="relative w-72">
+    <div ref={containerRef} className="relative w-full sm:w-72">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
@@ -120,12 +128,18 @@ function GlobalSearch() {
           onChange={e => setQuery(e.target.value)}
           onFocus={() => query.length > 0 && setOpen(true)}
           onKeyDown={onKeyDown}
+          role="combobox"
+          aria-expanded={open}
+          aria-controls="global-search-results"
+          aria-autocomplete="list"
+          aria-label="Rechercher un ticket ou un client"
+          aria-activedescendant={activeIndex >= 0 ? `search-result-${activeIndex}` : undefined}
           className="w-full pl-9 pr-3 h-9 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute top-full mt-1 w-96 max-h-96 overflow-y-auto rounded-md border bg-popover shadow-lg z-50">
+        <div id="global-search-results" role="listbox" className="absolute top-full mt-1 w-[calc(100vw-2rem)] sm:w-96 max-h-96 overflow-y-auto rounded-md border bg-popover shadow-lg z-50">
           {tickets.length > 0 && (
             <div>
               <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b">Tickets</p>
@@ -347,7 +361,9 @@ export function MainLayout() {
           >
             <Menu size={18} />
           </button>
-          <GlobalSearch />
+          <div className="flex-1 sm:flex-none">
+            <GlobalSearch />
+          </div>
 
           <div className="ml-auto flex items-center gap-2">
             <button
