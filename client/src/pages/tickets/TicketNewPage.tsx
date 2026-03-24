@@ -502,6 +502,7 @@ export function TicketNewPage() {
   const [priority, setPriority] = useState('MEDIUM');
   const [assignedToId, setAssignedToId] = useState('');
   const [poleId, setPoleId] = useState('');
+  const [typeId, setTypeId] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
 
   const { data: categories } = useQuery<Category[]>({
@@ -526,12 +527,20 @@ export function TicketNewPage() {
     queryFn: async () => (await api.get('/poles')).data?.data ?? [],
   });
 
+  const { data: ticketTypes } = useQuery<{ id: string; name: string; isActive: boolean; position: number }[]>({
+    queryKey: ['ticket-types'],
+    queryFn: async () => {
+      const all = (await api.get('/ticket-types')).data?.data ?? [];
+      return all.filter((t: { isActive: boolean }) => t.isActive);
+    },
+  });
+
   const queryClient = useQueryClient();
   const createMutation = useMutation({
     mutationFn: async (vars: {
       clientId: string; title: string; description: string;
       categoryId: string; priority: string; assignedToId: string; poleId: string;
-      attachments: File[];
+      typeId: string; attachments: File[];
     }) => {
       // Step 1 — create ticket with JSON
       const res = await api.post('/tickets', {
@@ -542,6 +551,7 @@ export function TicketNewPage() {
         priority: vars.priority,
         assignedToId: vars.assignedToId || undefined,
         poleId: vars.poleId || undefined,
+        typeId: vars.typeId || undefined,
       });
       const ticket = res.data.data;
 
@@ -585,6 +595,7 @@ export function TicketNewPage() {
       priority,
       assignedToId,
       poleId,
+      typeId,
       attachments,
     });
   };
@@ -707,6 +718,23 @@ export function TicketNewPage() {
                 <option value="">Aucun pôle</option>
                 {poles?.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="typeId">Type de ticket</Label>
+              <select
+                id="typeId"
+                value={typeId}
+                onChange={e => setTypeId(e.target.value)}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">{'\u2014'} Sélectionner {'\u2014'}</option>
+                {ticketTypes?.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
             </div>
