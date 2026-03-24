@@ -64,7 +64,7 @@ function SortableRow({
       }`}>
         {item.isActive ? 'Actif' : 'Inactif'}
       </span>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item)}>
           <Pencil className="h-3.5 w-3.5" />
         </Button>
@@ -153,10 +153,10 @@ export function AdminClubsPage() {
     try {
       if (editTarget) {
         await api.put(`/admin/clubs/${editTarget.id}`, form);
-        toast.success('Club mis a jour');
+        toast.success('Club mis à jour');
       } else {
         await api.post('/admin/clubs', form);
-        toast.success('Club cree');
+        toast.success('Club créé');
       }
       queryClient.invalidateQueries({ queryKey: ['admin-clubs'] });
       setModalOpen(false);
@@ -170,7 +170,7 @@ export function AdminClubsPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/clubs/${deleteTarget.id}`);
-      toast.success('Club supprime');
+      toast.success('Club supprimé');
       queryClient.invalidateQueries({ queryKey: ['admin-clubs'] });
     } catch (err: any) {
       toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
@@ -211,7 +211,7 @@ export function AdminClubsPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucun club. Creez-en un pour commencer.
+                Aucun club. Créez-en un pour commencer.
               </p>
             )}
           </div>
@@ -237,7 +237,7 @@ export function AdminClubsPage() {
                 onChange={e => setForm(f => ({ ...f, organisationId: e.target.value }))}
                 className="mt-1 w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
               >
-                <option value="">Selectionner une organisation</option>
+                <option value="">Sélectionner une organisation</option>
                 {organisations.map(o => (
                   <option key={o.id} value={o.id}>{o.name}</option>
                 ))}
@@ -254,7 +254,7 @@ export function AdminClubsPage() {
               Annuler
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Creer')}
+              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -266,8 +266,8 @@ export function AdminClubsPage() {
         title="Supprimer le club"
         description={
           deleteTarget?._count?.clients
-            ? `Ce club est utilise par ${deleteTarget._count.clients} client(s) et ne peut pas etre supprime.`
-            : `Supprimer le club "${deleteTarget?.name}" ? Cette action est irreversible.`
+            ? `Ce club est utilisé par ${deleteTarget._count.clients} client(s) et ne peut pas être supprimé.`
+            : `Supprimer le club "${deleteTarget?.name}" ? Cette action est irréversible.`
         }
         confirmLabel={deleteTarget?._count?.clients ? 'Fermer' : 'Supprimer'}
         variant={deleteTarget?._count?.clients ? 'default' : 'destructive'}

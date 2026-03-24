@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import {
   Phone, Mail, ExternalLink, Paperclip, Download, Trash2,
-  XCircle, RefreshCw, Bold, Italic, Code, X,
+  XCircle, RefreshCw, Bold, Italic, Code, X, Pencil,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -173,13 +173,18 @@ function InlineTitle({
   }
 
   return (
-    <h1
-      className={`text-2xl font-bold leading-snug ${canEdit ? 'cursor-text hover:bg-muted/40 rounded px-1 -mx-1' : ''}`}
+    <div
+      className={`group/title flex items-center ${canEdit ? 'cursor-text hover:bg-muted/40 rounded px-1 -mx-1' : ''}`}
       onClick={() => canEdit && setEditing(true)}
       title={canEdit ? 'Cliquer pour modifier' : undefined}
     >
-      {value}
-    </h1>
+      <h1 className="text-2xl font-bold leading-snug">
+        {value}
+      </h1>
+      {canEdit && (
+        <Pencil size={14} className="opacity-0 group-hover/title:opacity-100 text-muted-foreground transition-opacity ml-2 shrink-0" />
+      )}
+    </div>
   );
 }
 
@@ -382,7 +387,7 @@ function Timeline({
                 {canDelete && (
                   <button
                     onClick={() => setDeleteId(comment.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-muted-foreground hover:text-destructive"
+                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity ml-2 text-muted-foreground hover:text-destructive"
                     title="Supprimer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -720,7 +725,7 @@ export function TicketDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-[65%_35%] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[65%_35%] gap-6">
         <div className="space-y-4">
           <Skeleton className="h-8 w-3/4" />
           <Skeleton className="h-24 w-full" />
@@ -1110,8 +1115,12 @@ export function TicketDetailPage() {
               onChange={e => setClosingNote(e.target.value)}
               placeholder="Decrivez la resolution ou la raison de la fermeture..."
               rows={4}
+              maxLength={500}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
             />
+            <p className="text-xs text-muted-foreground text-right mt-1">
+              {closingNote.length}/500
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setClosingNoteOpen(false); setClosingNote(''); }}>
