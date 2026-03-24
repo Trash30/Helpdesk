@@ -53,7 +53,8 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, color, icon, children }: KpiCardProps) {
   return (
-    <Card>
+    <Card className="shadow-sm overflow-hidden">
+      <div style={{ height: '3px', backgroundColor: color }} />
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-muted-foreground font-medium">{label}</p>
@@ -90,7 +91,7 @@ interface UrgentTicketsTableProps {
 
 function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
   return (
-    <Card>
+    <Card className="shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Tickets urgents</CardTitle>
@@ -377,7 +378,7 @@ export function DashboardPage() {
       {/* ── ROW 2 — Line chart + Donut ──────────────────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Line chart — 60% */}
-        <Card className="flex-[3]">
+        <Card className="flex-[3] shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Tickets créés — 30 derniers jours</CardTitle>
           </CardHeader>
@@ -420,7 +421,7 @@ export function DashboardPage() {
         </Card>
 
         {/* Donut chart — 40% */}
-        <Card className="flex-[2]">
+        <Card className="flex-[2] shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Par priorité</CardTitle>
           </CardHeader>
@@ -476,7 +477,7 @@ export function DashboardPage() {
       {/* ── ROW 3 — Bar chart + Recent activity ─────────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Horizontal bar chart — 50% */}
-        <Card className="flex-1">
+        <Card className="flex-1 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Tickets par agent</CardTitle>
           </CardHeader>
@@ -514,7 +515,7 @@ export function DashboardPage() {
         </Card>
 
         {/* Recent activity — 50% */}
-        <Card className="flex-1">
+        <Card className="flex-1 shadow-sm">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Activité récente</CardTitle>
@@ -579,7 +580,7 @@ export function DashboardPage() {
 
       {/* ── ROW 5 — Tickets by Organisation (admin only) ────────────────── */}
       {can('tickets.viewAll') && (stats?.ticketsByOrganisation ?? []).length > 0 && (
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Tickets par Organisation</CardTitle>
           </CardHeader>
@@ -622,7 +623,7 @@ export function DashboardPage() {
 
       {/* ── ROW 6 — Tickets by Club (admin only) ─────────────────────────── */}
       {can('tickets.viewAll') && (stats?.ticketsByClub ?? []).length > 0 && (
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Tickets par Club</CardTitle>
           </CardHeader>
