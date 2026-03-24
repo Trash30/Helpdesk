@@ -148,6 +148,9 @@ function GlobalSearch() {
                 return (
                   <button
                     key={t.id}
+                    id={`search-result-${idx}`}
+                    role="option"
+                    aria-selected={activeIndex === idx}
                     className={`w-full text-left px-3 py-2.5 hover:bg-accent flex items-start gap-3 ${activeIndex === idx ? 'bg-accent' : ''}`}
                     onClick={() => selectResult({ type: 'ticket', item: t })}
                   >
@@ -167,6 +170,9 @@ function GlobalSearch() {
                 return (
                   <button
                     key={c.id}
+                    id={`search-result-${idx}`}
+                    role="option"
+                    aria-selected={activeIndex === idx}
                     className={`w-full text-left px-3 py-2.5 hover:bg-accent flex items-center gap-3 ${activeIndex === idx ? 'bg-accent' : ''}`}
                     onClick={() => selectResult({ type: 'client', item: c })}
                   >
@@ -231,8 +237,6 @@ export function MainLayout() {
   const { dark, toggle } = useDarkMode();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Fetch open ticket count for sidebar badge
@@ -241,16 +245,6 @@ export function MainLayout() {
     queryFn: () => api.get('/dashboard/stats').then(r => r.data.data),
     refetchInterval: 60000,
   });
-
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, []);
 
   const handleLogout = async () => {
     try { await api.post('/auth/logout'); } catch {}
@@ -358,6 +352,7 @@ export function MainLayout() {
           <button
             className="md:hidden flex items-center justify-center w-9 h-9 rounded-md hover:bg-accent"
             onClick={() => setMobileOpen(o => !o)}
+            aria-label="Ouvrir le menu de navigation"
           >
             <Menu size={18} />
           </button>
@@ -383,36 +378,28 @@ export function MainLayout() {
             )}
 
             {/* Avatar + user menu */}
-            <div ref={userMenuRef} className="relative">
-              <button
-                onClick={() => setUserMenuOpen(o => !o)}
-                className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                {user ? getInitials(user.firstName, user.lastName) : '?'}
-              </button>
-
-              {userMenuOpen && (
-                <div className="absolute right-0 top-full mt-1 w-44 rounded-md border bg-popover shadow-lg z-50 py-1">
-                  <div className="px-3 py-2 border-b">
-                    <p className="text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                  </div>
-                  <Link
-                    to="/profile"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
-                  >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">
+                  {user ? getInitials(user.firstName, user.lastName) : '?'}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel className="font-normal">
+                  <p className="text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
                     <User size={14} /> Mon profil
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent w-full text-left text-destructive"
-                  >
-                    <LogOut size={14} /> Déconnexion
-                  </button>
-                </div>
-              )}
-            </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer">
+                  <LogOut size={14} /> Deconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
