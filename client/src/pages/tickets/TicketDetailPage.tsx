@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import {
   Phone, Mail, ExternalLink, Paperclip, Download, Trash2,
-  XCircle, RefreshCw, Bold, Italic, Code, X,
+  XCircle, RefreshCw, Bold, Italic, Code, X, Pencil,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -382,7 +382,7 @@ function Timeline({
                 {canDelete && (
                   <button
                     onClick={() => setDeleteId(comment.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-muted-foreground hover:text-destructive"
+                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity ml-2 text-muted-foreground hover:text-destructive"
                     title="Supprimer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
