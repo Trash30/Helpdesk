@@ -31,7 +31,6 @@ router.get('/stats', async (req: Request, res: Response) => {
     openTickets,
     inProgressTickets,
     resolvedToday,
-    staleTickets,
     allResponses,
     currentMonthResponses,
     lastMonthResponses,
@@ -47,7 +46,6 @@ router.get('/stats', async (req: Request, res: Response) => {
     prisma.ticket.count({
       where: { resolvedAt: { gte: todayStart, lt: todayEnd }, deletedAt: null },
     }),
-    prisma.ticket.count({ where: staleWhere }),
     prisma.surveyResponse.findMany({ select: { vocScore: true } }),
     prisma.surveyResponse.findMany({
       where: { createdAt: { gte: currentMonthStart } },
