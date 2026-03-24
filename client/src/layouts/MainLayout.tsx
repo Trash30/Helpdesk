@@ -396,7 +396,7 @@ export function MainLayout() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer">
-                  <LogOut size={14} /> Deconnexion
+                  <LogOut size={14} /> Déconnexion
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
