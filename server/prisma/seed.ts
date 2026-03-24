@@ -172,6 +172,86 @@ async function main() {
 
   console.log('✅ Client roles created');
 
+  // ─── Client Organisations ────────────────────────────────────────────────
+
+  const orgParis = await prisma.clientOrganisation.upsert({
+    where: { name: 'Ligue de Paris' },
+    update: {},
+    create: { name: 'Ligue de Paris' },
+  });
+  const orgLyon = await prisma.clientOrganisation.upsert({
+    where: { name: 'Ligue de Lyon' },
+    update: {},
+    create: { name: 'Ligue de Lyon' },
+  });
+
+  console.log('✅ Client organisations created');
+
+  // ─── Client Clubs ──────────────────────────────────────────────────────
+
+  const clubParisNord = await prisma.clientClub.upsert({
+    where: { name_organisationId: { name: 'Club Paris Nord', organisationId: orgParis.id } },
+    update: {},
+    create: { name: 'Club Paris Nord', organisationId: orgParis.id },
+  });
+  const clubParisSud = await prisma.clientClub.upsert({
+    where: { name_organisationId: { name: 'Club Paris Sud', organisationId: orgParis.id } },
+    update: {},
+    create: { name: 'Club Paris Sud', organisationId: orgParis.id },
+  });
+  const clubLyonCentre = await prisma.clientClub.upsert({
+    where: { name_organisationId: { name: 'Club Lyon Centre', organisationId: orgLyon.id } },
+    update: {},
+    create: { name: 'Club Lyon Centre', organisationId: orgLyon.id },
+  });
+
+  console.log('✅ Client clubs created');
+
+  // ─── Client Poles ──────────────────────────────────────────────────────
+
+  const poleTechnique = await prisma.clientPole.upsert({
+    where: { name: 'Pôle Technique' },
+    update: {},
+    create: { name: 'Pôle Technique' },
+  });
+  const poleCommercial = await prisma.clientPole.upsert({
+    where: { name: 'Pôle Commercial' },
+    update: {},
+    create: { name: 'Pôle Commercial' },
+  });
+  const poleSupport = await prisma.clientPole.upsert({
+    where: { name: 'Pôle Support' },
+    update: {},
+    create: { name: 'Pôle Support' },
+  });
+
+  console.log('✅ Client poles created');
+
+  // ─── Ticket Types ──────────────────────────────────────────────────────
+
+  const typeIncident = await prisma.ticketType.upsert({
+    where: { name: 'Incident' },
+    update: {},
+    create: { name: 'Incident' },
+  });
+  const typeDemande = await prisma.ticketType.upsert({
+    where: { name: 'Demande' },
+    update: {},
+    create: { name: 'Demande' },
+  });
+  const typeReclamation = await prisma.ticketType.upsert({
+    where: { name: 'Réclamation' },
+    update: {},
+    create: { name: 'Réclamation' },
+  });
+  const typeConseil = await prisma.ticketType.upsert({
+    where: { name: 'Conseil' },
+    update: {},
+    create: { name: 'Conseil' },
+  });
+
+  console.log('✅ Ticket types created');
+
   // ─── Clients (10) ─────────────────────────────────────────────────────────
 
   const clients = await Promise.all([
@@ -233,6 +313,8 @@ async function main() {
 
   const agents = [agent1, agent2, agent3];
   const categories = [catMateriel, catLogiciel, catReseau, catAcces, catAutre];
+  const poles = [poleTechnique, poleCommercial, poleSupport];
+  const ticketTypes = [typeIncident, typeDemande, typeReclamation, typeConseil];
 
   const ticketDefs = [
     { num: 'VG20260001', title: "PC ne démarre plus après mise à jour", desc: "L'ordinateur de bureau refuse de démarrer depuis la mise à jour Windows du week-end.", status: 'OPEN', priority: 'CRITICAL', cat: catMateriel, client: clients[0], agent: agent1 },
@@ -280,6 +362,9 @@ async function main() {
       continue;
     }
 
+    const randomPole = poles[Math.floor(Math.random() * poles.length)];
+    const randomType = ticketTypes[Math.floor(Math.random() * ticketTypes.length)];
+
     const ticket = await prisma.ticket.create({
       data: {
         ticketNumber: def.num,
@@ -290,6 +375,8 @@ async function main() {
         categoryId: def.cat.id,
         clientId: def.client.id,
         assignedToId: def.agent?.id ?? null,
+        poleId: randomPole.id,
+        typeId: randomType.id,
         createdById: admin.id,
         resolvedAt,
         closedAt,
