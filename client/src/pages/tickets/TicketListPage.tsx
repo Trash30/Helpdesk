@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Search, Plus, ChevronDown, ChevronLeft, ChevronRight,
-  TicketIcon, RotateCcw, Download, FileText, FileSpreadsheet,
+  TicketIcon, RotateCcw, Download, FileText, FileSpreadsheet, SlidersHorizontal,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -189,24 +189,35 @@ function Pagination({
 
 function TableSkeleton() {
   return (
-    <div className="rounded-lg border overflow-hidden">
-      <div className="bg-muted/50 px-4 py-3 grid grid-cols-8 gap-4">
-        {['w-16', 'w-24', 'w-32', 'w-20', 'w-16', 'w-16', 'w-20', 'w-20'].map((w, i) => (
-          <Skeleton key={i} className={`h-4 ${w}`} />
-        ))}
-      </div>
-      {Array.from({ length: 10 }).map((_, i) => (
-        <div key={i} className="px-4 py-3 grid grid-cols-8 gap-4 border-t">
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-4 w-36" />
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-5 w-16 rounded-full" />
-          <Skeleton className="h-5 w-16 rounded-full" />
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-16" />
-        </div>
-      ))}
+    <div className="rounded-lg border overflow-x-auto">
+      <table className="w-full min-w-[600px]">
+        <thead>
+          <tr className="bg-muted/50">
+            <th className="px-4 py-3"><Skeleton className="h-4 w-16" /></th>
+            <th className="px-4 py-3"><Skeleton className="h-4 w-24" /></th>
+            <th className="px-4 py-3"><Skeleton className="h-4 w-32" /></th>
+            <th className="px-4 py-3 hidden xl:table-cell"><Skeleton className="h-4 w-20" /></th>
+            <th className="px-4 py-3"><Skeleton className="h-4 w-16" /></th>
+            <th className="px-4 py-3"><Skeleton className="h-4 w-16" /></th>
+            <th className="px-4 py-3 hidden lg:table-cell"><Skeleton className="h-4 w-20" /></th>
+            <th className="px-4 py-3 hidden md:table-cell"><Skeleton className="h-4 w-20" /></th>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <tr key={i} className="border-t">
+              <td className="px-4 py-3"><Skeleton className="h-4 w-16" /></td>
+              <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
+              <td className="px-4 py-3"><Skeleton className="h-4 w-36" /></td>
+              <td className="px-4 py-3 hidden xl:table-cell"><Skeleton className="h-4 w-20" /></td>
+              <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded-full" /></td>
+              <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded-full" /></td>
+              <td className="px-4 py-3 hidden lg:table-cell"><Skeleton className="h-4 w-20" /></td>
+              <td className="px-4 py-3 hidden md:table-cell"><Skeleton className="h-4 w-16" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -353,12 +364,29 @@ export function TicketListPage() {
   const [clubId, setClubId] = useState('');
   const [organisationId, setOrganisationId] = useState('');
   const [page, setPage] = useState(1);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const debouncedSearch = useDebounce(search, 400);
 
   const hasFilters = statuses.length > 0 || priorities.length > 0 ||
     categoryId || assignedToId || dateFrom || dateTo || debouncedSearch ||
     clubId || organisationId;
+
+  // Count active filters for mobile badge (excluding default statuses)
+  const activeFilterCount = (() => {
+    let count = 0;
+    const statusesSorted = [...statuses].sort();
+    const defaultSorted = [...DEFAULT_STATUSES].sort();
+    const statusChanged = statuses.length !== DEFAULT_STATUSES.length || statusesSorted.some((s, i) => s !== defaultSorted[i]);
+    if (statusChanged) count++;
+    if (priorities.length > 0) count++;
+    if (categoryId) count++;
+    if (assignedToId) count++;
+    if (clubId) count++;
+    if (organisationId) count++;
+    if (dateFrom || dateTo) count++;
+    return count;
+  })();
 
   // Check if filters differ from default
   const isNonDefault = (() => {
@@ -564,20 +592,117 @@ export function TicketListPage() {
 
         {/* Filter bar */}
         <div className="sticky top-0 z-10 bg-background border rounded-lg p-3 shadow-sm space-y-3">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Rechercher un ticket, client..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full h-9 pl-9 pr-4 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+          {/* Search + mobile filter toggle */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Rechercher un ticket, client..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full h-9 pl-9 pr-4 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="md:hidden flex items-center gap-1.5 shrink-0"
+              onClick={() => setFiltersOpen(o => !o)}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Filtres
+              {activeFilterCount > 0 && (
+                <span className="bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center leading-none">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
           </div>
 
-          {/* Filters row */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Mobile collapsible filters */}
+          {filtersOpen && (
+            <div className="md:hidden grid grid-cols-2 gap-2">
+              <MultiSelect
+                options={STATUS_OPTIONS}
+                value={statuses}
+                onChange={setStatuses}
+                placeholder="Statut"
+              />
+              <MultiSelect
+                options={PRIORITY_OPTIONS}
+                value={priorities}
+                onChange={setPriorities}
+                placeholder="Priorite"
+              />
+              <select
+                value={categoryId}
+                onChange={e => setCategoryId(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              >
+                <option value="">Toutes les categories</option>
+                {categories?.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {can('tickets.assign') && (
+                <select
+                  value={assignedToId}
+                  onChange={e => setAssignedToId(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+                >
+                  <option value="">Tous les agents</option>
+                  {agents?.map(a => (
+                    <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
+                  ))}
+                </select>
+              )}
+              <select
+                value={clubId}
+                onChange={e => setClubId(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              >
+                <option value="">Club / Ville</option>
+                {clubs?.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <select
+                value={organisationId}
+                onChange={e => setOrganisationId(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              >
+                <option value="">Organisation</option>
+                {organisations?.map(o => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              />
+              <input
+                type="date"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              />
+              {isNonDefault && (
+                <button
+                  onClick={resetFilters}
+                  className="col-span-2 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reinitialiser les filtres
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Desktop filters row */}
+          <div className="hidden md:flex flex-wrap items-center gap-2">
             <MultiSelect
               options={STATUS_OPTIONS}
               value={statuses}
@@ -699,18 +824,18 @@ export function TicketListPage() {
           </div>
         ) : (
           <>
-            <div className="rounded-lg border overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="rounded-lg border overflow-x-auto">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead className="bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <tr>
                     <th className="px-4 py-3 text-left">#</th>
                     <th className="px-4 py-3 text-left">Client</th>
                     <th className="px-4 py-3 text-left">Titre</th>
-                    <th className="px-4 py-3 text-left">Categorie</th>
+                    <th className="px-4 py-3 text-left hidden xl:table-cell">Categorie</th>
                     <th className="px-4 py-3 text-left">Priorite</th>
                     <th className="px-4 py-3 text-left">Statut</th>
-                    <th className="px-4 py-3 text-left">Assigne</th>
-                    <th className="px-4 py-3 text-left">Cree le</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">Assigne</th>
+                    <th className="px-4 py-3 text-left hidden md:table-cell">Cree le</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -748,7 +873,7 @@ export function TicketListPage() {
                           {ticket.title.length > 60 ? ticket.title.slice(0, 60) + '...' : ticket.title}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 hidden xl:table-cell">
                         {ticket.category ? (
                           <CategoryBadge name={ticket.category.name} color={ticket.category.color} />
                         ) : (
@@ -761,7 +886,7 @@ export function TicketListPage() {
                       <td className="px-4 py-3">
                         <StatusBadge status={ticket.status} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 hidden lg:table-cell">
                         {ticket.assignedTo ? (
                           <div className="flex items-center gap-1.5">
                             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs font-medium">
@@ -775,7 +900,7 @@ export function TicketListPage() {
                           <span className="text-muted-foreground text-xs">Non assigne</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="text-xs cursor-default">{relativeTime(ticket.createdAt)}</span>
