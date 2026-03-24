@@ -619,6 +619,9 @@ export function TicketDetailPage() {
   const [closingNote, setClosingNote] = useState('');
   const [closingLoading, setClosingLoading] = useState(false);
   const [materialDetail, setMaterialDetail] = useState('');
+  const [pendingNoteOpen, setPendingNoteOpen] = useState(false);
+  const [pendingNote, setPendingNote] = useState('');
+  const [pendingLoading, setPendingLoading] = useState(false);
   const { data: ticket, isLoading, error } = useQuery<Ticket>({
     queryKey: ['ticket', id],
     queryFn: async () => (await api.get(`/tickets/${id}`)).data?.data,
@@ -717,6 +720,22 @@ export function TicketDetailPage() {
       setClosingLoading(false);
     }
   }, [closingNote, id, invalidate]);
+
+  const handlePendingNote = useCallback(async () => {
+    if (!pendingNote.trim()) return;
+    setPendingLoading(true);
+    try {
+      await api.patch(`/tickets/${id}/status`, { status: 'PENDING', pendingNote: pendingNote.trim() });
+      invalidate();
+      toast.success('Ticket mis en attente');
+      setPendingNoteOpen(false);
+      setPendingNote('');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Erreur lors de la mise en attente');
+    } finally {
+      setPendingLoading(false);
+    }
+  }, [pendingNote, id, invalidate]);
 
   if (isLoading) {
     return (
@@ -839,7 +858,10 @@ export function TicketDetailPage() {
                   if (e.target.value === 'CLOSED') {
                     setClosingNote('');
                     setClosingNoteOpen(true);
-                    // Reset select to current status (dialog handles it)
+                    e.target.value = ticket.status;
+                  } else if (e.target.value === 'PENDING') {
+                    setPendingNote('');
+                    setPendingNoteOpen(true);
                     e.target.value = ticket.status;
                   } else {
                     updateStatus(e.target.value);
@@ -1122,6 +1144,41 @@ export function TicketDetailPage() {
               disabled={!closingNote.trim() || closingLoading}
             >
               {closingLoading ? 'Fermeture...' : 'Confirmer la fermeture'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pending note dialog */}
+      <Dialog open={pendingNoteOpen} onOpenChange={open => { if (!open) { setPendingNoteOpen(false); setPendingNote(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mise en attente du ticket</DialogTitle>
+            <DialogDescription>
+              Veuillez indiquer le motif de mise en attente avant de continuer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Motif <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              value={pendingNote}
+              onChange={e => setPendingNote(e.target.value)}
+              placeholder="Décrivez la raison de la mise en attente..."
+              rows={4}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPendingNoteOpen(false); setPendingNote(''); }}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handlePendingNote}
+              disabled={!pendingNote.trim() || pendingLoading}
+            >
+              {pendingLoading ? 'Mise en attente...' : 'Confirmer'}
             </Button>
           </DialogFooter>
         </DialogContent>
