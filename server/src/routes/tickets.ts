@@ -342,6 +342,7 @@ router.patch(
     const schema = z.object({
       status: z.nativeEnum(Status),
       closingNote: z.string().optional(),
+      pendingNote: z.string().optional(),
     });
     const parse = schema.safeParse(req.body);
     if (!parse.success) {
@@ -357,7 +358,7 @@ router.patch(
       return;
     }
 
-    const { status, closingNote } = parse.data;
+    const { status, closingNote, pendingNote } = parse.data;
 
     // Closing note is mandatory when transitioning to CLOSED
     if (status === 'CLOSED' && (!closingNote || !closingNote.trim())) {
@@ -365,6 +366,10 @@ router.patch(
       return;
     }
 
+    if (status === 'PENDING' && (!pendingNote || !pendingNote.trim())) {
+      res.status(400).json({ error: 'Un motif de mise en attente est obligatoire' });
+      return;
+    }
     const extra: any = {};
     if (status === 'CLOSED') {
       if (!existing.resolvedAt) extra.resolvedAt = new Date();
@@ -398,6 +403,28 @@ router.patch(
         newValue: status,
       },
     });
+
+    if (status === 'CLOSED' && closingNote) {
+      await prisma.comment.create({
+        data: {
+          ticketId: existing.id,
+          authorId: req.user!.id,
+          content: closingNote.trim(),
+          isInternal: true,
+        },
+      });
+    }
+
+    if (status === 'PENDING' && pendingNote) {
+      await prisma.comment.create({
+        data: {
+          ticketId: existing.id,
+          authorId: req.user!.id,
+          content: pendingNote.trim(),
+          isInternal: true,
+        },
+      });
+    }
 
     res.json({ data: ticket });
   }
