@@ -128,10 +128,10 @@ export function AdminPolesPage() {
     try {
       if (editTarget) {
         await api.put(`/admin/poles/${editTarget.id}`, form);
-        toast.success('Pole mis a jour');
+        toast.success('Pôle mis à jour');
       } else {
         await api.post('/admin/poles', form);
-        toast.success('Pole cree');
+        toast.success('Pôle créé');
       }
       queryClient.invalidateQueries({ queryKey: ['admin-poles'] });
       setModalOpen(false);
@@ -145,7 +145,7 @@ export function AdminPolesPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/poles/${deleteTarget.id}`);
-      toast.success('Pole supprime');
+      toast.success('Pôle supprimé');
       queryClient.invalidateQueries({ queryKey: ['admin-poles'] });
     } catch (err: any) {
       toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
@@ -155,9 +155,9 @@ export function AdminPolesPage() {
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Poles</h1>
+        <h1 className="text-2xl font-bold">Pôles</h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />Nouveau pole
+          <Plus className="h-4 w-4 mr-2" />Nouveau pôle
         </Button>
       </div>
 
@@ -172,7 +172,7 @@ export function AdminPolesPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucun pole. Creez-en un pour commencer.
+                Aucun pôle. Créez-en un pour commencer.
               </p>
             )}
           </div>
@@ -182,14 +182,14 @@ export function AdminPolesPage() {
       <Dialog open={modalOpen} onOpenChange={open => { if (!saving) setModalOpen(open); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editTarget ? 'Modifier le pole' : 'Nouveau pole'}</DialogTitle>
+            <DialogTitle>{editTarget ? 'Modifier le pôle' : 'Nouveau pôle'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
               <Label>Nom <span className="text-destructive">*</span></Label>
               <Input value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Nom du pole" className="mt-1" />
+                placeholder="Nom du pôle" className="mt-1" />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="pole-active" checked={form.isActive}
@@ -202,7 +202,7 @@ export function AdminPolesPage() {
               Annuler
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Creer')}
+              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -211,11 +211,11 @@ export function AdminPolesPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={open => !open && setDeleteTarget(null)}
-        title="Supprimer le pole"
+        title="Supprimer le pôle"
         description={
           deleteTarget?._count?.clients
-            ? `Ce pole est utilise par ${deleteTarget._count.clients} client(s) et ne peut pas etre supprime.`
-            : `Supprimer le pole "${deleteTarget?.name}" ? Cette action est irreversible.`
+            ? `Ce pôle est utilisé par ${deleteTarget._count.clients} client(s) et ne peut pas être supprimé.`
+            : `Supprimer le pôle "${deleteTarget?.name}" ? Cette action est irréversible.`
         }
         confirmLabel={deleteTarget?._count?.clients ? 'Fermer' : 'Supprimer'}
         variant={deleteTarget?._count?.clients ? 'default' : 'destructive'}

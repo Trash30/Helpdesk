@@ -128,10 +128,10 @@ export function AdminOrganisationsPage() {
     try {
       if (editTarget) {
         await api.put(`/admin/organisations/${editTarget.id}`, form);
-        toast.success('Organisation mise a jour');
+        toast.success('Organisation mise à jour');
       } else {
         await api.post('/admin/organisations', form);
-        toast.success('Organisation creee');
+        toast.success('Organisation créée');
       }
       queryClient.invalidateQueries({ queryKey: ['admin-organisations'] });
       setModalOpen(false);
@@ -145,7 +145,7 @@ export function AdminOrganisationsPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/organisations/${deleteTarget.id}`);
-      toast.success('Organisation supprimee');
+      toast.success('Organisation supprimée');
       queryClient.invalidateQueries({ queryKey: ['admin-organisations'] });
     } catch (err: any) {
       toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
@@ -172,7 +172,7 @@ export function AdminOrganisationsPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucune organisation. Creez-en une pour commencer.
+                Aucune organisation. Créez-en une pour commencer.
               </p>
             )}
           </div>
@@ -202,7 +202,7 @@ export function AdminOrganisationsPage() {
               Annuler
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Creer')}
+              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -214,8 +214,8 @@ export function AdminOrganisationsPage() {
         title="Supprimer l'organisation"
         description={
           deleteTarget?._count?.clients
-            ? `Cette organisation est utilisee par ${deleteTarget._count.clients} client(s) et ne peut pas etre supprimee.`
-            : `Supprimer l'organisation "${deleteTarget?.name}" ? Cette action est irreversible.`
+            ? `Cette organisation est utilisée par ${deleteTarget._count.clients} client(s) et ne peut pas être supprimée.`
+            : `Supprimer l'organisation "${deleteTarget?.name}" ? Cette action est irréversible.`
         }
         confirmLabel={deleteTarget?._count?.clients ? 'Fermer' : 'Supprimer'}
         variant={deleteTarget?._count?.clients ? 'default' : 'destructive'}
