@@ -585,8 +585,8 @@ export function TicketListPage() {
         {(staleDays || assignedToMe) && (
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-200">
             Filtres actifs depuis l'URL :
-            {staleDays && ` tickets sans mise a jour depuis ${staleDays} jours`}
-            {assignedToMe && ` - Assigne a moi`}
+            {staleDays && ` tickets sans mise à jour depuis ${staleDays} jours`}
+            {assignedToMe && ` - Assigné à moi`}
           </div>
         )}
 
@@ -633,14 +633,14 @@ export function TicketListPage() {
                 options={PRIORITY_OPTIONS}
                 value={priorities}
                 onChange={setPriorities}
-                placeholder="Priorite"
+                placeholder="Priorité"
               />
               <select
                 value={categoryId}
                 onChange={e => setCategoryId(e.target.value)}
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
               >
-                <option value="">Toutes les categories</option>
+                <option value="">Toutes les catégories</option>
                 {categories?.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -695,7 +695,7 @@ export function TicketListPage() {
                   className="col-span-2 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  Reinitialiser les filtres
+                  Réinitialiser les filtres
                 </button>
               )}
             </div>
@@ -713,7 +713,7 @@ export function TicketListPage() {
               options={PRIORITY_OPTIONS}
               value={priorities}
               onChange={setPriorities}
-              placeholder="Priorite"
+              placeholder="Priorité"
             />
 
             {/* Category select */}
@@ -722,7 +722,7 @@ export function TicketListPage() {
               onChange={e => setCategoryId(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
             >
-              <option value="">Toutes les categories</option>
+              <option value="">Toutes les catégories</option>
               {categories?.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -787,7 +787,7 @@ export function TicketListPage() {
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground ml-auto"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                Reinitialiser les filtres
+                Réinitialiser les filtres
               </button>
             )}
           </div>
@@ -803,13 +803,13 @@ export function TicketListPage() {
             <p className="text-muted-foreground text-sm mb-4">Une erreur est survenue lors du chargement.</p>
             <Button variant="outline" onClick={() => refetch()}>
               <RotateCcw className="h-4 w-4 mr-2" />
-              Reessayer
+              Réessayer
             </Button>
           </div>
         ) : !data || displayedTickets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center border rounded-lg">
             <TicketIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-1">Aucun ticket trouve</h3>
+            <h3 className="text-lg font-semibold mb-1">Aucun ticket trouvé</h3>
             <p className="text-muted-foreground text-sm mb-4">
               {hasFilters
                 ? 'Essayez de modifier vos filtres de recherche.'
@@ -818,7 +818,7 @@ export function TicketListPage() {
             {can('tickets.create') && !hasFilters && (
               <Button onClick={() => navigate('/tickets/new')}>
                 <Plus className="h-4 w-4 mr-2" />
-                Creer le premier ticket
+                Créer le premier ticket
               </Button>
             )}
           </div>
@@ -831,11 +831,11 @@ export function TicketListPage() {
                     <th className="px-4 py-3 text-left">#</th>
                     <th className="px-4 py-3 text-left">Client</th>
                     <th className="px-4 py-3 text-left">Titre</th>
-                    <th className="px-4 py-3 text-left hidden xl:table-cell">Categorie</th>
-                    <th className="px-4 py-3 text-left">Priorite</th>
+                    <th className="px-4 py-3 text-left hidden xl:table-cell">Catégorie</th>
+                    <th className="px-4 py-3 text-left">Priorité</th>
                     <th className="px-4 py-3 text-left">Statut</th>
-                    <th className="px-4 py-3 text-left hidden lg:table-cell">Assigne</th>
-                    <th className="px-4 py-3 text-left hidden md:table-cell">Cree le</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">Assigné</th>
+                    <th className="px-4 py-3 text-left hidden md:table-cell">Créé le</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -897,7 +897,7 @@ export function TicketListPage() {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-xs">Non assigne</span>
+                          <span className="text-muted-foreground text-xs">Non assigné</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">

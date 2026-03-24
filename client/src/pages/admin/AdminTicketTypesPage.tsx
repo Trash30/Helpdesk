@@ -128,10 +128,10 @@ export function AdminTicketTypesPage() {
     try {
       if (editTarget) {
         await api.put(`/admin/ticket-types/${editTarget.id}`, form);
-        toast.success('Type de demande mis a jour');
+        toast.success('Type de demande mis à jour');
       } else {
         await api.post('/admin/ticket-types', form);
-        toast.success('Type de demande cree');
+        toast.success('Type de demande créé');
       }
       queryClient.invalidateQueries({ queryKey: ['admin-ticket-types'] });
       setModalOpen(false);
@@ -145,7 +145,7 @@ export function AdminTicketTypesPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/ticket-types/${deleteTarget.id}`);
-      toast.success('Type de demande supprime');
+      toast.success('Type de demande supprimé');
       queryClient.invalidateQueries({ queryKey: ['admin-ticket-types'] });
     } catch (err: any) {
       toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
@@ -172,7 +172,7 @@ export function AdminTicketTypesPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucun type de demande. Creez-en un pour commencer.
+                Aucun type de demande. Créez-en un pour commencer.
               </p>
             )}
           </div>
@@ -202,7 +202,7 @@ export function AdminTicketTypesPage() {
               Annuler
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Creer')}
+              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -214,8 +214,8 @@ export function AdminTicketTypesPage() {
         title="Supprimer le type de demande"
         description={
           deleteTarget?._count?.tickets
-            ? `Ce type est utilise par ${deleteTarget._count.tickets} ticket(s) et ne peut pas etre supprime.`
-            : `Supprimer le type "${deleteTarget?.name}" ? Cette action est irreversible.`
+            ? `Ce type est utilisé par ${deleteTarget._count.tickets} ticket(s) et ne peut pas être supprimé.`
+            : `Supprimer le type "${deleteTarget?.name}" ? Cette action est irréversible.`
         }
         confirmLabel={deleteTarget?._count?.tickets ? 'Fermer' : 'Supprimer'}
         variant={deleteTarget?._count?.tickets ? 'default' : 'destructive'}
