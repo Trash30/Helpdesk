@@ -81,17 +81,6 @@ function KpiSkeleton() {
   );
 }
 
-// ─── Donut center label ───────────────────────────────────────────────────────
-
-function DonutCenterLabel({ cx, cy, total }: { cx?: number; cy?: number; total: number }) {
-  return (
-    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central">
-      <tspan x={cx} dy="-0.3em" fontSize="22" fontWeight="700" fill="#111827">{total}</tspan>
-      <tspan x={cx} dy="1.4em" fontSize="11" fill="#6b7280">actifs</tspan>
-    </text>
-  );
-}
-
 // ─── Urgent tickets table ─────────────────────────────────────────────────────
 
 interface UrgentTicketsTableProps {
@@ -298,7 +287,7 @@ export function DashboardPage() {
                     >
                       <div className="mt-2 space-y-1">
                         {/* Progress bar */}
-                        <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all"
                             style={{ width: `${csatScore}%`, backgroundColor: csatColorVal }}
@@ -337,7 +326,7 @@ export function DashboardPage() {
               <Card
                 className={`cursor-pointer transition-colors hover:shadow-md ${
                   (stats.staleTickets ?? 0) > 0
-                    ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50'
                     : 'hover:bg-muted/40'
                 }`}
                 onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5')}
@@ -345,11 +334,11 @@ export function DashboardPage() {
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-muted-foreground font-medium">Tickets en attente de MAJ</p>
-                    <span className={`opacity-80 ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    <span className={`opacity-80 ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
                       <AlertTriangle size={20} />
                     </span>
                   </div>
-                  <p className={`text-3xl font-bold ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-700' : 'text-foreground'}`}>
+                  <p className={`text-3xl font-bold ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-700 dark:text-amber-200' : 'text-foreground'}`}>
                     {stats.staleTickets ?? 0}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Sans MAJ depuis &gt; 5 jours</p>
@@ -362,7 +351,7 @@ export function DashboardPage() {
               <Card
                 className={`cursor-pointer transition-colors hover:shadow-md ${
                   (stats.myStaleTickets ?? 0) > 0
-                    ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50'
                     : 'hover:bg-muted/40'
                 }`}
                 onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5&assignedToMe=true')}
@@ -370,11 +359,11 @@ export function DashboardPage() {
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-muted-foreground font-medium">Mes tickets en attente de MAJ</p>
-                    <span className={`opacity-80 ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    <span className={`opacity-80 ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
                       <Clock size={20} />
                     </span>
                   </div>
-                  <p className={`text-3xl font-bold ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-700' : 'text-foreground'}`}>
+                  <p className={`text-3xl font-bold ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-700 dark:text-amber-200' : 'text-foreground'}`}>
                     {stats.myStaleTickets ?? 0}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Mes tickets sans MAJ &gt; 5j</p>
@@ -456,11 +445,11 @@ export function DashboardPage() {
                     ))}
                   </Pie>
                   {/* Center label via custom component trick */}
-                  <text x="50%" y="47%" textAnchor="middle" dominantBaseline="central">
-                    <tspan fontSize="22" fontWeight="700" fill="#111827">{donutTotal}</tspan>
+                  <text x="50%" y="47%" textAnchor="middle" dominantBaseline="central" className="text-foreground">
+                    <tspan fontSize="22" fontWeight="700" fill="currentColor">{donutTotal}</tspan>
                   </text>
-                  <text x="50%" y="56%" textAnchor="middle" dominantBaseline="central">
-                    <tspan fontSize="11" fill="#6b7280">actifs</tspan>
+                  <text x="50%" y="56%" textAnchor="middle" dominantBaseline="central" className="text-muted-foreground">
+                    <tspan fontSize="11" fill="currentColor">actifs</tspan>
                   </text>
                   <RechartsTooltip
                     contentStyle={{ fontSize: 12, borderRadius: 6 }}

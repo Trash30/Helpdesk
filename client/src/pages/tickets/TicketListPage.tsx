@@ -52,8 +52,8 @@ const STATUS_LABELS: Record<string, string> = {
   OPEN: 'Ouvert',
   IN_PROGRESS: 'En cours',
   PENDING: 'En attente',
-  CLOSED: 'Ferme',
-  RESOLVED: 'Resolu',
+  CLOSED: 'Fermé',
+  RESOLVED: 'Résolu',
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -95,7 +95,7 @@ function MultiSelect({ options, value, onChange, placeholder }: MultiSelectProps
         className="flex h-9 min-w-[150px] items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-sm"
       >
         <span className="text-muted-foreground truncate">
-          {value.length === 0 ? placeholder : `${value.length} selectionne${value.length > 1 ? 's' : ''}`}
+          {value.length === 0 ? placeholder : `${value.length} sélectionné${value.length > 1 ? 's' : ''}`}
         </span>
         <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
       </button>
@@ -284,7 +284,7 @@ const STATUS_OPTIONS = [
   { value: 'OPEN', label: 'Ouvert' },
   { value: 'IN_PROGRESS', label: 'En cours' },
   { value: 'PENDING', label: 'En attente' },
-  { value: 'CLOSED', label: 'Ferme' },
+  { value: 'CLOSED', label: 'Fermé' },
 ];
 
 const PRIORITY_OPTIONS = [
@@ -471,7 +471,7 @@ export function TicketListPage() {
       const res = await api.get(`/tickets?${params.toString()}`);
       const tickets: Ticket[] = res.data?.data ?? [];
 
-      const header = ['#', 'Client', 'Titre', 'Categorie', 'Priorite', 'Statut', 'Assigne a', 'Cree le', 'Derniere MAJ'];
+      const header = ['#', 'Client', 'Titre', 'Catégorie', 'Priorité', 'Statut', 'Assigné à', 'Créé le', 'Dernière MAJ'];
       const rows = tickets.map(t => [
         t.ticketNumber,
         t.client ? `${t.client.firstName} ${t.client.lastName}` : '',
@@ -498,7 +498,7 @@ export function TicketListPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('Export CSV termine');
+      toast.success('Export CSV terminé');
     } catch {
       toast.error('Erreur lors de l\'export CSV');
     }
@@ -528,11 +528,11 @@ export function TicketListPage() {
       if (truncated) {
         doc.setFontSize(9);
         doc.setTextColor(200, 0, 0);
-        doc.text('Attention : export limite a 1000 lignes.', 14, 25);
+        doc.text('Attention : export limité à 1000 lignes.', 14, 25);
         doc.setTextColor(0, 0, 0);
       }
 
-      const head = [['#', 'Client', 'Titre', 'Categorie', 'Priorite', 'Statut', 'Assigne a', 'Cree le', 'Derniere MAJ']];
+      const head = [['#', 'Client', 'Titre', 'Catégorie', 'Priorité', 'Statut', 'Assigné à', 'Créé le', 'Dernière MAJ']];
       const body = tickets.map(t => [
         t.ticketNumber,
         t.client ? `${t.client.firstName} ${t.client.lastName}` : '',
@@ -555,9 +555,9 @@ export function TicketListPage() {
 
       doc.save(`tickets_${new Date().toISOString().slice(0, 10)}.pdf`);
       if (truncated) {
-        toast.success('Export PDF termine (limite a 1000 lignes)');
+        toast.success('Export PDF terminé (limité à 1000 lignes)');
       } else {
-        toast.success('Export PDF termine');
+        toast.success('Export PDF terminé');
       }
     } catch {
       toast.error('Erreur lors de l\'export PDF');
@@ -583,7 +583,7 @@ export function TicketListPage() {
 
         {/* Stale tickets indicator */}
         {(staleDays || assignedToMe) && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-200">
             Filtres actifs depuis l'URL :
             {staleDays && ` tickets sans mise a jour depuis ${staleDays} jours`}
             {assignedToMe && ` - Assigne a moi`}
