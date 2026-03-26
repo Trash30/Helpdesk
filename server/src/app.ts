@@ -88,7 +88,19 @@ app.use((_req, res) => {
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('[ERROR]', err);
   const status = err.status || err.statusCode || 500;
-  const message = err.message || 'Erreur interne du serveur';
+
+  // En production ou pour les erreurs 5xx, ne pas exposer les détails internes
+  const isPrismaError = err?.constructor?.name?.startsWith('PrismaClient');
+  const isServerError = status >= 500;
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  let message: string;
+  if (isPrismaError || (isServerError && isProduction)) {
+    message = 'Erreur interne du serveur';
+  } else {
+    message = err.message || 'Erreur interne du serveur';
+  }
+
   res.status(status).json({ error: message });
 });
 
