@@ -66,6 +66,8 @@ interface ClientDetail {
   createdAt: string;
   roleId: string | null;
   role: { id: string; name: string; color: string } | null;
+  organisation: { id: string; name: string } | null;
+  club: { id: string; name: string } | null;
   tickets: TicketRow[];
   _count: {
     tickets: number;
@@ -236,6 +238,14 @@ export function ClientDetailPage() {
               ? <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-primary hover:underline"><Mail className="h-3.5 w-3.5" />{client.email}</a>
               : <p className="text-muted-foreground">—</p>
             }
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Organisation</p>
+            <p>{client.organisation?.name || '—'}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Club / Ville</p>
+            <p>{client.club?.name || '—'}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Enquêtes</p>

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Search, Plus, UserPlus, BellOff, Eye, Pencil, Ticket,
-  ChevronLeft, ChevronRight, ChevronDown,
+  ChevronLeft, ChevronRight, ChevronDown, RotateCcw,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useClientPanel } from '@/contexts/ClientPanelContext';
@@ -219,7 +219,7 @@ export function ClientListPage() {
   // Reset page on filter change
   useEffect(() => { setPage(1); }, [debouncedSearch, roleIds, openOnly]);
 
-  const { data, isLoading } = useQuery<ClientsResponse>({
+  const { data, isLoading, isError, refetch } = useQuery<ClientsResponse>({
     queryKey: ['clients', debouncedSearch, roleIds, openOnly, page],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -288,6 +288,16 @@ export function ClientListPage() {
         {/* Table */}
         {isLoading ? (
           <TableSkeleton />
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center border rounded-lg">
+            <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-1">Impossible de charger les clients</h3>
+            <p className="text-muted-foreground text-sm mb-4">Une erreur est survenue lors du chargement.</p>
+            <Button variant="outline" onClick={() => refetch()}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reessayer
+            </Button>
+          </div>
         ) : !data || data.data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center border rounded-lg">
             <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
@@ -306,19 +316,19 @@ export function ClientListPage() {
           </div>
         ) : (
           <>
-            <div className="rounded-lg border overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="rounded-lg border overflow-x-auto">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead className="bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <tr>
                     <th className="px-4 py-3 text-left">Nom</th>
-                    <th className="px-4 py-3 text-left">Société</th>
+                    <th className="px-4 py-3 text-left hidden xl:table-cell">Société</th>
                     <th className="px-4 py-3 text-left">Téléphone</th>
-                    <th className="px-4 py-3 text-left">Email</th>
+                    <th className="px-4 py-3 text-left hidden xl:table-cell">Email</th>
                     <th className="px-4 py-3 text-left">Rôle</th>
-                    <th className="px-4 py-3 text-center">Enquêtes</th>
+                    <th className="px-4 py-3 text-center hidden lg:table-cell">Enquêtes</th>
                     <th className="px-4 py-3 text-center">Ouverts</th>
-                    <th className="px-4 py-3 text-center">Total</th>
-                    <th className="px-4 py-3 text-left">Dernière activité</th>
+                    <th className="px-4 py-3 text-center hidden lg:table-cell">Total</th>
+                    <th className="px-4 py-3 text-left hidden md:table-cell">Dernière activité</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -341,7 +351,7 @@ export function ClientListPage() {
                           </span>
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell">
                         {client.company || '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -350,7 +360,7 @@ export function ClientListPage() {
                           : <span className="text-muted-foreground">—</span>
                         }
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 hidden xl:table-cell">
                         {client.email
                           ? <a href={`mailto:${client.email}`} className="text-foreground hover:underline truncate block max-w-[160px]">{client.email}</a>
                           : <span className="text-muted-foreground">—</span>
@@ -368,7 +378,7 @@ export function ClientListPage() {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-center hidden lg:table-cell">
                         {!client.isSurveyable ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -390,10 +400,10 @@ export function ClientListPage() {
                           {client.openTicketsCount ?? 0}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center text-muted-foreground">
+                      <td className="px-4 py-3 text-center text-muted-foreground hidden lg:table-cell">
                         {client._count.tickets}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                      <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell">
                         {relativeTime(client.lastActivityAt ?? null)}
                       </td>
                       <td className="px-4 py-3">
@@ -403,7 +413,7 @@ export function ClientListPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 w-7 p-0"
+                                className="h-8 w-8 p-0"
                                 onClick={() => navigate(`/clients/${client.id}`)}
                               >
                                 <Eye className="h-3.5 w-3.5" />
@@ -417,7 +427,7 @@ export function ClientListPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 w-7 p-0"
+                                  className="h-8 w-8 p-0"
                                   onClick={() => openClientPanel(client.id)}
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
@@ -432,7 +442,7 @@ export function ClientListPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 w-7 p-0"
+                                  className="h-8 w-8 p-0"
                                   onClick={() => navigate(`/tickets/new?clientId=${client.id}`)}
                                 >
                                   <Ticket className="h-3.5 w-3.5" />

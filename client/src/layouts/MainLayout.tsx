@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Ticket, Users, Settings, Tag, UserCheck,
   Shield, Users2, BarChart2, Plus, Search, LogOut, User,
-  ChevronRight, Moon, Sun, Menu,
+  ChevronRight, Moon, Sun, Menu, Building2, MapPin, Landmark, FileType,
 } from 'lucide-react';
 import { useBranding } from '@/hooks/useBranding';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -13,6 +13,14 @@ import { getInitials, timeAgo } from '@/lib/utils';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -106,12 +114,11 @@ function GlobalSearch() {
     OPEN: 'bg-blue-100 text-blue-700',
     IN_PROGRESS: 'bg-orange-100 text-orange-700',
     PENDING: 'bg-pink-100 text-pink-700',
-    RESOLVED: 'bg-green-100 text-green-700',
     CLOSED: 'bg-gray-100 text-gray-600',
   };
 
   return (
-    <div ref={containerRef} className="relative w-72">
+    <div ref={containerRef} className="relative w-full sm:w-72">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
@@ -121,12 +128,18 @@ function GlobalSearch() {
           onChange={e => setQuery(e.target.value)}
           onFocus={() => query.length > 0 && setOpen(true)}
           onKeyDown={onKeyDown}
+          role="combobox"
+          aria-expanded={open}
+          aria-controls="global-search-results"
+          aria-autocomplete="list"
+          aria-label="Rechercher un ticket ou un client"
+          aria-activedescendant={activeIndex >= 0 ? `search-result-${activeIndex}` : undefined}
           className="w-full pl-9 pr-3 h-9 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute top-full mt-1 w-96 max-h-96 overflow-y-auto rounded-md border bg-popover shadow-lg z-50">
+        <div id="global-search-results" role="listbox" className="absolute top-full mt-1 w-[calc(100vw-2rem)] sm:w-96 max-h-96 overflow-y-auto rounded-md border bg-popover shadow-lg z-50">
           {tickets.length > 0 && (
             <div>
               <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b">Tickets</p>
@@ -135,6 +148,9 @@ function GlobalSearch() {
                 return (
                   <button
                     key={t.id}
+                    id={`search-result-${idx}`}
+                    role="option"
+                    aria-selected={activeIndex === idx}
                     className={`w-full text-left px-3 py-2.5 hover:bg-accent flex items-start gap-3 ${activeIndex === idx ? 'bg-accent' : ''}`}
                     onClick={() => selectResult({ type: 'ticket', item: t })}
                   >
@@ -154,6 +170,9 @@ function GlobalSearch() {
                 return (
                   <button
                     key={c.id}
+                    id={`search-result-${idx}`}
+                    role="option"
+                    aria-selected={activeIndex === idx}
                     className={`w-full text-left px-3 py-2.5 hover:bg-accent flex items-center gap-3 ${activeIndex === idx ? 'bg-accent' : ''}`}
                     onClick={() => selectResult({ type: 'client', item: c })}
                   >
@@ -191,8 +210,8 @@ function NavItem({ to, icon, label, badge, collapsed, onNavigate }: NavItemProps
             className={({ isActive }) =>
               `flex w-full items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-foreground/70 hover:bg-accent hover:text-foreground'
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-foreground/70 hover:bg-muted hover:text-foreground'
               } ${collapsed ? 'justify-center' : ''}`
             }
           >
@@ -218,8 +237,6 @@ export function MainLayout() {
   const { dark, toggle } = useDarkMode();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Fetch open ticket count for sidebar badge
@@ -228,16 +245,6 @@ export function MainLayout() {
     queryFn: () => api.get('/dashboard/stats').then(r => r.data.data),
     refetchInterval: 60000,
   });
-
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, []);
 
   const handleLogout = async () => {
     try { await api.post('/auth/logout'); } catch {}
@@ -313,6 +320,18 @@ export function MainLayout() {
               {can('surveys.view') && (
                 <NavItem to="/admin/surveys" icon={<BarChart2 size={18} />} label="Enquêtes" collapsed={collapsed} onNavigate={closeMobile} />
               )}
+              {can('admin.clientRoles') && (
+                <NavItem to="/admin/organisations" icon={<Building2 size={18} />} label="Organisations" collapsed={collapsed} onNavigate={closeMobile} />
+              )}
+              {can('admin.clientRoles') && (
+                <NavItem to="/admin/clubs" icon={<MapPin size={18} />} label="Clubs / Villes" collapsed={collapsed} onNavigate={closeMobile} />
+              )}
+              {can('admin.clientRoles') && (
+                <NavItem to="/admin/poles" icon={<Landmark size={18} />} label="Pôles" collapsed={collapsed} onNavigate={closeMobile} />
+              )}
+              {can('admin.clientRoles') && (
+                <NavItem to="/admin/ticket-types" icon={<FileType size={18} />} label="Types de demande" collapsed={collapsed} onNavigate={closeMobile} />
+              )}
             </>
           )}
         </nav>
@@ -333,10 +352,13 @@ export function MainLayout() {
           <button
             className="md:hidden flex items-center justify-center w-9 h-9 rounded-md hover:bg-accent"
             onClick={() => setMobileOpen(o => !o)}
+            aria-label="Ouvrir le menu de navigation"
           >
             <Menu size={18} />
           </button>
-          <GlobalSearch />
+          <div className="flex-1 sm:flex-none">
+            <GlobalSearch />
+          </div>
 
           <div className="ml-auto flex items-center gap-2">
             <button
@@ -356,41 +378,33 @@ export function MainLayout() {
             )}
 
             {/* Avatar + user menu */}
-            <div ref={userMenuRef} className="relative">
-              <button
-                onClick={() => setUserMenuOpen(o => !o)}
-                className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                {user ? getInitials(user.firstName, user.lastName) : '?'}
-              </button>
-
-              {userMenuOpen && (
-                <div className="absolute right-0 top-full mt-1 w-44 rounded-md border bg-popover shadow-lg z-50 py-1">
-                  <div className="px-3 py-2 border-b">
-                    <p className="text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                  </div>
-                  <Link
-                    to="/profile"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent"
-                  >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">
+                  {user ? getInitials(user.firstName, user.lastName) : '?'}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel className="font-normal">
+                  <p className="text-sm font-medium truncate">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center gap-2 cursor-pointer">
                     <User size={14} /> Mon profil
                   </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent w-full text-left text-destructive"
-                  >
-                    <LogOut size={14} /> Déconnexion
-                  </button>
-                </div>
-              )}
-            </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer">
+                  <LogOut size={14} /> Déconnexion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 bg-muted/40">
           <Outlet />
         </main>
       </div>

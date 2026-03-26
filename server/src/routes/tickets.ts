@@ -30,6 +30,8 @@ const createTicketSchema = z.object({
   categoryId: z.string().uuid().optional().nullable(),
   priority: z.nativeEnum(Priority).optional(),
   assignedToId: z.string().uuid().optional().nullable(),
+  typeId: z.string().uuid().optional().nullable(),
+  poleId: z.string().uuid().optional().nullable(),
 });
 
 const updateTicketSchema = z.object({
@@ -38,6 +40,8 @@ const updateTicketSchema = z.object({
   categoryId: z.string().uuid().optional().nullable(),
   priority: z.nativeEnum(Priority).optional(),
   assignedToId: z.string().uuid().optional().nullable(),
+  typeId: z.string().uuid().optional().nullable(),
+  poleId: z.string().uuid().optional().nullable(),
 });
 
 // ─── GET /api/tickets ─────────────────────────────────────────────────────────
@@ -54,6 +58,9 @@ router.get(
       dateFrom: z.string().optional(),
       dateTo: z.string().optional(),
       search: z.string().optional(),
+      organisationId: z.string().optional(),
+      clubId: z.string().optional(),
+      typeId: z.string().optional(),
       page: z.coerce.number().int().min(1).default(1),
       limit: z.coerce.number().int().min(1).max(100).default(25),
     });
@@ -64,7 +71,7 @@ router.get(
       return;
     }
 
-    const { status, priority, categoryId, assignedToId, dateFrom, dateTo, search, page, limit } =
+    const { status, priority, categoryId, assignedToId, dateFrom, dateTo, search, organisationId, clubId, typeId, page, limit } =
       parse.data;
 
     const where: any = { deletedAt: null };
@@ -87,6 +94,9 @@ router.get(
     }
 
     if (categoryId) where.categoryId = categoryId;
+    if (organisationId) where.client = { ...where.client, organisationId };
+    if (clubId) where.client = { ...where.client, clubId };
+    if (typeId) where.typeId = typeId;
 
     if (dateFrom || dateTo) {
       where.createdAt = {};
@@ -118,7 +128,9 @@ router.get(
         take: limit,
         orderBy: { createdAt: 'desc' },
         include: {
-          client: { include: { role: true } },
+          client: { include: { role: true, organisation: true, club: true } },
+        pole: true,
+          type: true,
           assignedTo: { select: userSelect },
           category: true,
           createdBy: { select: userSelect },
@@ -148,7 +160,7 @@ router.post(
       return;
     }
 
-    const { title, description, clientId, categoryId, priority, assignedToId } = parse.data;
+    const { title, description, clientId, categoryId, priority, assignedToId, typeId, poleId } = parse.data;
 
     // Verify client exists
     const client = await prisma.client.findUnique({ where: { id: clientId } });
@@ -168,10 +180,14 @@ router.post(
         categoryId: categoryId ?? null,
         priority: priority ?? 'MEDIUM',
         assignedToId: assignedToId ?? null,
+        poleId: poleId ?? null,
+        typeId: typeId ?? null,
         createdById: req.user!.id,
       },
       include: {
-        client: { include: { role: true } },
+        client: { include: { role: true, organisation: true, club: true } },
+        pole: true,
+        type: true,
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -199,7 +215,9 @@ router.get(
     const ticket = await prisma.ticket.findFirst({
       where: { id: req.params.id, deletedAt: null },
       include: {
-        client: { include: { role: true } },
+        client: { include: { role: true, organisation: true, club: true } },
+        pole: true,
+        type: true,
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -269,6 +287,8 @@ router.put(
       categoryId: 'Catégorie',
       priority: 'Priorité',
       assignedToId: 'Assigné',
+      poleId: 'Pôle',
+      typeId: 'Type de ticket',
     };
 
     for (const [key, newVal] of Object.entries(updates)) {
@@ -288,7 +308,9 @@ router.put(
       where: { id: req.params.id },
       data: updates,
       include: {
-        client: { include: { role: true } },
+        client: { include: { role: true, organisation: true, club: true } },
+        pole: true,
+        type: true,
         assignedTo: { select: userSelect },
         category: true,
         createdBy: { select: userSelect },
@@ -317,7 +339,11 @@ router.patch(
       return;
     }
 
-    const schema = z.object({ status: z.nativeEnum(Status) });
+    const schema = z.object({
+      status: z.nativeEnum(Status),
+      closingNote: z.string().max(2000).optional(),
+      pendingNote: z.string().max(2000).optional(),
+    });
     const parse = schema.safeParse(req.body);
     if (!parse.success) {
       res.status(400).json({ error: 'Statut invalide' });
@@ -332,16 +358,41 @@ router.patch(
       return;
     }
 
-    const { status } = parse.data;
+    const { status, closingNote, pendingNote } = parse.data;
+
+    // Closing note is mandatory when transitioning to CLOSED
+    if (status === 'CLOSED' && (!closingNote || !closingNote.trim())) {
+      res.status(400).json({ error: 'Une note de fermeture est obligatoire' });
+      return;
+    }
+
+    if (status === 'PENDING' && (!pendingNote || !pendingNote.trim())) {
+      res.status(400).json({ error: 'Un motif de mise en attente est obligatoire' });
+      return;
+    }
     const extra: any = {};
-    if (status === 'CLOSED' && !existing.resolvedAt) extra.resolvedAt = new Date();
-    if (status === 'CLOSED') extra.closedAt = new Date();
+    if (status === 'CLOSED') {
+      if (!existing.resolvedAt) extra.resolvedAt = new Date();
+      extra.closedAt = new Date();
+    }
 
     const ticket = await prisma.ticket.update({
       where: { id: req.params.id },
       data: { status, ...extra },
       include: { client: true, assignedTo: { select: userSelect }, category: true },
     });
+
+    // Create internal comment with closing note when closing
+    if (status === 'CLOSED' && closingNote) {
+      await prisma.comment.create({
+        data: {
+          ticketId: existing.id,
+          authorId: req.user!.id,
+          content: closingNote.trim(),
+          isInternal: true,
+        },
+      });
+    }
 
     await prisma.activityLog.create({
       data: {
@@ -352,6 +403,17 @@ router.patch(
         newValue: status,
       },
     });
+
+    if (status === 'PENDING' && pendingNote) {
+      await prisma.comment.create({
+        data: {
+          ticketId: existing.id,
+          authorId: req.user!.id,
+          content: pendingNote.trim(),
+          isInternal: true,
+        },
+      });
+    }
 
     res.json({ data: ticket });
   }

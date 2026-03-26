@@ -15,6 +15,8 @@ const clientSchema = z.object({
   phone: z.string().optional().nullable(),
   company: z.string().optional().nullable(),
   roleId: z.string().uuid().optional().nullable(),
+  organisationId: z.string().uuid().optional().nullable(),
+  clubId: z.string().uuid().optional().nullable(),
   isSurveyable: z.boolean().optional(),
   notes: z.string().optional().nullable(),
 });
@@ -28,6 +30,8 @@ router.get(
     const querySchema = z.object({
       search: z.string().optional(),
       roleId: z.string().optional(),
+      organisationId: z.string().optional(),
+      clubId: z.string().optional(),
       hasOpenTickets: z.coerce.boolean().optional(),
       page: z.coerce.number().int().min(1).default(1),
       limit: z.coerce.number().int().min(1).max(100).default(25),
@@ -39,7 +43,7 @@ router.get(
       return;
     }
 
-    const { search, roleId, hasOpenTickets, page, limit } = parse.data;
+    const { search, roleId, organisationId, clubId, hasOpenTickets, page, limit } = parse.data;
 
     const where: any = {};
 
@@ -54,6 +58,8 @@ router.get(
     }
 
     if (roleId) where.roleId = roleId;
+    if (organisationId) where.organisationId = organisationId;
+    if (clubId) where.clubId = clubId;
 
     if (hasOpenTickets) {
       where.tickets = {
@@ -70,6 +76,8 @@ router.get(
         orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
         include: {
           role: true,
+          organisation: true,
+          club: true,
           _count: { select: { tickets: true } },
         },
       }),
@@ -107,10 +115,12 @@ router.post(
         phone: data.phone ?? null,
         company: data.company ?? null,
         roleId: data.roleId ?? null,
+        organisationId: data.organisationId ?? null,
+        clubId: data.clubId ?? null,
         isSurveyable: data.isSurveyable ?? true,
         notes: data.notes ?? null,
       },
-      include: { role: true },
+      include: { role: true, organisation: true, club: true },
     });
 
     res.status(201).json({ data: client });
@@ -127,6 +137,8 @@ router.get(
       where: { id: req.params.id },
       include: {
         role: true,
+        organisation: true,
+        club: true,
         tickets: {
           where: { deletedAt: null },
           include: { category: true, assignedTo: true },
@@ -205,10 +217,12 @@ router.put(
         phone: data.phone ?? null,
         company: data.company ?? null,
         roleId: data.roleId ?? null,
+        organisationId: data.organisationId ?? null,
+        clubId: data.clubId ?? null,
         isSurveyable: data.isSurveyable ?? existing.isSurveyable,
         notes: data.notes ?? null,
       },
-      include: { role: true },
+      include: { role: true, organisation: true, club: true },
     });
 
     res.json({ data: client });
