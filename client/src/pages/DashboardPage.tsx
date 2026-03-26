@@ -11,6 +11,7 @@ import {
   ExternalLink, AlertTriangle,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuthStore } from '@/stores/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -196,6 +197,7 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
 export function DashboardPage() {
   const navigate = useNavigate();
   const { can } = usePermissions();
+  const user = useAuthStore((s) => s.user);
   const isAdmin = can('admin.access');
 
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -246,7 +248,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Tableau de bord</h1>
+      <h1 className="text-2xl font-bold">Bienvenue {user?.firstName}</h1>
 
       {/* ── ROW 1 — KPI cards ──────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
