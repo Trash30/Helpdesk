@@ -410,6 +410,11 @@ export function TicketListPage() {
     setPage(1);
   }, []);
 
+  // Reset clubId when organisationId changes
+  useEffect(() => {
+    setClubId('');
+  }, [organisationId]);
+
   // Reset page when filters change
   useEffect(() => { setPage(1); }, [debouncedSearch, statuses, priorities, categoryId, assignedToId, dateFrom, dateTo, clubId, organisationId]);
 
@@ -455,8 +460,8 @@ export function TicketListPage() {
   });
 
   const { data: clubs } = useQuery<{ id: string; name: string }[]>({
-    queryKey: ['clubs'],
-    queryFn: async () => (await api.get('/clubs')).data?.data ?? [],
+    queryKey: ['clubs', organisationId],
+    queryFn: async () => (await api.get(`/clubs${organisationId ? `?organisationId=${organisationId}` : ''}`)).data?.data ?? [],
   });
 
   const { data: organisations } = useQuery<{ id: string; name: string }[]>({
@@ -658,16 +663,6 @@ export function TicketListPage() {
                 </select>
               )}
               <select
-                value={clubId}
-                onChange={e => setClubId(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
-              >
-                <option value="">Club / Ville</option>
-                {clubs?.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              <select
                 value={organisationId}
                 onChange={e => setOrganisationId(e.target.value)}
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
@@ -675,6 +670,16 @@ export function TicketListPage() {
                 <option value="">Organisation</option>
                 {organisations?.map(o => (
                   <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+              <select
+                value={clubId}
+                onChange={e => setClubId(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              >
+                <option value="">Club / Ville</option>
+                {clubs?.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
               <input
@@ -742,18 +747,6 @@ export function TicketListPage() {
               </select>
             )}
 
-            {/* Club select */}
-            <select
-              value={clubId}
-              onChange={e => setClubId(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
-            >
-              <option value="">Club / Ville</option>
-              {clubs?.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-
             {/* Organisation select */}
             <select
               value={organisationId}
@@ -763,6 +756,18 @@ export function TicketListPage() {
               <option value="">Organisation</option>
               {organisations?.map(o => (
                 <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+
+            {/* Club select */}
+            <select
+              value={clubId}
+              onChange={e => setClubId(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+            >
+              <option value="">Club / Ville</option>
+              {clubs?.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
 
