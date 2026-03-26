@@ -172,6 +172,86 @@ async function main() {
 
   console.log('✅ Client roles created');
 
+  // ─── Client Organisations ────────────────────────────────────────────────
+
+  const orgParis = await prisma.clientOrganisation.upsert({
+    where: { name: 'Ligue de Paris' },
+    update: {},
+    create: { name: 'Ligue de Paris' },
+  });
+  const orgLyon = await prisma.clientOrganisation.upsert({
+    where: { name: 'Ligue de Lyon' },
+    update: {},
+    create: { name: 'Ligue de Lyon' },
+  });
+
+  console.log('✅ Client organisations created');
+
+  // ─── Client Clubs ──────────────────────────────────────────────────────
+
+  const clubParisNord = await prisma.clientClub.upsert({
+    where: { name_organisationId: { name: 'Club Paris Nord', organisationId: orgParis.id } },
+    update: {},
+    create: { name: 'Club Paris Nord', organisationId: orgParis.id },
+  });
+  const clubParisSud = await prisma.clientClub.upsert({
+    where: { name_organisationId: { name: 'Club Paris Sud', organisationId: orgParis.id } },
+    update: {},
+    create: { name: 'Club Paris Sud', organisationId: orgParis.id },
+  });
+  const clubLyonCentre = await prisma.clientClub.upsert({
+    where: { name_organisationId: { name: 'Club Lyon Centre', organisationId: orgLyon.id } },
+    update: {},
+    create: { name: 'Club Lyon Centre', organisationId: orgLyon.id },
+  });
+
+  console.log('✅ Client clubs created');
+
+  // ─── Client Poles ──────────────────────────────────────────────────────
+
+  const poleTechnique = await prisma.clientPole.upsert({
+    where: { name: 'Pôle Technique' },
+    update: {},
+    create: { name: 'Pôle Technique' },
+  });
+  const poleCommercial = await prisma.clientPole.upsert({
+    where: { name: 'Pôle Commercial' },
+    update: {},
+    create: { name: 'Pôle Commercial' },
+  });
+  const poleSupport = await prisma.clientPole.upsert({
+    where: { name: 'Pôle Support' },
+    update: {},
+    create: { name: 'Pôle Support' },
+  });
+
+  console.log('✅ Client poles created');
+
+  // ─── Ticket Types ──────────────────────────────────────────────────────
+
+  const typeIncident = await prisma.ticketType.upsert({
+    where: { name: 'Incident' },
+    update: {},
+    create: { name: 'Incident' },
+  });
+  const typeDemande = await prisma.ticketType.upsert({
+    where: { name: 'Demande' },
+    update: {},
+    create: { name: 'Demande' },
+  });
+  const typeReclamation = await prisma.ticketType.upsert({
+    where: { name: 'Réclamation' },
+    update: {},
+    create: { name: 'Réclamation' },
+  });
+  const typeConseil = await prisma.ticketType.upsert({
+    where: { name: 'Conseil' },
+    update: {},
+    create: { name: 'Conseil' },
+  });
+
+  console.log('✅ Ticket types created');
+
   // ─── Clients (10) ─────────────────────────────────────────────────────────
 
   const clients = await Promise.all([
@@ -233,17 +313,19 @@ async function main() {
 
   const agents = [agent1, agent2, agent3];
   const categories = [catMateriel, catLogiciel, catReseau, catAcces, catAutre];
+  const poles = [poleTechnique, poleCommercial, poleSupport];
+  const ticketTypes = [typeIncident, typeDemande, typeReclamation, typeConseil];
 
   const ticketDefs = [
     { num: 'VG20260001', title: "PC ne démarre plus après mise à jour", desc: "L'ordinateur de bureau refuse de démarrer depuis la mise à jour Windows du week-end.", status: 'OPEN', priority: 'CRITICAL', cat: catMateriel, client: clients[0], agent: agent1 },
     { num: 'VG20260002', title: "Problème de connexion VPN", desc: "Impossible de se connecter au VPN d'entreprise depuis le domicile.", status: 'IN_PROGRESS', priority: 'HIGH', cat: catReseau, client: clients[1], agent: agent2 },
-    { num: 'VG20260003', title: "Réinitialisation mot de passe AD", desc: "L'utilisateur a oublié son mot de passe Active Directory.", status: 'RESOLVED', priority: 'MEDIUM', cat: catAcces, client: clients[2], agent: agent1 },
+    { num: 'VG20260003', title: "Réinitialisation mot de passe AD", desc: "L'utilisateur a oublié son mot de passe Active Directory.", status: 'CLOSED', priority: 'MEDIUM', cat: catAcces, client: clients[2], agent: agent1 },
     { num: 'VG20260004', title: "Imprimante réseau hors ligne", desc: "L'imprimante du service comptabilité n'est plus accessible depuis le réseau.", status: 'PENDING', priority: 'MEDIUM', cat: catMateriel, client: clients[3], agent: agent3 },
     { num: 'VG20260005', title: "Logiciel de facturation plante", desc: "Le logiciel ERP se ferme inopinément lors de la génération des factures.", status: 'IN_PROGRESS', priority: 'HIGH', cat: catLogiciel, client: clients[4], agent: agent2 },
     { num: 'VG20260006', title: "Mise à jour antivirus bloquée", desc: "Les postes du service RH n'arrivent pas à mettre à jour leur antivirus.", status: 'OPEN', priority: 'HIGH', cat: catLogiciel, client: clients[5], agent: null },
-    { num: 'VG20260007', title: "Écran noir au démarrage", desc: "Trois postes affichent un écran noir après le logo Windows.", status: 'RESOLVED', priority: 'HIGH', cat: catMateriel, client: clients[6], agent: agent1 },
+    { num: 'VG20260007', title: "Écran noir au démarrage", desc: "Trois postes affichent un écran noir après le logo Windows.", status: 'CLOSED', priority: 'HIGH', cat: catMateriel, client: clients[6], agent: agent1 },
     { num: 'VG20260008', title: "Partage réseau inaccessible", desc: "Le dossier partagé \\\\serveur\\commun n'est plus accessible depuis la salle de réunion.", status: 'CLOSED', priority: 'MEDIUM', cat: catReseau, client: clients[7], agent: agent3 },
-    { num: 'VG20260009', title: "Demande création compte utilisateur", desc: "Création d'un compte pour le nouveau stagiaire intégrant le service marketing.", status: 'RESOLVED', priority: 'LOW', cat: catAcces, client: clients[8], agent: agent2 },
+    { num: 'VG20260009', title: "Demande création compte utilisateur", desc: "Création d'un compte pour le nouveau stagiaire intégrant le service marketing.", status: 'CLOSED', priority: 'LOW', cat: catAcces, client: clients[8], agent: agent2 },
     { num: 'VG20260010', title: "Clavier et souris sans fil déconnectés", desc: "Les périphériques sans fil se déconnectent aléatoirement.", status: 'CLOSED', priority: 'LOW', cat: catMateriel, client: clients[9], agent: agent1 },
     { num: 'VG20260011', title: "Messagerie Outlook lente", desc: "Outlook met plus de 2 minutes à charger les emails au démarrage.", status: 'OPEN', priority: 'MEDIUM', cat: catLogiciel, client: clients[0], agent: agent3 },
     { num: 'VG20260012', title: "Caméra web non détectée", desc: "La webcam USB n'est pas reconnue lors des réunions Teams.", status: 'IN_PROGRESS', priority: 'MEDIUM', cat: catMateriel, client: clients[1], agent: agent1 },
@@ -251,10 +333,10 @@ async function main() {
     { num: 'VG20260014', title: "Perte de données suite à crash disque", desc: "Disque dur en panne sur le poste direction. Récupération de données nécessaire.", status: 'IN_PROGRESS', priority: 'CRITICAL', cat: catMateriel, client: clients[3], agent: agent3 },
     { num: 'VG20260015', title: "Migration boite mail vers O365", desc: "Accompagnement migration de la boite mail historique vers Office 365.", status: 'PENDING', priority: 'MEDIUM', cat: catLogiciel, client: clients[4], agent: agent2 },
     { num: 'VG20260016', title: "Accès refusé sur application métier", desc: "L'utilisateur reçoit une erreur 403 lors de la connexion à l'application RH.", status: 'OPEN', priority: 'HIGH', cat: catAcces, client: clients[5], agent: null },
-    { num: 'VG20260017', title: "Poste de travail très lent", desc: "Le PC est extrêmement lent depuis l'installation du dernier patch sécurité.", status: 'RESOLVED', priority: 'MEDIUM', cat: catLogiciel, client: clients[6], agent: agent1 },
+    { num: 'VG20260017', title: "Poste de travail très lent", desc: "Le PC est extrêmement lent depuis l'installation du dernier patch sécurité.", status: 'CLOSED', priority: 'MEDIUM', cat: catLogiciel, client: clients[6], agent: agent1 },
     { num: 'VG20260018', title: "Wifi instable en open space", desc: "Déconnexions fréquentes du WiFi dans l'espace de travail collaboratif.", status: 'OPEN', priority: 'HIGH', cat: catReseau, client: clients[7], agent: agent3 },
     { num: 'VG20260019', title: "Scanner ne fonctionne plus", desc: "Le scanner du service juridique ne communique plus avec le PC.", status: 'CLOSED', priority: 'LOW', cat: catMateriel, client: clients[8], agent: agent2 },
-    { num: 'VG20260020', title: "Erreur license Microsoft Office", desc: "Office affiche 'Produit non activé' depuis le renouvellement du contrat.", status: 'RESOLVED', priority: 'HIGH', cat: catLogiciel, client: clients[9], agent: agent1 },
+    { num: 'VG20260020', title: "Erreur license Microsoft Office", desc: "Office affiche 'Produit non activé' depuis le renouvellement du contrat.", status: 'CLOSED', priority: 'HIGH', cat: catLogiciel, client: clients[9], agent: agent1 },
     { num: 'VG20260021', title: "Double facteur authentification bloqué", desc: "Le SMS de vérification 2FA n'arrive pas sur le téléphone de l'utilisateur.", status: 'IN_PROGRESS', priority: 'HIGH', cat: catAcces, client: clients[0], agent: agent2 },
     { num: 'VG20260022', title: "Déploiement poste Windows 11", desc: "Déploiement et configuration d'un nouveau poste Windows 11 pour arrivant.", status: 'PENDING', priority: 'LOW', cat: catMateriel, client: clients[1], agent: agent3 },
     { num: 'VG20260023', title: "Firewall bloque application externe", desc: "Le pare-feu bloque l'accès à l'outil de collaboration partenaire.", status: 'OPEN', priority: 'MEDIUM', cat: catReseau, client: clients[2], agent: null },
@@ -266,7 +348,7 @@ async function main() {
 
   for (const def of ticketDefs) {
     const resolvedAt =
-      def.status === 'RESOLVED' || def.status === 'CLOSED'
+      def.status === 'CLOSED'
         ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
         : null;
     const closedAt =
@@ -280,6 +362,9 @@ async function main() {
       continue;
     }
 
+    const randomPole = poles[Math.floor(Math.random() * poles.length)];
+    const randomType = ticketTypes[Math.floor(Math.random() * ticketTypes.length)];
+
     const ticket = await prisma.ticket.create({
       data: {
         ticketNumber: def.num,
@@ -290,6 +375,8 @@ async function main() {
         categoryId: def.cat.id,
         clientId: def.client.id,
         assignedToId: def.agent?.id ?? null,
+        poleId: randomPole.id,
+        typeId: randomType.id,
         createdById: admin.id,
         resolvedAt,
         closedAt,

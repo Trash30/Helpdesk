@@ -501,6 +501,8 @@ export function TicketNewPage() {
   const [categoryId, setCategoryId] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
   const [assignedToId, setAssignedToId] = useState('');
+  const [poleId, setPoleId] = useState('');
+  const [typeId, setTypeId] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
 
   const { data: categories } = useQuery<Category[]>({
@@ -508,17 +510,37 @@ export function TicketNewPage() {
     queryFn: async () => (await api.get('/categories')).data?.data ?? [],
   });
 
-  const { data: agentsData } = useQuery<{ data: Agent[] }>({
+  const { data: agents } = useQuery<Agent[]>({
     queryKey: ['agents'],
-    queryFn: async () => (await api.get('/admin/users')).data,
+    queryFn: async () => {
+      try {
+        const res = await api.get('/admin/users');
+        return res.data?.data ?? [];
+      } catch {
+        return [];
+      }
+    },
+  });
+
+  const { data: poles } = useQuery<{ id: string; name: string }[]>({
+    queryKey: ['poles'],
+    queryFn: async () => (await api.get('/poles')).data?.data ?? [],
+  });
+
+  const { data: ticketTypes } = useQuery<{ id: string; name: string; isActive: boolean; position: number }[]>({
+    queryKey: ['ticket-types'],
+    queryFn: async () => {
+      const all = (await api.get('/ticket-types')).data?.data ?? [];
+      return all.filter((t: { isActive: boolean }) => t.isActive);
+    },
   });
 
   const queryClient = useQueryClient();
   const createMutation = useMutation({
     mutationFn: async (vars: {
       clientId: string; title: string; description: string;
-      categoryId: string; priority: string; assignedToId: string;
-      attachments: File[];
+      categoryId: string; priority: string; assignedToId: string; poleId: string;
+      typeId: string; attachments: File[];
     }) => {
       // Step 1 — create ticket with JSON
       const res = await api.post('/tickets', {
@@ -528,6 +550,8 @@ export function TicketNewPage() {
         categoryId: vars.categoryId || undefined,
         priority: vars.priority,
         assignedToId: vars.assignedToId || undefined,
+        poleId: vars.poleId || undefined,
+        typeId: vars.typeId || undefined,
       });
       const ticket = res.data.data;
 
@@ -570,6 +594,8 @@ export function TicketNewPage() {
       categoryId,
       priority,
       assignedToId,
+      poleId,
+      typeId,
       attachments,
     });
   };
@@ -666,19 +692,52 @@ export function TicketNewPage() {
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="assignedTo">Assigner à</Label>
-            <select
-              id="assignedTo"
-              value={assignedToId}
-              onChange={e => setAssignedToId(e.target.value)}
-              className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Non assigné</option>
-              {agentsData?.data?.map(a => (
-                <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="assignedTo">Assigner à</Label>
+              <select
+                id="assignedTo"
+                value={assignedToId}
+                onChange={e => setAssignedToId(e.target.value)}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Non assigné</option>
+                {agents?.map(a => (
+                  <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="pole">Pôle</Label>
+              <select
+                id="pole"
+                value={poleId}
+                onChange={e => setPoleId(e.target.value)}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Aucun pôle</option>
+                {poles?.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="typeId">Type de ticket</Label>
+              <select
+                id="typeId"
+                value={typeId}
+                onChange={e => setTypeId(e.target.value)}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">{'\u2014'} Sélectionner {'\u2014'}</option>
+                {ticketTypes?.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>

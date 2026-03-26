@@ -20,7 +20,7 @@ const PERMISSION_GROUPS = [
       { key: 'tickets.view', label: 'Voir les tickets', description: 'Accès à la liste et au détail des tickets' },
       { key: 'tickets.create', label: 'Créer un ticket', description: 'Créer de nouveaux tickets' },
       { key: 'tickets.edit', label: 'Modifier un ticket', description: 'Éditer le titre, la description, la priorité...' },
-      { key: 'tickets.close', label: 'Fermer / résoudre un ticket', description: 'Passer un ticket en RESOLVED ou CLOSED' },
+      { key: 'tickets.close', label: 'Fermer un ticket', description: 'Passer un ticket en CLOSED' },
       { key: 'tickets.delete', label: 'Supprimer un ticket', description: 'Supprimer définitivement un ticket' },
       { key: 'tickets.assign', label: 'Assigner un ticket', description: "Assigner un ticket à un agent" },
       { key: 'tickets.viewAll', label: 'Voir tous les tickets', description: "Sans ce droit, l'agent ne voit que ses tickets assignés" },

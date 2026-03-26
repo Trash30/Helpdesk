@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import {
   Phone, Mail, ExternalLink, Paperclip, Download, Trash2,
-  CheckCircle, XCircle, RefreshCw, Bold, Italic, Code, X,
+  XCircle, RefreshCw, Bold, Italic, Code, X, Pencil,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -21,6 +21,10 @@ import { Separator } from '@/components/ui/separator';
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -83,9 +87,12 @@ interface Ticket {
     phone: string | null;
     email: string | null;
     role: { id: string; name: string; color: string } | null;
+    organisation: { id: string; name: string } | null;
+    club: { id: string; name: string } | null;
   } | null;
   assignedTo: { id: string; firstName: string; lastName: string } | null;
-  category: { id: string; name: string; color: string } | null;
+  category: { id: string; name: string; slug?: string; color: string } | null;
+  pole: { id: string; name: string } | null;
   createdBy: { id: string; firstName: string; lastName: string } | null;
   comments: Comment[];
   attachments: Attachment[];
@@ -124,8 +131,9 @@ interface TimelineItem {
   data: Comment | ActivityLog;
 }
 
-interface Category { id: string; name: string; color: string }
+interface Category { id: string; name: string; slug?: string; color: string }
 interface Agent { id: string; firstName: string; lastName: string }
+interface Pole { id: string; name: string }
 
 // ── Inline editable title ────────────────────────────────────────────────────
 
@@ -165,13 +173,18 @@ function InlineTitle({
   }
 
   return (
-    <h1
-      className={`text-2xl font-bold leading-snug ${canEdit ? 'cursor-text hover:bg-muted/40 rounded px-1 -mx-1' : ''}`}
+    <div
+      className={`group/title flex items-center ${canEdit ? 'cursor-text hover:bg-muted/40 rounded px-1 -mx-1' : ''}`}
       onClick={() => canEdit && setEditing(true)}
       title={canEdit ? 'Cliquer pour modifier' : undefined}
     >
-      {value}
-    </h1>
+      <h1 className="text-2xl font-bold leading-snug">
+        {value}
+      </h1>
+      {canEdit && (
+        <Pencil size={14} className="opacity-0 group-hover/title:opacity-100 text-muted-foreground transition-opacity ml-2 shrink-0" />
+      )}
+    </div>
   );
 }
 
@@ -374,7 +387,7 @@ function Timeline({
                 {canDelete && (
                   <button
                     onClick={() => setDeleteId(comment.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 text-muted-foreground hover:text-destructive"
+                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity ml-2 text-muted-foreground hover:text-destructive"
                     title="Supprimer"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -605,8 +618,15 @@ export function TicketDetailPage() {
   const currentUser = useAuthStore(s => s.user);
   const queryClient = useQueryClient();
 
-  const [confirmAction, setConfirmAction] = useState<'resolve' | 'close' | 'reopen' | null>(null);
+  const [confirmAction, setConfirmAction] = useState<'close' | 'reopen' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [closingNoteOpen, setClosingNoteOpen] = useState(false);
+  const [closingNote, setClosingNote] = useState('');
+  const [closingLoading, setClosingLoading] = useState(false);
+  const [materialDetail, setMaterialDetail] = useState('');
+  const [pendingNoteOpen, setPendingNoteOpen] = useState(false);
+  const [pendingNote, setPendingNote] = useState('');
+  const [pendingLoading, setPendingLoading] = useState(false);
   const { data: ticket, isLoading, error } = useQuery<Ticket>({
     queryKey: ['ticket', id],
     queryFn: async () => (await api.get(`/tickets/${id}`)).data?.data,
@@ -619,10 +639,22 @@ export function TicketDetailPage() {
     queryFn: async () => (await api.get('/categories')).data?.data ?? [],
   });
 
-  const { data: agentsData } = useQuery<{ data: Agent[] }>({
+  const { data: agents } = useQuery<Agent[]>({
     queryKey: ['agents'],
-    queryFn: async () => (await api.get('/admin/users')).data,
+    queryFn: async () => {
+      try {
+        const res = await api.get('/admin/users');
+        return res.data?.data ?? [];
+      } catch {
+        return [];
+      }
+    },
     enabled: can('tickets.assign'),
+  });
+
+  const { data: poles } = useQuery<Pole[]>({
+    queryKey: ['poles'],
+    queryFn: async () => (await api.get('/poles')).data?.data ?? [],
   });
 
   const invalidate = useCallback(() => {
@@ -666,7 +698,7 @@ export function TicketDetailPage() {
     if (!confirmAction) return;
     setActionLoading(true);
     try {
-      const statusMap = { resolve: 'RESOLVED', close: 'CLOSED', reopen: 'OPEN' };
+      const statusMap = { close: 'CLOSED', reopen: 'OPEN' };
       await api.patch(`/tickets/${id}/status`, { status: statusMap[confirmAction] });
       invalidate();
       toast.success('Statut mis à jour');
@@ -678,10 +710,41 @@ export function TicketDetailPage() {
     }
   }, [confirmAction, id, invalidate]);
 
+  const handleClosingNote = useCallback(async () => {
+    if (!closingNote.trim()) return;
+    setClosingLoading(true);
+    try {
+      await api.patch(`/tickets/${id}/status`, { status: 'CLOSED', closingNote: closingNote.trim() });
+      invalidate();
+      toast.success('Ticket fermé');
+      setClosingNoteOpen(false);
+      setClosingNote('');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Erreur lors de la fermeture');
+    } finally {
+      setClosingLoading(false);
+    }
+  }, [closingNote, id, invalidate]);
+
+  const handlePendingNote = useCallback(async () => {
+    if (!pendingNote.trim()) return;
+    setPendingLoading(true);
+    try {
+      await api.patch(`/tickets/${id}/status`, { status: 'PENDING', pendingNote: pendingNote.trim() });
+      invalidate();
+      toast.success('Ticket mis en attente');
+      setPendingNoteOpen(false);
+      setPendingNote('');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Erreur lors de la mise en attente');
+    } finally {
+      setPendingLoading(false);
+    }
+  }, [pendingNote, id, invalidate]);
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-[65%_35%] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[65%_35%] gap-6">
         <div className="space-y-4">
           <Skeleton className="h-8 w-3/4" />
           <Skeleton className="h-24 w-full" />
@@ -728,7 +791,6 @@ export function TicketDetailPage() {
   const canDeleteAnyComment = can('comments.deleteAny');
 
   const actionLabels = {
-    resolve: { title: 'Résoudre le ticket', description: 'Le ticket sera marqué comme résolu.' },
     close: { title: 'Fermer le ticket', description: 'Le ticket sera fermé définitivement.' },
     reopen: { title: 'Rouvrir le ticket', description: 'Le ticket sera rouvert.' },
   };
@@ -797,16 +859,27 @@ export function TicketDetailPage() {
             <FieldRow label="Statut">
               <select
                 value={ticket.status}
-                onChange={e => updateStatus(e.target.value)}
+                onChange={e => {
+                  if (e.target.value === 'CLOSED') {
+                    setClosingNote('');
+                    setClosingNoteOpen(true);
+                    e.target.value = ticket.status;
+                  } else if (e.target.value === 'PENDING') {
+                    setPendingNote('');
+                    setPendingNoteOpen(true);
+                    e.target.value = ticket.status;
+                  } else {
+                    updateStatus(e.target.value);
+                  }
+                }}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                {['OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'].map(s => (
+                {['OPEN', 'IN_PROGRESS', 'PENDING', 'CLOSED'].map(s => (
                   <option key={s} value={s}>
                     {s === 'OPEN' ? 'Ouvert' :
                      s === 'IN_PROGRESS' ? 'En cours' :
-                     s === 'PENDING' ? 'En attente' :
-                     s === 'RESOLVED' ? 'Résolu' : 'Fermé'}
+                     s === 'PENDING' ? 'En attente' : 'Fermé'}
                   </option>
                 ))}
               </select>
@@ -840,6 +913,55 @@ export function TicketDetailPage() {
               </select>
             </FieldRow>
 
+            {/* Materiel field for pmateriel category */}
+            {(() => {
+              const selectedCat = categories?.find(c => c.id === ticket.category?.id);
+              const isPmateriel = selectedCat?.slug?.toLowerCase() === 'pmateriel'
+                || ticket.category?.slug?.toLowerCase() === 'pmateriel';
+              if (!isPmateriel || !canEdit) return null;
+              return (
+                <FieldRow label="Materiel concerne (optionnel)">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={materialDetail}
+                      onChange={e => setMaterialDetail(e.target.value)}
+                      placeholder="Ex: Ecran Dell P2422H, Switch HP 1820..."
+                      className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!materialDetail.trim()}
+                      onClick={() => {
+                        if (!materialDetail.trim()) return;
+                        const append = `\n\n**Materiel concerne :** ${materialDetail.trim()}`;
+                        updateField({ description: (ticket.description ?? '') + append });
+                        setMaterialDetail('');
+                        toast.success('Materiel ajoute a la description');
+                      }}
+                    >
+                      Ajouter
+                    </Button>
+                  </div>
+                </FieldRow>
+              );
+            })()}
+
+            <FieldRow label="Pôle">
+              <select
+                value={ticket.pole?.id ?? ''}
+                onChange={e => updateField({ poleId: e.target.value || null })}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Aucun pôle</option>
+                {poles?.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </FieldRow>
+
             <FieldRow label="Assigné à">
               <select
                 value={ticket.assignedTo?.id ?? ''}
@@ -848,7 +970,7 @@ export function TicketDetailPage() {
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
                 <option value="">Non assigné</option>
-                {agentsData?.data?.map(a => (
+                {agents?.map(a => (
                   <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
                 ))}
               </select>
@@ -897,6 +1019,22 @@ export function TicketDetailPage() {
                     </a>
                   )}
                 </div>
+                {(ticket.client.organisation || ticket.client.club) && (
+                  <div className="space-y-1 text-sm border-t pt-2">
+                    {ticket.client.organisation && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Organisation</span>
+                        <span className="font-medium">{ticket.client.organisation.name}</span>
+                      </div>
+                    )}
+                    {ticket.client.club && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Club / Ville</span>
+                        <span className="font-medium">{ticket.client.club.name}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <Link
                   to={`/clients/${ticket.client.id}`}
                   className="flex items-center gap-1 text-xs text-primary hover:underline"
@@ -944,27 +1082,17 @@ export function TicketDetailPage() {
 
           {/* Action buttons */}
           <div className="space-y-2">
-            {canClose && ['OPEN', 'IN_PROGRESS'].includes(ticket.status) && (
-              <Button
-                variant="outline"
-                className="w-full border-green-500 text-green-700 hover:bg-green-50"
-                onClick={() => setConfirmAction('resolve')}
-              >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Résoudre
-              </Button>
-            )}
-            {canClose && ticket.status === 'RESOLVED' && (
+            {canClose && ['OPEN', 'IN_PROGRESS', 'PENDING'].includes(ticket.status) && (
               <Button
                 variant="outline"
                 className="w-full border-gray-400 text-gray-600 hover:bg-gray-50"
-                onClick={() => setConfirmAction('close')}
+                onClick={() => { setClosingNote(''); setClosingNoteOpen(true); }}
               >
                 <XCircle className="h-4 w-4 mr-2" />
                 Fermer
               </Button>
             )}
-            {canEdit && ['RESOLVED', 'CLOSED'].includes(ticket.status) && (
+            {canEdit && ticket.status === 'CLOSED' && (
               <Button
                 variant="outline"
                 className="w-full border-blue-500 text-blue-700 hover:bg-blue-50"
@@ -978,7 +1106,7 @@ export function TicketDetailPage() {
         </div>
       </div>
 
-      {/* Action confirm dialog */}
+      {/* Action confirm dialog (reopen only) */}
       {confirmAction && (
         <ConfirmDialog
           open
@@ -990,6 +1118,80 @@ export function TicketDetailPage() {
           onConfirm={handleAction}
         />
       )}
+
+      {/* Closing note dialog */}
+      <Dialog open={closingNoteOpen} onOpenChange={open => { if (!open) { setClosingNoteOpen(false); setClosingNote(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cloture du ticket</DialogTitle>
+            <DialogDescription>
+              Veuillez fournir une note de fermeture avant de clore ce ticket.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Note de fermeture <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              value={closingNote}
+              onChange={e => setClosingNote(e.target.value)}
+              placeholder="Decrivez la resolution ou la raison de la fermeture..."
+              rows={4}
+              maxLength={500}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+            />
+            <p className="text-xs text-muted-foreground text-right mt-1">
+              {closingNote.length}/500
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setClosingNoteOpen(false); setClosingNote(''); }}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleClosingNote}
+              disabled={!closingNote.trim() || closingLoading}
+            >
+              {closingLoading ? 'Fermeture...' : 'Confirmer la fermeture'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pending note dialog */}
+      <Dialog open={pendingNoteOpen} onOpenChange={open => { if (!open) { setPendingNoteOpen(false); setPendingNote(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mise en attente du ticket</DialogTitle>
+            <DialogDescription>
+              Veuillez indiquer le motif de mise en attente avant de continuer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Motif <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              value={pendingNote}
+              onChange={e => setPendingNote(e.target.value)}
+              placeholder="Décrivez la raison de la mise en attente..."
+              rows={4}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPendingNoteOpen(false); setPendingNote(''); }}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handlePendingNote}
+              disabled={!pendingNote.trim() || pendingLoading}
+            >
+              {pendingLoading ? 'Mise en attente...' : 'Confirmer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </TooltipProvider>
   );
