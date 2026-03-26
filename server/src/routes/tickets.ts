@@ -334,7 +334,7 @@ router.patch(
 
     const { status } = parse.data;
     const extra: any = {};
-    if (status === 'RESOLVED' && !existing.resolvedAt) extra.resolvedAt = new Date();
+    if (status === 'CLOSED' && !existing.resolvedAt) extra.resolvedAt = new Date();
     if (status === 'CLOSED') extra.closedAt = new Date();
 
     const ticket = await prisma.ticket.update({
