@@ -404,17 +404,6 @@ router.patch(
       },
     });
 
-    if (status === 'CLOSED' && closingNote) {
-      await prisma.comment.create({
-        data: {
-          ticketId: existing.id,
-          authorId: req.user!.id,
-          content: closingNote.trim(),
-          isInternal: true,
-        },
-      });
-    }
-
     if (status === 'PENDING' && pendingNote) {
       await prisma.comment.create({
         data: {
