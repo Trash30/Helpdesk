@@ -665,7 +665,7 @@ export function TicketListPage() {
               <select
                 value={organisationId}
                 onChange={e => setOrganisationId(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
               >
                 <option value="">Organisation</option>
                 {organisations?.map(o => (
@@ -675,7 +675,7 @@ export function TicketListPage() {
               <select
                 value={clubId}
                 onChange={e => setClubId(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
               >
                 <option value="">Club / Ville</option>
                 {clubs?.map(c => (
@@ -751,7 +751,7 @@ export function TicketListPage() {
             <select
               value={organisationId}
               onChange={e => setOrganisationId(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              className="h-9 max-w-[160px] rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
             >
               <option value="">Organisation</option>
               {organisations?.map(o => (
@@ -763,7 +763,7 @@ export function TicketListPage() {
             <select
               value={clubId}
               onChange={e => setClubId(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              className="h-9 max-w-[160px] rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
             >
               <option value="">Club / Ville</option>
               {clubs?.map(c => (
