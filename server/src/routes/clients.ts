@@ -146,7 +146,7 @@ router.get(
     const openTickets = allTickets.filter((t) =>
       ['OPEN', 'IN_PROGRESS', 'PENDING'].includes(t.status)
     ).length;
-    const resolvedTickets = allTickets.filter((t) => t.status === 'RESOLVED').length;
+    const resolvedTickets = allTickets.filter((t) => t.status === 'CLOSED').length;
 
     const resolvedWithTime = allTickets.filter((t) => t.resolvedAt && t.createdAt);
     const avgResolutionHours =
@@ -226,12 +226,7 @@ router.delete(
       include: {
         _count: {
           select: {
-            tickets: {
-              where: {
-                status: { in: ['OPEN', 'IN_PROGRESS', 'PENDING'] },
-                deletedAt: null,
-              },
-            },
+            tickets: true,
           },
         },
       },
@@ -245,7 +240,7 @@ router.delete(
     const openCount = existing._count.tickets;
     if (openCount > 0) {
       res.status(400).json({
-        error: `Impossible de supprimer ce client : ${openCount} ticket(s) en cours`,
+        error: `Impossible de supprimer ce client : ${openCount} ticket(s) associé(s)`,
         count: openCount,
       });
       return;
