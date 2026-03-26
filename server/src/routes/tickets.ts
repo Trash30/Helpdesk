@@ -248,6 +248,12 @@ router.get(
       return;
     }
 
+    const isViewAll = hasPermission(req.user!, 'tickets.viewAll');
+    if (!isViewAll && ticket.assignedToId !== req.user!.id) {
+      res.status(403).json({ error: 'Accès refusé' });
+      return;
+    }
+
     res.json({ data: ticket });
   }
 );
@@ -272,7 +278,18 @@ router.put(
       return;
     }
 
+    const isViewAll = hasPermission(req.user!, 'tickets.viewAll');
+    if (!isViewAll && existing.assignedToId !== req.user!.id) {
+      res.status(403).json({ error: 'Accès refusé' });
+      return;
+    }
+
     const updates = parse.data;
+
+    if (updates.assignedToId !== undefined && !hasPermission(req.user!, 'tickets.assign')) {
+      res.status(403).json({ error: 'Permission insuffisante pour modifier l\'assignation' });
+      return;
+    }
     const activityEntries: Array<{
       ticketId: string;
       userId: string;
@@ -355,6 +372,12 @@ router.patch(
     });
     if (!existing) {
       res.status(404).json({ error: 'Ticket introuvable' });
+      return;
+    }
+
+    const isViewAllScope = hasPermission(req.user!, 'tickets.viewAll');
+    if (!isViewAllScope && existing.assignedToId !== req.user!.id) {
+      res.status(403).json({ error: 'Accès refusé' });
       return;
     }
 
