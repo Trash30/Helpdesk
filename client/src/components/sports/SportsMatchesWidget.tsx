@@ -30,7 +30,7 @@ interface SportsMatchesResponse {
 const COMPETITION_META: Record<Competition, { label: string; favicon: string }> = {
   TOP14:  { label: 'Top 14',        favicon: 'https://top14.lnr.fr/favicon.ico' },
   PRO_D2: { label: 'Pro D2',        favicon: 'https://prod2.lnr.fr/favicon.ico' },
-  EPCR:   { label: 'Champions Cup', favicon: 'https://media-cdn.incrowdsports.com/35b79a50-1f91-4e00-b6b1-fec06cbecb9e.svg?format=webp&width=1920' },
+  EPCR:   { label: 'Champions Cup', favicon: 'https://media-cdn.incrowdsports.com/77535d85-bcdc-49b9-9dc9-879e70d9adba.svg' },
   LNH:    { label: 'Starligue',     favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg' },
 };
 
