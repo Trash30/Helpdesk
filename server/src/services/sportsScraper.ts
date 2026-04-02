@@ -371,9 +371,26 @@ function parseFrenchDatetime(raw: string): { date: string; time: string } {
 
 // ─── EPCR Scraper (Nuxt SSR payload) ────────────────────────────────────────
 
+// French clubs currently competing in the Champions Cup (2025-2026)
+const FRENCH_EPCR_CLUBS = [
+  'Stade Toulousain', 'Toulouse',
+  'Stade Rochelais', 'La Rochelle',
+  'Bordeaux-Bègles', 'Union Bordeaux-Bègles',
+  'Stade Français', 'Stade Français Paris',
+  'Clermont', 'Clermont Auvergne', 'ASM Clermont',
+  'Bayonne', 'Aviron Bayonnais',
+  'Castres', 'Castres Olympique',
+  'Racing 92', 'Racing',
+  'Lyon', 'LOU Rugby',
+];
+
+function isFrenchClub(name: string): boolean {
+  return FRENCH_EPCR_CLUBS.some(c => name.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(name.toLowerCase()));
+}
+
 /**
  * Scrapes EPCR Champions Cup from the Nuxt SSR payload embedded in the HTML.
- * The page inlines all fixture data in a <script> tag as a flat reference array.
+ * Only returns matches where the home team is a French club.
  */
 async function scrapeEPCR(): Promise<Match[]> {
   const client = createClient();
@@ -431,8 +448,8 @@ async function scrapeEPCR(): Promise<Match[]> {
       });
     }
 
-    const filtered = matches.filter(m => isInCurrentWeek(m.date));
-    log(`EPCR: ${filtered.length} matches in current week (out of ${matches.length} total)`);
+    const filtered = matches.filter(m => isInCurrentWeek(m.date) && isFrenchClub(m.homeTeam));
+    log(`EPCR: ${filtered.length} matches this week with French home team (out of ${matches.length} total)`);
     return filtered;
   } catch (err) {
     logError('EPCR scraping failed:', err instanceof Error ? err.message : err);
