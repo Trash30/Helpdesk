@@ -268,7 +268,9 @@ async function scrapeLNH(): Promise<Match[]> {
         .filter(Boolean)
         .join(' ');                   // e.g. "Liqui Moly StarLigue - J22 ven. 03 avril 20h00"
 
-      const parsed = parseFrenchDatetime(rawDatetime);
+      // parseLNRDate handles dates without year (same format as LNR sites)
+      const rawTime = (rawDatetime.match(/\d{1,2}h\d{2}/) || [''])[0];
+      const parsed = { date: parseLNRDate(rawDatetime, rawTime), time: rawTime.replace('h', ':') };
 
       // Teams
       const teamLogos = block.find('.team-logo');
@@ -309,7 +311,7 @@ const FRENCH_MONTHS: Record<string, number> = {
   mai: 4, juin: 5, juillet: 6, aout: 7, 'ao\u00fbt': 7,
   septembre: 8, octobre: 9, novembre: 10, decembre: 11, 'd\u00e9cembre': 11,
   jan: 0, fev: 1, 'f\u00e9v': 1, mar: 2, avr: 3,
-  jui: 5, jul: 6, aou: 7, 'ao\u00fb': 7, sep: 8, oct: 9, nov: 10, dec: 11, 'd\u00e9c': 11,
+  jui: 5, juil: 6, jul: 6, aou: 7, 'ao\u00fb': 7, sep: 8, sept: 8, oct: 9, nov: 10, dec: 11, 'd\u00e9c': 11,
 };
 
 function parseFrenchDatetime(raw: string): { date: string; time: string } {
