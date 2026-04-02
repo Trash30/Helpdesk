@@ -1,6 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
-import type { AnyNode } from 'domhandler';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -89,54 +88,6 @@ function isInCurrentWeek(dateStr: string): boolean {
   return matchDate >= monday && matchDate <= sunday;
 }
 
-// ─── Logo helpers ───────────────────────────────────────────────────────────
-
-/**
- * Extracts the logo URL from an <img> element found near a team element.
- * Returns an absolute URL or undefined if not found.
- */
-function extractTeamLogo(
-  $: cheerio.CheerioAPI,
-  teamEl: cheerio.Cheerio<AnyNode>,
-  baseUrl: string
-): string | undefined {
-  // Look for an <img> inside the team element itself
-  let img = teamEl.find('img').first();
-
-  // Fallback: look for an <img> in the parent container
-  if (img.length === 0) {
-    img = teamEl.parent().find('img').first();
-  }
-
-  // Fallback: look for a sibling <img>
-  if (img.length === 0) {
-    img = teamEl.siblings('img').first();
-  }
-
-  // Fallback: look for an <img> in the closest ancestor that contains both team and logo
-  if (img.length === 0) {
-    img = teamEl.closest('[class*="team"], [class*="equipe"], [class*="club"]').find('img').first();
-  }
-
-  const src = img.attr('src') || img.attr('data-src');
-  if (!src) return undefined;
-
-  // Build absolute URL if needed
-  if (src.startsWith('http://') || src.startsWith('https://')) {
-    return src;
-  }
-  if (src.startsWith('//')) {
-    return `https:${src}`;
-  }
-
-  // Relative URL: resolve against base
-  try {
-    return new URL(src, baseUrl).href;
-  } catch {
-    return undefined;
-  }
-}
-
 // ─── Axios client ───────────────────────────────────────────────────────────
 
 function createClient(): AxiosInstance {
@@ -150,11 +101,52 @@ function createClient(): AxiosInstance {
   });
 }
 
+// ─── LNR date helper ────────────────────────────────────────────────────────
+
+/**
+ * Parses "jeudi 02 avril" (no year) + "21h00" into an ISO date string.
+ * Infers the year: current year, or next year if the date is > 4 months past.
+ */
+function parseLNRDate(rawDate: string, rawTime: string): string {
+  const dateMatch = rawDate.toLowerCase().match(/(\d{1,2})\s+([a-zéûôàè]+)/);
+  if (!dateMatch) return '';
+
+  const day = parseInt(dateMatch[1], 10);
+  const monthName = dateMatch[2].normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // strip accents
+  const month = FRENCH_MONTHS[dateMatch[2]] ?? FRENCH_MONTHS[monthName];
+  if (month === undefined) return '';
+
+  const now = new Date();
+  let year = now.getFullYear();
+  const candidate = new Date(year, month, day);
+  // If candidate is more than 4 months in the past, assume next year
+  if (candidate.getTime() < now.getTime() - 4 * 30 * 24 * 60 * 60 * 1000) {
+    year++;
+  }
+
+  const timeMatch = rawTime.match(/(\d{1,2})h(\d{2})/);
+  const hours = timeMatch ? parseInt(timeMatch[1], 10) : 0;
+  const minutes = timeMatch ? parseInt(timeMatch[2], 10) : 0;
+
+  return new Date(year, month, day, hours, minutes).toISOString();
+}
+
 // ─── LNR Scraper (Pro D2 & Top 14) ─────────────────────────────────────────
 
 /**
  * Scrapes the LNR calendar pages (same DOM structure for Pro D2 and Top 14).
- * The pages use SSR with match blocks containing team names, dates and times.
+ *
+ * Actual HTML structure (verified):
+ *   .calendar-results__fixture-date  → "jeudi 02 avril"
+ *   .match-line
+ *     .club-line.club-line--reversed  → home team
+ *       img.club-line__icon-img[src]  → home logo
+ *       a.club-line__name             → home team name
+ *     .match-line__result
+ *       .match-line__time             → "21h00"
+ *     .club-line (no --reversed)      → away team
+ *       img.club-line__icon-img[src]  → away logo
+ *       a.club-line__name             → away team name
  */
 async function scrapeLNR(
   url: string,
@@ -165,135 +157,44 @@ async function scrapeLNR(
 
   try {
     const resp = await client.get(url);
-    const html: string = resp.data;
-    const $ = cheerio.load(html);
+    const $ = cheerio.load(resp.data as string);
 
-    // LNR sites structure: match cards within calendar sections
-    // Try multiple selectors to be resilient to minor DOM changes
+    let currentDate = '';
 
-    // Pattern 1: .match-card or .matchCard elements
-    $('[class*="match"], [class*="Match"], .rencontre, .game').each((_i, el) => {
-      const block = $(el);
-      const text = block.text();
+    // Iterate in document order: capture date headers then match lines
+    $('.calendar-results__fixture-date, .match-line').each((_i, el) => {
+      const tagEl = $(el);
 
-      // Try to extract teams - look for team name elements
-      const teamEls = block.find('[class*="team"], [class*="equipe"], [class*="club"]');
-      let homeTeam = '';
-      let awayTeam = '';
-      let homeTeamLogo: string | undefined;
-      let awayTeamLogo: string | undefined;
-
-      if (teamEls.length >= 2) {
-        homeTeam = teamEls.eq(0).text().trim();
-        awayTeam = teamEls.eq(1).text().trim();
-        homeTeamLogo = extractTeamLogo($, teamEls.eq(0), url);
-        awayTeamLogo = extractTeamLogo($, teamEls.eq(1), url);
+      if (tagEl.hasClass('calendar-results__fixture-date')) {
+        currentDate = tagEl.text().trim();
+        return;
       }
 
-      // Try to extract date/time
-      const dateEl = block.find('[class*="date"], time, [datetime]');
-      let dateStr = '';
-      let timeStr = '';
+      // It's a .match-line
+      const homeClub = tagEl.find('.club-line--reversed');
+      const awayClub = tagEl.find('.club-line').not('.club-line--reversed').first();
 
-      if (dateEl.length > 0) {
-        const datetime = dateEl.attr('datetime') || dateEl.text().trim();
-        const parsed = parseFrenchDatetime(datetime);
-        dateStr = parsed.date;
-        timeStr = parsed.time;
-      }
+      const homeTeam = homeClub.find('.club-line__name').first().text().trim();
+      const awayTeam = awayClub.find('.club-line__name').first().text().trim();
 
-      // Fallback: try to parse from the raw text
-      if (!dateStr) {
-        const parsed = extractDateFromText(text);
-        dateStr = parsed.date;
-        timeStr = parsed.time || timeStr;
-      }
+      if (!homeTeam || !awayTeam) return;
 
-      if (homeTeam && awayTeam) {
-        matches.push({
-          competition,
-          homeTeam,
-          awayTeam,
-          date: dateStr,
-          time: timeStr,
-          homeTeamLogo,
-          awayTeamLogo,
-        });
-      }
+      const homeLogoSrc = homeClub.find('img.club-line__icon-img').first().attr('src');
+      const awayLogoSrc = awayClub.find('img.club-line__icon-img').first().attr('src');
+
+      const rawTime = tagEl.find('.match-line__time').first().text().trim();
+      const dateIso = parseLNRDate(currentDate, rawTime);
+
+      matches.push({
+        competition,
+        homeTeam,
+        awayTeam,
+        date: dateIso,
+        time: rawTime.replace('h', ':') || '',
+        homeTeamLogo: homeLogoSrc || undefined,
+        awayTeamLogo: awayLogoSrc || undefined,
+      });
     });
-
-    // Pattern 2: table-based layout (common in LNR)
-    if (matches.length === 0) {
-      $('table tbody tr, .calendar-row, .fixture-row').each((_i, el) => {
-        const row = $(el);
-        const cells = row.find('td, .cell, .col');
-
-        if (cells.length >= 2) {
-          const texts = cells.map((_j, cell) => $(cell).text().trim()).get();
-          const teamPattern = texts.filter((t) => t.length > 2 && !t.match(/^\d/));
-          const datePattern = texts.find((t) => t.match(/\d{2}[/.-]\d{2}[/.-]\d{2,4}/));
-
-          if (teamPattern.length >= 2 && datePattern) {
-            const parsed = parseFrenchDatetime(datePattern);
-
-            // Extract logos from table cells containing team names
-            const teamCells = cells.filter((_j, cell) => {
-              const cellText = $(cell).text().trim();
-              return cellText === teamPattern[0] || cellText === teamPattern[1];
-            });
-            const homeLogo = teamCells.length >= 1
-              ? extractTeamLogo($, $(teamCells[0]), url)
-              : undefined;
-            const awayLogo = teamCells.length >= 2
-              ? extractTeamLogo($, $(teamCells[1]), url)
-              : undefined;
-
-            matches.push({
-              competition,
-              homeTeam: teamPattern[0],
-              awayTeam: teamPattern[1],
-              date: parsed.date,
-              time: parsed.time,
-              homeTeamLogo: homeLogo,
-              awayTeamLogo: awayLogo,
-            });
-          }
-        }
-      });
-    }
-
-    // Pattern 3: structured data in JSON-LD or script tags
-    if (matches.length === 0) {
-      $('script[type="application/ld+json"]').each((_i, el) => {
-        try {
-          const json = JSON.parse($(el).html() || '');
-          const events = Array.isArray(json) ? json : [json];
-          for (const event of events) {
-            if (event['@type'] === 'SportsEvent' && event.homeTeam && event.awayTeam) {
-              const startDate = event.startDate || '';
-              const d = new Date(startDate);
-
-              // Extract logo URLs from JSON-LD structured data
-              const homeLogo = event.homeTeam?.logo || event.homeTeam?.image || undefined;
-              const awayLogo = event.awayTeam?.logo || event.awayTeam?.image || undefined;
-
-              matches.push({
-                competition,
-                homeTeam: event.homeTeam.name || event.homeTeam,
-                awayTeam: event.awayTeam.name || event.awayTeam,
-                date: isNaN(d.getTime()) ? '' : d.toISOString(),
-                time: isNaN(d.getTime()) ? '' : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
-                venue: event.location?.name,
-                homeTeamLogo: typeof homeLogo === 'string' ? homeLogo : undefined,
-                awayTeamLogo: typeof awayLogo === 'string' ? awayLogo : undefined,
-              });
-            }
-          }
-        } catch {
-          // Invalid JSON, skip
-        }
-      });
-    }
 
     log(`${competition}: scraped ${matches.length} total matches from ${url}`);
   } catch (err) {
@@ -301,7 +202,6 @@ async function scrapeLNR(
     return [];
   }
 
-  // Filter to current week
   const filtered = matches.filter((m) => m.date && isInCurrentWeek(m.date));
   log(`${competition}: ${filtered.length} matches in current week`);
   return filtered;
@@ -310,8 +210,9 @@ async function scrapeLNR(
 // ─── LNH Scraper ────────────────────────────────────────────────────────────
 
 /**
- * The LNH site uses AJAX to load calendar data.
- * We attempt the known AJAX endpoint with various parameter combinations.
+ * The LNH site is a client-side SPA — no match data is present in the HTML
+ * source and the AJAX endpoint returns 404. Returns [] until a working API
+ * endpoint is identified.
  */
 async function scrapeLNH(): Promise<Match[]> {
   const client = createClient();
@@ -368,20 +269,15 @@ async function scrapeLNH(): Promise<Match[]> {
       const html: string = resp.data;
       const $ = cheerio.load(html);
 
-      const lnhBaseUrl = 'https://www.lnh.fr';
       $('[class*="match"], [class*="game"], [class*="fixture"], .rencontre').each((_i, el) => {
         const block = $(el);
         const teamEls = block.find('[class*="team"], [class*="equipe"], [class*="club"]');
         let homeTeam = '';
         let awayTeam = '';
-        let homeTeamLogo: string | undefined;
-        let awayTeamLogo: string | undefined;
 
         if (teamEls.length >= 2) {
           homeTeam = teamEls.eq(0).text().trim();
           awayTeam = teamEls.eq(1).text().trim();
-          homeTeamLogo = extractTeamLogo($, teamEls.eq(0), lnhBaseUrl);
-          awayTeamLogo = extractTeamLogo($, teamEls.eq(1), lnhBaseUrl);
         }
 
         const dateEl = block.find('[class*="date"], time, [datetime]');
@@ -396,15 +292,7 @@ async function scrapeLNH(): Promise<Match[]> {
         }
 
         if (homeTeam && awayTeam) {
-          matches.push({
-            competition: 'LNH',
-            homeTeam,
-            awayTeam,
-            date: dateStr,
-            time: timeStr,
-            homeTeamLogo,
-            awayTeamLogo,
-          });
+          matches.push({ competition: 'LNH', homeTeam, awayTeam, date: dateStr, time: timeStr });
         }
       });
     } catch (err) {
@@ -445,8 +333,6 @@ function parseLNHResponse(data: unknown): Match[] {
             awayTeam,
             date: parsed.date,
             time: parsed.time,
-            homeTeamLogo: extractTeamLogo($, teamEls.eq(0), lnhBase),
-            awayTeamLogo: extractTeamLogo($, teamEls.eq(1), lnhBase),
           });
         }
       }
@@ -553,23 +439,6 @@ function parseFrenchDatetime(raw: string): { date: string; time: string } {
         date: d.toISOString(),
         time: timeMatch ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}` : '',
       };
-    }
-  }
-
-  return { date: '', time: '' };
-}
-
-function extractDateFromText(text: string): { date: string; time: string } {
-  // Try to find any date-like pattern in text
-  const patterns = [
-    /(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})/,
-    /(\d{1,2})\s+(janvier|fevrier|février|mars|avril|mai|juin|juillet|aout|août|septembre|octobre|novembre|decembre|décembre)\s+(\d{4})/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) {
-      return parseFrenchDatetime(match[0]);
     }
   }
 
