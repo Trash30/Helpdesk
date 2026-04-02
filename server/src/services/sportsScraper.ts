@@ -376,21 +376,26 @@ function parseFrenchDatetime(raw: string): { date: string; time: string } {
 
 // ─── EPCR Scraper (Nuxt SSR payload) ────────────────────────────────────────
 
-// French clubs currently competing in the Champions Cup (2025-2026)
+// French clubs competing in the Champions Cup — names as returned by the EPCR API
 const FRENCH_EPCR_CLUBS = [
-  'Stade Toulousain', 'Toulouse',
-  'Stade Rochelais', 'La Rochelle',
-  'Bordeaux-Bègles', 'Union Bordeaux-Bègles',
-  'Stade Français', 'Stade Français Paris',
+  'Toulouse', 'Stade Toulousain',
+  'La Rochelle', 'Stade Rochelais',
+  'Bordeaux', // matches 'Bordeaux-Begles' and variants
+  'Toulon', 'RC Toulon',
   'Clermont', 'Clermont Auvergne', 'ASM Clermont',
   'Bayonne', 'Aviron Bayonnais',
   'Castres', 'Castres Olympique',
-  'Racing 92', 'Racing',
-  'Lyon', 'LOU Rugby',
+  'Pau', 'Section Paloise',
+  'Racing', 'Stade Français', 'Lyon', 'LOU Rugby',
 ];
 
+function normalize(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function isFrenchClub(name: string): boolean {
-  return FRENCH_EPCR_CLUBS.some(c => name.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(name.toLowerCase()));
+  const n = normalize(name);
+  return FRENCH_EPCR_CLUBS.some(c => n.includes(normalize(c)) || normalize(c).includes(n));
 }
 
 /**
