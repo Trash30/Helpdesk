@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Competition = 'LNH' | 'PRO_D2' | 'TOP14';
+type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR';
 
 interface Match {
   competition: Competition;
@@ -17,6 +17,7 @@ interface Match {
   venue?: string;
   homeTeamLogo?: string;
   awayTeamLogo?: string;
+  broadcasterLogo?: string;
 }
 
 interface SportsMatchesResponse {
@@ -27,12 +28,13 @@ interface SportsMatchesResponse {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const COMPETITION_META: Record<Competition, { label: string; favicon: string }> = {
-  TOP14:  { label: 'Top 14',    favicon: 'https://top14.lnr.fr/favicon.ico' },
-  PRO_D2: { label: 'Pro D2',    favicon: 'https://prod2.lnr.fr/favicon.ico' },
-  LNH:    { label: 'Starligue', favicon: 'https://www.lnh.fr/favicon.ico' },
+  TOP14:  { label: 'Top 14',           favicon: 'https://top14.lnr.fr/favicon.ico' },
+  PRO_D2: { label: 'Pro D2',           favicon: 'https://prod2.lnr.fr/favicon.ico' },
+  EPCR:   { label: 'Champions Cup',    favicon: 'https://www.epcrugby.com/favicon.ico' },
+  LNH:    { label: 'Starligue',        favicon: 'https://www.lnh.fr/favicon.ico' },
 };
 
-const COMPETITION_ORDER: Competition[] = ['TOP14', 'PRO_D2', 'LNH'];
+const COMPETITION_ORDER: Competition[] = ['TOP14', 'PRO_D2', 'EPCR', 'LNH'];
 
 const DAY_NAMES = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
 
@@ -114,6 +116,8 @@ interface MatchRowProps {
 }
 
 function MatchRow({ match }: MatchRowProps) {
+  const [broadcasterError, setBroadcasterError] = useState(false);
+
   return (
     <div className="flex flex-col items-center gap-1 py-2.5 px-3">
       <div className="flex items-center justify-center gap-2 w-full">
@@ -130,9 +134,19 @@ function MatchRow({ match }: MatchRowProps) {
         </div>
       </div>
 
-      <span className="text-xs text-muted-foreground">
-        {formatMatchDate(match.date, match.time)}
-      </span>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">
+          {formatMatchDate(match.date, match.time)}
+        </span>
+        {match.broadcasterLogo && !broadcasterError && (
+          <img
+            src={match.broadcasterLogo}
+            alt="Diffuseur"
+            className="h-4 object-contain opacity-70"
+            onError={() => setBroadcasterError(true)}
+          />
+        )}
+      </div>
     </div>
   );
 }
