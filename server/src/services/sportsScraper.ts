@@ -1,6 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
-import puppeteer from 'puppeteer';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -211,196 +210,95 @@ async function scrapeLNR(
   return filtered;
 }
 
-// ─── LNH Scraper (Puppeteer — SPA) ─────────────────────────────────────────
+// ─── LNH Scraper (ajaxpost1 endpoint) ───────────────────────────────────────
 
 /**
- * Scrapes the LNH Starligue calendar using Puppeteer (headless Chromium).
- * The site is a client-side SPA: match data is rendered via JavaScript and
- * is not available in the raw HTML source. Puppeteer waits for the DOM to
- * be populated, then extracts match information via page.evaluate().
+ * Scrapes LNH Starligue via the internal AJAX endpoint discovered in DevTools.
+ * POST /ajaxpost1 with days_id=all returns the full season HTML calendar.
+ * Parsed with cheerio using verified selectors.
+ *
+ * Selectors (verified on live response):
+ *   .calendars-listing-item  → each match block
+ *   .col-competitions text   → "ven. 03 avril 20h00"
+ *   .team-logo:nth(0) .team-name → home team
+ *   .team-logo:nth(1) .team-name → away team
+ *   .team-logo img           → team logos
+ *   .tv-icon img             → broadcaster logo
  */
 async function scrapeLNH(): Promise<Match[]> {
-  const LNH_URL = 'https://www.lnh.fr/liquimoly-starligue/calendrier';
+  const client = createClient();
   const LNH_BASE = 'https://www.lnh.fr';
 
-  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
-
   try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    const params = new URLSearchParams({
+      seasons_id: '39',
+      days_id: 'all',
+      teams_id: 'all',
+      univers: 'd1-26623',
+      key: '608423208',
+      current_month: 'all',
+      type: 'all',
+      type_id: 'all',
+      contents_controller: 'sportsCalendars',
+      contents_action: 'index_ajax',
+      cache: 'yes',
+      cacheKeys: 'univers,contents_controller,contents_action,type,seasons_id,days_id,teams_id,current_month',
     });
 
-    const page = await browser.newPage();
-    await page.setUserAgent(USER_AGENT);
-
-    await page.goto(LNH_URL, {
-      waitUntil: 'networkidle2',
-      timeout: 30_000,
+    const resp = await client.post(`${LNH_BASE}/ajaxpost1`, params.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Referer': `${LNH_BASE}/liquimoly-starligue/calendrier`,
+      },
     });
 
-    // Try several possible selectors — the SPA DOM structure is unknown a priori
-    const CANDIDATE_SELECTORS = [
-      '.match',
-      '.matchs',
-      '.rencontre',
-      '[class*="match"]',
-      '[class*="fixture"]',
-      '[class*="game-card"]',
-      '[class*="calendar"] [class*="row"]',
-    ];
+    const $ = cheerio.load(resp.data as string);
+    const matches: Match[] = [];
 
-    let matchSelector: string | null = null;
-    for (const selector of CANDIDATE_SELECTORS) {
-      try {
-        await page.waitForSelector(selector, { timeout: 15_000 });
-        const count = await page.$$eval(selector, (els) => els.length);
-        if (count > 0) {
-          matchSelector = selector;
-          log(`LNH: found ${count} elements with selector "${selector}"`);
-          break;
-        }
-      } catch {
-        // Selector not found within timeout, try next
-      }
-    }
+    $('.calendars-listing-item').each((_i, el) => {
+      const block = $(el);
 
-    if (!matchSelector) {
-      log('LNH: no match elements found with any candidate selector');
-      return [];
-    }
+      // Date + time from .col-competitions text node after <br>
+      const colComp = block.find('.col-competitions');
+      const rawDatetime = (colComp.html() || '')
+        .replace(/<[^>]+>/g, '\n')   // strip tags
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .join(' ');                   // e.g. "Liqui Moly StarLigue - J22 ven. 03 avril 20h00"
 
-    // Extract match data from the DOM via page.evaluate.
-    // The JS string is evaluated in the browser context (Chromium) where DOM
-    // globals exist. We pass it as a string to avoid TS errors since the Node
-    // tsconfig does not include the 'dom' lib.
-    interface RawLNHMatch {
-      homeTeam: string;
-      awayTeam: string;
-      dateText: string;
-      timeText: string;
-      homeLogo: string;
-      awayLogo: string;
-    }
+      const parsed = parseFrenchDatetime(rawDatetime);
 
-    const extractScript = `
-      (function(selector, baseUrl) {
-        var elements = document.querySelectorAll(selector);
-        var results = [];
+      // Teams
+      const teamLogos = block.find('.team-logo');
+      const homeTeam = teamLogos.eq(0).find('.team-name').text().trim();
+      const awayTeam = teamLogos.eq(1).find('.team-name').text().trim();
+      if (!homeTeam || !awayTeam) return;
 
-        elements.forEach(function(el) {
-          var teamEls = el.querySelectorAll(
-            '[class*="team"], [class*="equipe"], [class*="club"], [class*="nom"]'
-          );
-          var imgEls = el.querySelectorAll('img');
+      // Logos
+      const homeLogo = teamLogos.eq(0).find('img').attr('src');
+      const awayLogo = teamLogos.eq(1).find('img').attr('src');
+      const broadcasterLogo = block.find('.tv-icon img').attr('src');
 
-          var homeTeam = '';
-          var awayTeam = '';
-          var homeLogo = '';
-          var awayLogo = '';
-
-          if (teamEls.length >= 2) {
-            homeTeam = (teamEls[0].textContent || '').trim();
-            awayTeam = (teamEls[1].textContent || '').trim();
-          } else {
-            var spans = el.querySelectorAll('span, a, div, p');
-            var teamTexts = [];
-            spans.forEach(function(s) {
-              var text = (s.textContent || '').trim();
-              if (text.length >= 2 && text.length <= 50 && !/^\\d+$/.test(text)) {
-                teamTexts.push(text);
-              }
-            });
-            if (teamTexts.length >= 2) {
-              homeTeam = teamTexts[0];
-              awayTeam = teamTexts[1];
-            }
-          }
-
-          if (imgEls.length >= 2) {
-            var src0 = imgEls[0].getAttribute('src') || '';
-            var src1 = imgEls[1].getAttribute('src') || '';
-            homeLogo = src0.startsWith('http') ? src0 : src0 ? baseUrl + src0 : '';
-            awayLogo = src1.startsWith('http') ? src1 : src1 ? baseUrl + src1 : '';
-          }
-
-          var dateEl = el.querySelector('[class*="date"], time, [datetime]');
-          var timeEl = el.querySelector('[class*="time"], [class*="heure"], [class*="hour"]');
-
-          var dateText = '';
-          var timeText = '';
-
-          if (dateEl) {
-            dateText = dateEl.getAttribute('datetime') || (dateEl.textContent || '').trim();
-          }
-          if (timeEl) {
-            timeText = (timeEl.textContent || '').trim();
-          }
-
-          if (!timeText && dateText) {
-            var tMatch = dateText.match(/(\\d{1,2})[h:](\\d{2})/);
-            if (tMatch) {
-              timeText = tMatch[1] + 'h' + tMatch[2];
-            }
-          }
-
-          if (!dateText) {
-            var parent = el.closest('[class*="day"], [class*="jour"], [class*="round"]');
-            if (parent) {
-              var parentDateEl = parent.querySelector('[class*="date"], time, [datetime]');
-              if (parentDateEl) {
-                dateText = parentDateEl.getAttribute('datetime') || (parentDateEl.textContent || '').trim();
-              }
-            }
-          }
-
-          if (homeTeam && awayTeam) {
-            results.push({
-              homeTeam: homeTeam,
-              awayTeam: awayTeam,
-              dateText: dateText,
-              timeText: timeText,
-              homeLogo: homeLogo,
-              awayLogo: awayLogo
-            });
-          }
-        });
-
-        return results;
-      })('${matchSelector.replace(/'/g, "\\'")}', '${LNH_BASE}')
-    `;
-
-    const rawMatches = await page.evaluate(extractScript) as RawLNHMatch[];
-
-    log(`LNH: extracted ${rawMatches.length} raw matches from DOM`);
-
-    // Parse extracted data into Match objects
-    const matches: Match[] = rawMatches.map((raw) => {
-      const parsed = parseFrenchDatetime(
-        raw.timeText ? `${raw.dateText} ${raw.timeText}` : raw.dateText
-      );
-
-      return {
-        competition: 'LNH' as const,
-        homeTeam: raw.homeTeam,
-        awayTeam: raw.awayTeam,
+      matches.push({
+        competition: 'LNH',
+        homeTeam,
+        awayTeam,
         date: parsed.date,
-        time: parsed.time || raw.timeText.replace('h', ':') || '',
-        homeTeamLogo: raw.homeLogo || undefined,
-        awayTeamLogo: raw.awayLogo || undefined,
-      };
+        time: parsed.time,
+        homeTeamLogo: homeLogo || undefined,
+        awayTeamLogo: awayLogo || undefined,
+        broadcasterLogo: broadcasterLogo || undefined,
+      });
     });
 
-    const filtered = matches.filter((m) => m.date && isInCurrentWeek(m.date));
+    const filtered = matches.filter(m => m.date && isInCurrentWeek(m.date));
     log(`LNH: ${filtered.length} matches in current week (out of ${matches.length} total)`);
     return filtered;
   } catch (err) {
-    logError('LNH Puppeteer scraping failed:', err instanceof Error ? err.message : err);
+    logError('LNH scraping failed:', err instanceof Error ? err.message : err);
     return [];
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 }
 
@@ -559,14 +457,7 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     },
     {
       key: 'LNH',
-      // Hard timeout: Puppeteer can be slow — don't block the other sources
-      fetch: () => Promise.race([
-        scrapeLNH(),
-        new Promise<Match[]>(resolve => setTimeout(() => {
-          log('LNH: timeout reached, returning []');
-          resolve([]);
-        }, 20_000)),
-      ]),
+      fetch: scrapeLNH,
     },
     {
       key: 'EPCR',
