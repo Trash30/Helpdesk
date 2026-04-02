@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
+import type { AnyNode } from 'domhandler';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -10,6 +11,8 @@ export interface Match {
   date: string;       // ISO date string
   time: string;       // "HH:mm" or "" if unknown
   venue?: string;
+  homeTeamLogo?: string;   // URL absolue du logo de l'équipe domicile
+  awayTeamLogo?: string;   // URL absolue du logo de l'équipe extérieure
 }
 
 interface CacheEntry {
@@ -86,6 +89,54 @@ function isInCurrentWeek(dateStr: string): boolean {
   return matchDate >= monday && matchDate <= sunday;
 }
 
+// ─── Logo helpers ───────────────────────────────────────────────────────────
+
+/**
+ * Extracts the logo URL from an <img> element found near a team element.
+ * Returns an absolute URL or undefined if not found.
+ */
+function extractTeamLogo(
+  $: cheerio.CheerioAPI,
+  teamEl: cheerio.Cheerio<AnyNode>,
+  baseUrl: string
+): string | undefined {
+  // Look for an <img> inside the team element itself
+  let img = teamEl.find('img').first();
+
+  // Fallback: look for an <img> in the parent container
+  if (img.length === 0) {
+    img = teamEl.parent().find('img').first();
+  }
+
+  // Fallback: look for a sibling <img>
+  if (img.length === 0) {
+    img = teamEl.siblings('img').first();
+  }
+
+  // Fallback: look for an <img> in the closest ancestor that contains both team and logo
+  if (img.length === 0) {
+    img = teamEl.closest('[class*="team"], [class*="equipe"], [class*="club"]').find('img').first();
+  }
+
+  const src = img.attr('src') || img.attr('data-src');
+  if (!src) return undefined;
+
+  // Build absolute URL if needed
+  if (src.startsWith('http://') || src.startsWith('https://')) {
+    return src;
+  }
+  if (src.startsWith('//')) {
+    return `https:${src}`;
+  }
+
+  // Relative URL: resolve against base
+  try {
+    return new URL(src, baseUrl).href;
+  } catch {
+    return undefined;
+  }
+}
+
 // ─── Axios client ───────────────────────────────────────────────────────────
 
 function createClient(): AxiosInstance {
@@ -129,10 +180,14 @@ async function scrapeLNR(
       const teamEls = block.find('[class*="team"], [class*="equipe"], [class*="club"]');
       let homeTeam = '';
       let awayTeam = '';
+      let homeTeamLogo: string | undefined;
+      let awayTeamLogo: string | undefined;
 
       if (teamEls.length >= 2) {
         homeTeam = teamEls.eq(0).text().trim();
         awayTeam = teamEls.eq(1).text().trim();
+        homeTeamLogo = extractTeamLogo($, teamEls.eq(0), url);
+        awayTeamLogo = extractTeamLogo($, teamEls.eq(1), url);
       }
 
       // Try to extract date/time
@@ -161,6 +216,8 @@ async function scrapeLNR(
           awayTeam,
           date: dateStr,
           time: timeStr,
+          homeTeamLogo,
+          awayTeamLogo,
         });
       }
     });
@@ -178,12 +235,27 @@ async function scrapeLNR(
 
           if (teamPattern.length >= 2 && datePattern) {
             const parsed = parseFrenchDatetime(datePattern);
+
+            // Extract logos from table cells containing team names
+            const teamCells = cells.filter((_j, cell) => {
+              const cellText = $(cell).text().trim();
+              return cellText === teamPattern[0] || cellText === teamPattern[1];
+            });
+            const homeLogo = teamCells.length >= 1
+              ? extractTeamLogo($, $(teamCells[0]), url)
+              : undefined;
+            const awayLogo = teamCells.length >= 2
+              ? extractTeamLogo($, $(teamCells[1]), url)
+              : undefined;
+
             matches.push({
               competition,
               homeTeam: teamPattern[0],
               awayTeam: teamPattern[1],
               date: parsed.date,
               time: parsed.time,
+              homeTeamLogo: homeLogo,
+              awayTeamLogo: awayLogo,
             });
           }
         }
@@ -200,6 +272,11 @@ async function scrapeLNR(
             if (event['@type'] === 'SportsEvent' && event.homeTeam && event.awayTeam) {
               const startDate = event.startDate || '';
               const d = new Date(startDate);
+
+              // Extract logo URLs from JSON-LD structured data
+              const homeLogo = event.homeTeam?.logo || event.homeTeam?.image || undefined;
+              const awayLogo = event.awayTeam?.logo || event.awayTeam?.image || undefined;
+
               matches.push({
                 competition,
                 homeTeam: event.homeTeam.name || event.homeTeam,
@@ -207,6 +284,8 @@ async function scrapeLNR(
                 date: isNaN(d.getTime()) ? '' : d.toISOString(),
                 time: isNaN(d.getTime()) ? '' : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
                 venue: event.location?.name,
+                homeTeamLogo: typeof homeLogo === 'string' ? homeLogo : undefined,
+                awayTeamLogo: typeof awayLogo === 'string' ? awayLogo : undefined,
               });
             }
           }
@@ -289,15 +368,20 @@ async function scrapeLNH(): Promise<Match[]> {
       const html: string = resp.data;
       const $ = cheerio.load(html);
 
+      const lnhBaseUrl = 'https://www.lnh.fr';
       $('[class*="match"], [class*="game"], [class*="fixture"], .rencontre').each((_i, el) => {
         const block = $(el);
         const teamEls = block.find('[class*="team"], [class*="equipe"], [class*="club"]');
         let homeTeam = '';
         let awayTeam = '';
+        let homeTeamLogo: string | undefined;
+        let awayTeamLogo: string | undefined;
 
         if (teamEls.length >= 2) {
           homeTeam = teamEls.eq(0).text().trim();
           awayTeam = teamEls.eq(1).text().trim();
+          homeTeamLogo = extractTeamLogo($, teamEls.eq(0), lnhBaseUrl);
+          awayTeamLogo = extractTeamLogo($, teamEls.eq(1), lnhBaseUrl);
         }
 
         const dateEl = block.find('[class*="date"], time, [datetime]');
@@ -318,6 +402,8 @@ async function scrapeLNH(): Promise<Match[]> {
             awayTeam,
             date: dateStr,
             time: timeStr,
+            homeTeamLogo,
+            awayTeamLogo,
           });
         }
       });
@@ -341,6 +427,7 @@ function parseLNHResponse(data: unknown): Match[] {
 
   if (typeof data === 'string') {
     // Might be HTML fragment
+    const lnhBase = 'https://www.lnh.fr';
     const $ = cheerio.load(data);
     $('[class*="match"], [class*="game"], tr, .rencontre').each((_i, el) => {
       const block = $(el);
@@ -358,6 +445,8 @@ function parseLNHResponse(data: unknown): Match[] {
             awayTeam,
             date: parsed.date,
             time: parsed.time,
+            homeTeamLogo: extractTeamLogo($, teamEls.eq(0), lnhBase),
+            awayTeamLogo: extractTeamLogo($, teamEls.eq(1), lnhBase),
           });
         }
       }
@@ -380,6 +469,11 @@ function parseLNHResponse(data: unknown): Match[] {
 
         if (homeTeam && awayTeam) {
           const d = new Date(dateVal);
+
+          // Extract logo URLs from JSON response if available
+          const homeLogo = m.homeTeamLogo || m.home_team_logo || m.homeLogo;
+          const awayLogo = m.awayTeamLogo || m.away_team_logo || m.awayLogo;
+
           matches.push({
             competition: 'LNH',
             homeTeam,
@@ -387,6 +481,8 @@ function parseLNHResponse(data: unknown): Match[] {
             date: isNaN(d.getTime()) ? dateVal : d.toISOString(),
             time: isNaN(d.getTime()) ? '' : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
             venue: m.venue ? String(m.venue) : undefined,
+            homeTeamLogo: typeof homeLogo === 'string' ? homeLogo : undefined,
+            awayTeamLogo: typeof awayLogo === 'string' ? awayLogo : undefined,
           });
         }
       }
