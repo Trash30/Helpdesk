@@ -268,9 +268,12 @@ async function scrapeLNH(): Promise<Match[]> {
         .filter(Boolean)
         .join(' ');                   // e.g. "Liqui Moly StarLigue - J22 ven. 03 avril 20h00"
 
-      // parseLNRDate handles dates without year (same format as LNR sites)
-      const rawTime = (rawDatetime.match(/\d{1,2}h\d{2}/) || [''])[0];
-      const parsed = { date: parseLNRDate(rawDatetime, rawTime), time: rawTime.replace('h', ':') };
+      // Extract "DD mois HHhMM" — skip the "Jxx" round and day-of-week abbreviation
+      // Format: "Liqui Moly StarLigue - J22 ven. 03 avril 20h00"
+      const lnhDateMatch = rawDatetime.match(/[a-z]{2,3}\.\s+(\d{1,2})\s+([a-zéùûôàèîïœæ]+)\.?\s+(\d{1,2}h\d{2})/i);
+      const rawTime = lnhDateMatch ? lnhDateMatch[3] : '';
+      const cleanDate = lnhDateMatch ? `${lnhDateMatch[1]} ${lnhDateMatch[2]}` : rawDatetime;
+      const parsed = { date: parseLNRDate(cleanDate, rawTime), time: rawTime.replace('h', ':') };
 
       // Teams
       const teamLogos = block.find('.team-logo');
