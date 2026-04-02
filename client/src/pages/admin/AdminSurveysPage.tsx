@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -789,9 +789,38 @@ function TemplateTab() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function AdminSurveysPage() {
+  const queryClient = useQueryClient();
+
+  const { data: settings } = useQuery({
+    queryKey: ['admin-settings'],
+    queryFn: async () => (await api.get('/admin/settings')).data.data as Record<string, string>,
+  });
+
+  const surveyEnabled = settings?.survey_enabled !== 'false';
+
+  const toggleMutation = useMutation({
+    mutationFn: (enabled: boolean) =>
+      api.put('/admin/settings', { survey_enabled: enabled ? 'true' : 'false' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-settings'] }),
+    onError: () => toast.error('Erreur lors de la mise à jour'),
+  });
+
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Enquêtes de satisfaction</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Enquêtes de satisfaction</h1>
+        <div className="flex items-center gap-3 px-4 py-2 rounded-lg border bg-card">
+          <Switch
+            id="survey-global-toggle"
+            checked={surveyEnabled}
+            disabled={toggleMutation.isPending}
+            onCheckedChange={v => toggleMutation.mutate(v)}
+          />
+          <Label htmlFor="survey-global-toggle" className="cursor-pointer">
+            {surveyEnabled ? 'Envois activés' : 'Envois désactivés'}
+          </Label>
+        </div>
+      </div>
       <Tabs defaultValue="results">
         <TabsList>
           <TabsTrigger value="results">Résultats</TabsTrigger>

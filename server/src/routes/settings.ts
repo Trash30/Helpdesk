@@ -17,6 +17,7 @@ const ALLOWED_SETTINGS_KEYS = [
   'auto_close_days',
   'survey_delay_hours',
   'survey_cooldown_days',
+  'survey_enabled',
 ];
 
 // ─── GET /api/settings/public (no auth) ──────────────────────────────────────
