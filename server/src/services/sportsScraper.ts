@@ -5,14 +5,15 @@ import puppeteer from 'puppeteer';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
   time: string;       // "HH:mm" or "" if unknown
   venue?: string;
-  homeTeamLogo?: string;   // URL absolue du logo de l'équipe domicile
-  awayTeamLogo?: string;   // URL absolue du logo de l'équipe extérieure
+  homeTeamLogo?: string;
+  awayTeamLogo?: string;
+  broadcasterLogo?: string;  // URL logo diffuseur TV
 }
 
 interface CacheEntry {
@@ -182,6 +183,7 @@ async function scrapeLNR(
 
       const homeLogoSrc = homeClub.find('img.club-line__icon-img').first().attr('src');
       const awayLogoSrc = awayClub.find('img.club-line__icon-img').first().attr('src');
+      const broadcasterSrc = tagEl.find('img.match-line__broadcaster').first().attr('src');
 
       const rawTime = tagEl.find('.match-line__time').first().text().trim();
       const dateIso = parseLNRDate(currentDate, rawTime);
@@ -194,6 +196,7 @@ async function scrapeLNR(
         time: rawTime.replace('h', ':') || '',
         homeTeamLogo: homeLogoSrc || undefined,
         awayTeamLogo: awayLogoSrc || undefined,
+        broadcasterLogo: broadcasterSrc || undefined,
       });
     });
 
@@ -468,6 +471,77 @@ function parseFrenchDatetime(raw: string): { date: string; time: string } {
   return { date: '', time: '' };
 }
 
+// ─── EPCR Scraper (Nuxt SSR payload) ────────────────────────────────────────
+
+/**
+ * Scrapes EPCR Champions Cup from the Nuxt SSR payload embedded in the HTML.
+ * The page inlines all fixture data in a <script> tag as a flat reference array.
+ */
+async function scrapeEPCR(): Promise<Match[]> {
+  const client = createClient();
+  try {
+    const resp = await client.get('https://www.epcrugby.com/fr/champions-cup/matchs');
+    const $ = cheerio.load(resp.data as string);
+
+    let arr: unknown[] | null = null;
+    $('script').each((_, el) => {
+      const content = $(el).html() || '';
+      if (content.startsWith('[') && content.includes('ShallowReactive')) {
+        try { arr = JSON.parse(content); } catch { /* skip */ }
+      }
+    });
+    if (!arr) return [];
+
+    // arr[5] = array of match indices; each index points to a match object in arr
+    const matchIndices = arr[5];
+    if (!Array.isArray(matchIndices)) return [];
+
+    function val(v: unknown): unknown {
+      return typeof v === 'number' && v >= 0 && (v as number) < (arr as unknown[]).length
+        ? (arr as unknown[])[v as number]
+        : v;
+    }
+
+    const matches: Match[] = [];
+    for (const idx of matchIndices as number[]) {
+      const m = arr[idx] as Record<string, unknown> | undefined;
+      if (!m) continue;
+
+      const dateStr = val(m.date);
+      if (typeof dateStr !== 'string' || !dateStr) continue;
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) continue;
+
+      const home = val(m.homeTeam) as Record<string, unknown>;
+      const away = val(m.awayTeam) as Record<string, unknown>;
+      const homeTeam = val(home?.name);
+      const awayTeam = val(away?.name);
+      if (typeof homeTeam !== 'string' || typeof awayTeam !== 'string') continue;
+      if (!homeTeam || !awayTeam) continue;
+
+      const homeLogo = val(home?.imageUrl);
+      const awayLogo = val(away?.imageUrl);
+
+      matches.push({
+        competition: 'EPCR',
+        homeTeam,
+        awayTeam,
+        date: d.toISOString(),
+        time: `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`,
+        homeTeamLogo: typeof homeLogo === 'string' ? homeLogo : undefined,
+        awayTeamLogo: typeof awayLogo === 'string' ? awayLogo : undefined,
+      });
+    }
+
+    const filtered = matches.filter(m => isInCurrentWeek(m.date));
+    log(`EPCR: ${filtered.length} matches in current week (out of ${matches.length} total)`);
+    return filtered;
+  } catch (err) {
+    logError('EPCR scraping failed:', err instanceof Error ? err.message : err);
+    return [];
+  }
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: string }> {
@@ -485,7 +559,18 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     },
     {
       key: 'LNH',
-      fetch: scrapeLNH,
+      // Hard timeout: Puppeteer can be slow — don't block the other sources
+      fetch: () => Promise.race([
+        scrapeLNH(),
+        new Promise<Match[]>(resolve => setTimeout(() => {
+          log('LNH: timeout reached, returning []');
+          resolve([]);
+        }, 20_000)),
+      ]),
+    },
+    {
+      key: 'EPCR',
+      fetch: scrapeEPCR,
     },
   ];
 
