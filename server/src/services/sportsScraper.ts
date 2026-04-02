@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
+import puppeteer from 'puppeteer';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -207,175 +208,197 @@ async function scrapeLNR(
   return filtered;
 }
 
-// ─── LNH Scraper ────────────────────────────────────────────────────────────
+// ─── LNH Scraper (Puppeteer — SPA) ─────────────────────────────────────────
 
 /**
- * The LNH site is a client-side SPA — no match data is present in the HTML
- * source and the AJAX endpoint returns 404. Returns [] until a working API
- * endpoint is identified.
+ * Scrapes the LNH Starligue calendar using Puppeteer (headless Chromium).
+ * The site is a client-side SPA: match data is rendered via JavaScript and
+ * is not available in the raw HTML source. Puppeteer waits for the DOM to
+ * be populated, then extracts match information via page.evaluate().
  */
 async function scrapeLNH(): Promise<Match[]> {
-  const client = createClient();
-  const matches: Match[] = [];
-  const ajaxUrl = 'https://www.lnh.fr/ajax';
+  const LNH_URL = 'https://www.lnh.fr/liquimoly-starligue/calendrier';
+  const LNH_BASE = 'https://www.lnh.fr';
 
-  const paramSets = [
-    { controller: 'sportsCalendars', action: 'index_ajax' },
-    { controller: 'sportsCalendars', action: 'index_ajax', competition: 'liquimoly-starligue' },
-    { controller: 'sportsCalendars', action: 'index_ajax', type: 'week' },
-  ];
+  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
 
-  for (const params of paramSets) {
-    try {
-      // Try GET first
-      const getResp = await client.get(ajaxUrl, { params });
-      if (getResp.status === 200 && getResp.data) {
-        const parsed = parseLNHResponse(getResp.data);
-        if (parsed.length > 0) {
-          matches.push(...parsed);
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    const page = await browser.newPage();
+    await page.setUserAgent(USER_AGENT);
+
+    await page.goto(LNH_URL, {
+      waitUntil: 'networkidle2',
+      timeout: 30_000,
+    });
+
+    // Try several possible selectors — the SPA DOM structure is unknown a priori
+    const CANDIDATE_SELECTORS = [
+      '.match',
+      '.matchs',
+      '.rencontre',
+      '[class*="match"]',
+      '[class*="fixture"]',
+      '[class*="game-card"]',
+      '[class*="calendar"] [class*="row"]',
+    ];
+
+    let matchSelector: string | null = null;
+    for (const selector of CANDIDATE_SELECTORS) {
+      try {
+        await page.waitForSelector(selector, { timeout: 15_000 });
+        const count = await page.$$eval(selector, (els) => els.length);
+        if (count > 0) {
+          matchSelector = selector;
+          log(`LNH: found ${count} elements with selector "${selector}"`);
           break;
         }
-      }
-    } catch {
-      // GET failed, try POST
-      try {
-        const filteredParams: Record<string, string> = {};
-        for (const [k, v] of Object.entries(params)) {
-          if (v !== undefined) filteredParams[k] = v;
-        }
-        const postResp = await client.post(ajaxUrl, new URLSearchParams(filteredParams).toString(), {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-        });
-        if (postResp.status === 200 && postResp.data) {
-          const parsed = parseLNHResponse(postResp.data);
-          if (parsed.length > 0) {
-            matches.push(...parsed);
-            break;
-          }
-        }
       } catch {
-        // This param set failed entirely, try next
+        // Selector not found within timeout, try next
       }
     }
-  }
 
-  // Fallback: try to scrape the main page HTML directly
-  if (matches.length === 0) {
-    try {
-      const resp = await client.get('https://www.lnh.fr/liquimoly-starligue/calendrier');
-      const html: string = resp.data;
-      const $ = cheerio.load(html);
-
-      $('[class*="match"], [class*="game"], [class*="fixture"], .rencontre').each((_i, el) => {
-        const block = $(el);
-        const teamEls = block.find('[class*="team"], [class*="equipe"], [class*="club"]');
-        let homeTeam = '';
-        let awayTeam = '';
-
-        if (teamEls.length >= 2) {
-          homeTeam = teamEls.eq(0).text().trim();
-          awayTeam = teamEls.eq(1).text().trim();
-        }
-
-        const dateEl = block.find('[class*="date"], time, [datetime]');
-        let dateStr = '';
-        let timeStr = '';
-
-        if (dateEl.length > 0) {
-          const datetime = dateEl.attr('datetime') || dateEl.text().trim();
-          const parsed = parseFrenchDatetime(datetime);
-          dateStr = parsed.date;
-          timeStr = parsed.time;
-        }
-
-        if (homeTeam && awayTeam) {
-          matches.push({ competition: 'LNH', homeTeam, awayTeam, date: dateStr, time: timeStr });
-        }
-      });
-    } catch (err) {
-      logError('LNH HTML fallback failed:', err instanceof Error ? err.message : err);
+    if (!matchSelector) {
+      log('LNH: no match elements found with any candidate selector');
+      return [];
     }
-  }
 
-  log(`LNH: scraped ${matches.length} total matches`);
+    // Extract match data from the DOM via page.evaluate.
+    // The JS string is evaluated in the browser context (Chromium) where DOM
+    // globals exist. We pass it as a string to avoid TS errors since the Node
+    // tsconfig does not include the 'dom' lib.
+    interface RawLNHMatch {
+      homeTeam: string;
+      awayTeam: string;
+      dateText: string;
+      timeText: string;
+      homeLogo: string;
+      awayLogo: string;
+    }
 
-  const filtered = matches.filter((m) => m.date && isInCurrentWeek(m.date));
-  log(`LNH: ${filtered.length} matches in current week`);
-  return filtered;
-}
+    const extractScript = `
+      (function(selector, baseUrl) {
+        var elements = document.querySelectorAll(selector);
+        var results = [];
 
-/**
- * Parse the LNH AJAX response which may be JSON or HTML.
- */
-function parseLNHResponse(data: unknown): Match[] {
-  const matches: Match[] = [];
+        elements.forEach(function(el) {
+          var teamEls = el.querySelectorAll(
+            '[class*="team"], [class*="equipe"], [class*="club"], [class*="nom"]'
+          );
+          var imgEls = el.querySelectorAll('img');
 
-  if (typeof data === 'string') {
-    // Might be HTML fragment
-    const lnhBase = 'https://www.lnh.fr';
-    const $ = cheerio.load(data);
-    $('[class*="match"], [class*="game"], tr, .rencontre').each((_i, el) => {
-      const block = $(el);
-      const teamEls = block.find('[class*="team"], [class*="equipe"], td');
-      if (teamEls.length >= 2) {
-        const homeTeam = teamEls.eq(0).text().trim();
-        const awayTeam = teamEls.eq(1).text().trim();
-        if (homeTeam && awayTeam && homeTeam.length < 60 && awayTeam.length < 60) {
-          const dateEl = block.find('[class*="date"], time, [datetime]');
-          const datetime = dateEl.attr('datetime') || dateEl.text().trim();
-          const parsed = parseFrenchDatetime(datetime);
-          matches.push({
-            competition: 'LNH',
-            homeTeam,
-            awayTeam,
-            date: parsed.date,
-            time: parsed.time,
-          });
-        }
-      }
+          var homeTeam = '';
+          var awayTeam = '';
+          var homeLogo = '';
+          var awayLogo = '';
+
+          if (teamEls.length >= 2) {
+            homeTeam = (teamEls[0].textContent || '').trim();
+            awayTeam = (teamEls[1].textContent || '').trim();
+          } else {
+            var spans = el.querySelectorAll('span, a, div, p');
+            var teamTexts = [];
+            spans.forEach(function(s) {
+              var text = (s.textContent || '').trim();
+              if (text.length >= 2 && text.length <= 50 && !/^\\d+$/.test(text)) {
+                teamTexts.push(text);
+              }
+            });
+            if (teamTexts.length >= 2) {
+              homeTeam = teamTexts[0];
+              awayTeam = teamTexts[1];
+            }
+          }
+
+          if (imgEls.length >= 2) {
+            var src0 = imgEls[0].getAttribute('src') || '';
+            var src1 = imgEls[1].getAttribute('src') || '';
+            homeLogo = src0.startsWith('http') ? src0 : src0 ? baseUrl + src0 : '';
+            awayLogo = src1.startsWith('http') ? src1 : src1 ? baseUrl + src1 : '';
+          }
+
+          var dateEl = el.querySelector('[class*="date"], time, [datetime]');
+          var timeEl = el.querySelector('[class*="time"], [class*="heure"], [class*="hour"]');
+
+          var dateText = '';
+          var timeText = '';
+
+          if (dateEl) {
+            dateText = dateEl.getAttribute('datetime') || (dateEl.textContent || '').trim();
+          }
+          if (timeEl) {
+            timeText = (timeEl.textContent || '').trim();
+          }
+
+          if (!timeText && dateText) {
+            var tMatch = dateText.match(/(\\d{1,2})[h:](\\d{2})/);
+            if (tMatch) {
+              timeText = tMatch[1] + 'h' + tMatch[2];
+            }
+          }
+
+          if (!dateText) {
+            var parent = el.closest('[class*="day"], [class*="jour"], [class*="round"]');
+            if (parent) {
+              var parentDateEl = parent.querySelector('[class*="date"], time, [datetime]');
+              if (parentDateEl) {
+                dateText = parentDateEl.getAttribute('datetime') || (parentDateEl.textContent || '').trim();
+              }
+            }
+          }
+
+          if (homeTeam && awayTeam) {
+            results.push({
+              homeTeam: homeTeam,
+              awayTeam: awayTeam,
+              dateText: dateText,
+              timeText: timeText,
+              homeLogo: homeLogo,
+              awayLogo: awayLogo
+            });
+          }
+        });
+
+        return results;
+      })('${matchSelector.replace(/'/g, "\\'")}', '${LNH_BASE}')
+    `;
+
+    const rawMatches = await page.evaluate(extractScript) as RawLNHMatch[];
+
+    log(`LNH: extracted ${rawMatches.length} raw matches from DOM`);
+
+    // Parse extracted data into Match objects
+    const matches: Match[] = rawMatches.map((raw) => {
+      const parsed = parseFrenchDatetime(
+        raw.timeText ? `${raw.dateText} ${raw.timeText}` : raw.dateText
+      );
+
+      return {
+        competition: 'LNH' as const,
+        homeTeam: raw.homeTeam,
+        awayTeam: raw.awayTeam,
+        date: parsed.date,
+        time: parsed.time || raw.timeText.replace('h', ':') || '',
+        homeTeamLogo: raw.homeLogo || undefined,
+        awayTeamLogo: raw.awayLogo || undefined,
+      };
     });
-  } else if (typeof data === 'object' && data !== null) {
-    // JSON response - try to find match data in various structures
-    const obj = data as Record<string, unknown>;
-    const items = Array.isArray(obj.data) ? obj.data :
-                  Array.isArray(obj.matches) ? obj.matches :
-                  Array.isArray(obj.events) ? obj.events :
-                  Array.isArray(obj.results) ? obj.results :
-                  Array.isArray(data) ? data as unknown[] : [];
 
-    for (const item of items) {
-      if (typeof item === 'object' && item !== null) {
-        const m = item as Record<string, unknown>;
-        const homeTeam = String(m.homeTeam || m.home_team || m.team_home || m.domicile || '');
-        const awayTeam = String(m.awayTeam || m.away_team || m.team_away || m.exterieur || '');
-        const dateVal = String(m.date || m.startDate || m.start_date || m.datetime || '');
-
-        if (homeTeam && awayTeam) {
-          const d = new Date(dateVal);
-
-          // Extract logo URLs from JSON response if available
-          const homeLogo = m.homeTeamLogo || m.home_team_logo || m.homeLogo;
-          const awayLogo = m.awayTeamLogo || m.away_team_logo || m.awayLogo;
-
-          matches.push({
-            competition: 'LNH',
-            homeTeam,
-            awayTeam,
-            date: isNaN(d.getTime()) ? dateVal : d.toISOString(),
-            time: isNaN(d.getTime()) ? '' : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
-            venue: m.venue ? String(m.venue) : undefined,
-            homeTeamLogo: typeof homeLogo === 'string' ? homeLogo : undefined,
-            awayTeamLogo: typeof awayLogo === 'string' ? awayLogo : undefined,
-          });
-        }
-      }
+    const filtered = matches.filter((m) => m.date && isInCurrentWeek(m.date));
+    log(`LNH: ${filtered.length} matches in current week (out of ${matches.length} total)`);
+    return filtered;
+  } catch (err) {
+    logError('LNH Puppeteer scraping failed:', err instanceof Error ? err.message : err);
+    return [];
+  } finally {
+    if (browser) {
+      await browser.close();
     }
   }
-
-  return matches;
 }
 
 // ─── Date parsing helpers ───────────────────────────────────────────────────
