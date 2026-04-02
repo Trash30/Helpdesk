@@ -18,6 +18,7 @@ import { StatusBadge } from '@/components/common/StatusBadge';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { getInitials, timeAgo, fullDate } from '@/lib/utils';
 import api from '@/lib/axios';
+import { SportsMatchesWidget } from '@/components/sports/SportsMatchesWidget';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -663,6 +664,9 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* ── ROW 7 — Sports Matches Widget ─────────────────────────────────── */}
+      <SportsMatchesWidget />
     </div>
   );
 }
