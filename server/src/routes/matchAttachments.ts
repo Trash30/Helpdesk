@@ -102,6 +102,11 @@ router.post(
 router.get(
   '/match-attachments',
   async (req: Request, res: Response) => {
+    if (!hasPermission(req.user!, 'admin.access')) {
+      res.status(403).json({ error: 'Permission refusée' });
+      return;
+    }
+
     const matchKey = req.query.matchKey as string | undefined;
     if (!matchKey) {
       res.status(400).json({ error: 'matchKey est requis' });
@@ -173,13 +178,20 @@ router.delete(
       return;
     }
 
-    // Delete from disk
+    // Delete from disk — path traversal guard
     const filePath = path.isAbsolute(attachment.path)
       ? attachment.path
       : path.join(getUploadsPath(), attachment.path);
 
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    const absolutePath = path.resolve(filePath);
+    const uploadsRoot = path.resolve(getUploadsPath());
+    if (!absolutePath.startsWith(uploadsRoot + path.sep)) {
+      res.status(400).json({ error: 'Chemin invalide' });
+      return;
+    }
+
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath);
     }
 
     await prisma.matchAttachment.delete({ where: { id: req.params.id } });

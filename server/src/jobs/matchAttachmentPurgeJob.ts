@@ -20,19 +20,30 @@ async function purgeExpiredAttachments(): Promise<void> {
     return;
   }
 
+  const uploadsRoot = path.resolve(getUploadsPath());
+
   for (const attachment of expired) {
     // Delete file from disk (ignore if already absent)
     const filePath = path.isAbsolute(attachment.path)
       ? attachment.path
       : path.join(getUploadsPath(), attachment.path);
 
-    try {
-      fs.unlinkSync(filePath);
-    } catch {
-      // File already deleted or missing — ignore
+    const absolutePath = path.resolve(filePath);
+
+    // Path traversal guard: only delete files within uploads directory
+    if (!absolutePath.startsWith(uploadsRoot + path.sep)) {
+      console.warn(
+        `[MatchAttachmentPurge] Skipping file deletion for attachment ${attachment.id}: path outside uploads directory`
+      );
+    } else {
+      try {
+        fs.unlinkSync(absolutePath);
+      } catch {
+        // File already deleted or missing — ignore
+      }
     }
 
-    // Delete DB record
+    // Always delete DB record
     await prisma.matchAttachment.delete({ where: { id: attachment.id } });
   }
 
