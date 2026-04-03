@@ -148,7 +148,7 @@ function MatchRow({ match, attachments }: MatchRowProps) {
       formData.append('file', file);
       formData.append('matchKey', matchKey);
       formData.append('matchDate', match.date);
-      return (await api.post('/sports/match-attachments', formData)).data;
+      return (await api.post('/sports/match-attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
