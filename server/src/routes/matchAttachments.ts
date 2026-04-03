@@ -50,7 +50,7 @@ const matchAttachmentUpload = multer({
 
 const matchAttachmentBodySchema = z.object({
   matchKey: z.string().min(1, 'matchKey est requis'),
-  matchDate: z.string().datetime({ message: 'matchDate doit \u00eatre une date ISO valide' }),
+  matchDate: z.string().min(1).refine((v) => !isNaN(Date.parse(v)), { message: 'matchDate doit être une date valide' }),
 });
 
 // All routes require authentication
