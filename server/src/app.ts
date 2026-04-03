@@ -21,6 +21,7 @@ import clubsRouter from './routes/clubs';
 import organisationsRouter from './routes/organisations';
 import polesRouter from './routes/poles';
 import ticketTypesRouter from './routes/ticketTypes';
+import sportsRouter from './routes/sports';
 
 const app = express();
 
@@ -76,6 +77,7 @@ app.use('/api', clubsRouter);
 app.use('/api', organisationsRouter);
 app.use('/api', polesRouter);
 app.use('/api', ticketTypesRouter);
+app.use('/api/sports', sportsRouter);
 
 // ─── 404 handler ────────────────────────────────────────────────────────────
 
