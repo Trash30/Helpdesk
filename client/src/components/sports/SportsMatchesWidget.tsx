@@ -154,8 +154,8 @@ function MatchRow({ match, attachments }: MatchRowProps) {
       queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
       toast.success('PDF ajouté avec succès');
     },
-    onError: () => {
-      toast.error('Erreur lors de l\'envoi du fichier');
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.error ?? 'Erreur lors de l\'envoi du fichier');
     },
   });
 
