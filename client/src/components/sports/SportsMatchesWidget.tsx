@@ -335,7 +335,7 @@ function MatchesList({ matches }: MatchesListProps) {
     queryFn: async () => {
       const params = new URLSearchParams();
       matchKeys.forEach((key) => params.append('matchKey', key));
-      return (await api.get('/sports/match-attachments', { params })).data as MatchAttachment[];
+      return ((await api.get('/sports/match-attachments', { params })).data?.data ?? []) as MatchAttachment[];
     },
     enabled: matches.length > 0,
   });
