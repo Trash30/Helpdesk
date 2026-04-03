@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR';
+type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE';
 
 interface Match {
   competition: Competition;
@@ -40,11 +40,12 @@ interface MatchAttachment {
 const COMPETITION_META: Record<Competition, { label: string; favicon: string }> = {
   TOP14:  { label: 'Top 14',        favicon: 'https://top14.lnr.fr/favicon.ico' },
   PRO_D2: { label: 'Pro D2',        favicon: 'https://prod2.lnr.fr/favicon.ico' },
-  EPCR:   { label: 'Champions Cup', favicon: 'https://media-cdn.incrowdsports.com/77535d85-bcdc-49b9-9dc9-879e70d9adba.svg' },
-  LNH:    { label: 'Starligue',     favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg' },
+  EPCR:           { label: 'Champions Cup', favicon: 'https://media-cdn.incrowdsports.com/77535d85-bcdc-49b9-9dc9-879e70d9adba.svg' },
+  EPCR_CHALLENGE: { label: 'Challenge Cup', favicon: 'https://media-cdn.incrowdsports.com/96d27751-bc48-42e6-890e-a389508ab133.svg' },
+  LNH:            { label: 'Starligue',     favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg' },
 };
 
-const COMPETITION_ORDER: Competition[] = ['TOP14', 'PRO_D2', 'EPCR', 'LNH'];
+const COMPETITION_ORDER: Competition[] = ['TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH'];
 
 const DAY_NAMES = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
 

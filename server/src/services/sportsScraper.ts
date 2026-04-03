@@ -4,7 +4,7 @@ import * as cheerio from 'cheerio';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
@@ -399,13 +399,16 @@ function isFrenchClub(name: string): boolean {
 }
 
 /**
- * Scrapes EPCR Champions Cup from the Nuxt SSR payload embedded in the HTML.
+ * Scrapes an EPCR competition (Champions Cup or Challenge Cup) from the Nuxt SSR payload.
  * Only returns matches where the home team is a French club.
  */
-async function scrapeEPCR(): Promise<Match[]> {
+async function scrapeEPCRCompetition(
+  url: string,
+  competition: 'EPCR' | 'EPCR_CHALLENGE'
+): Promise<Match[]> {
   const client = createClient();
   try {
-    const resp = await client.get('https://www.epcrugby.com/fr/champions-cup/matchs');
+    const resp = await client.get(url);
     const $ = cheerio.load(resp.data as string);
 
     let arr: unknown[] | null = null;
@@ -448,7 +451,7 @@ async function scrapeEPCR(): Promise<Match[]> {
       const awayLogo = val(away?.imageUrl);
 
       matches.push({
-        competition: 'EPCR',
+        competition,
         homeTeam,
         awayTeam,
         date: d.toISOString(),
@@ -459,10 +462,10 @@ async function scrapeEPCR(): Promise<Match[]> {
     }
 
     const filtered = matches.filter(m => isInCurrentWeek(m.date) && isFrenchClub(m.homeTeam));
-    log(`EPCR: ${filtered.length} matches this week with French home team (out of ${matches.length} total)`);
+    log(`${competition}: ${filtered.length} matches this week with French home team (out of ${matches.length} total)`);
     return filtered;
   } catch (err) {
-    logError('EPCR scraping failed:', err instanceof Error ? err.message : err);
+    logError(`${competition} scraping failed:`, err instanceof Error ? err.message : err);
     return [];
   }
 }
@@ -488,7 +491,11 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     },
     {
       key: 'EPCR',
-      fetch: scrapeEPCR,
+      fetch: () => scrapeEPCRCompetition('https://www.epcrugby.com/fr/champions-cup/matchs', 'EPCR'),
+    },
+    {
+      key: 'EPCR_CHALLENGE',
+      fetch: () => scrapeEPCRCompetition('https://www.epcrugby.com/fr/challenge-cup/matchs', 'EPCR_CHALLENGE'),
     },
   ];
 
