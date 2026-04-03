@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import api from '@/lib/axios';
+import { usePermissions } from '@/hooks/usePermissions';
+import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -23,6 +25,14 @@ interface Match {
 interface SportsMatchesResponse {
   data: Match[];
   lastUpdated: string;
+}
+
+interface MatchAttachment {
+  id: string;
+  matchKey: string;
+  originalName: string;
+  size: number;
+  createdAt: string;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -61,6 +71,15 @@ function formatMatchDate(dateStr: string, time: string): string {
 
   const formattedTime = time.replace(':', 'h');
   return `${day} ${dd}/${mm} \u00B7 ${formattedTime}`;
+}
+
+function getMatchKey(match: Match): string {
+  return `${match.competition}_${match.homeTeam}_${match.awayTeam}_${match.date}`;
+}
+
+function formatFileSize(bytes: number): string {
+  const kb = Math.round(bytes / 1024);
+  return kb < 1 ? '< 1 Ko' : `${kb} Ko`;
 }
 
 function groupAndSort(matches: Match[]): Map<Competition, Match[]> {
@@ -113,10 +132,72 @@ function TeamLogo({ logoUrl, teamName }: TeamLogoProps) {
 
 interface MatchRowProps {
   match: Match;
+  attachments: MatchAttachment[];
 }
 
-function MatchRow({ match }: MatchRowProps) {
+function MatchRow({ match, attachments }: MatchRowProps) {
   const [broadcasterError, setBroadcasterError] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const { can } = usePermissions();
+  const queryClient = useQueryClient();
+  const matchKey = getMatchKey(match);
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('matchKey', matchKey);
+      formData.append('matchDate', match.date);
+      return (await api.post('/sports/match-attachments', formData)).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
+      toast.success('PDF ajouté avec succès');
+    },
+    onError: () => {
+      toast.error('Erreur lors de l\'envoi du fichier');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return (await api.delete(`/sports/match-attachments/${id}`)).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
+      toast.success('PDF supprimé');
+    },
+    onError: () => {
+      toast.error('Erreur lors de la suppression');
+    },
+  });
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+
+      if (file.type !== 'application/pdf') {
+        toast.error('Seuls les fichiers PDF sont acceptés');
+        return;
+      }
+
+      uploadMutation.mutate(file);
+    },
+    [uploadMutation],
+  );
 
   return (
     <div className="flex flex-col items-center gap-1 py-2.5 px-3">
@@ -147,6 +228,58 @@ function MatchRow({ match }: MatchRowProps) {
           />
         )}
       </div>
+
+      {/* Attached PDFs */}
+      {attachments.length > 0 && (
+        <div className="w-full mt-1 space-y-0.5">
+          {attachments.map((att) => (
+            <div
+              key={att.id}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground px-1"
+            >
+              <span className="shrink-0">📄</span>
+              <button
+                type="button"
+                className="truncate hover:text-foreground hover:underline transition-colors text-left"
+                onClick={() =>
+                  window.open(`/api/sports/match-attachments/${att.id}/download`, '_blank')
+                }
+                title={att.originalName}
+              >
+                {att.originalName}
+              </button>
+              <span className="shrink-0 text-muted-foreground/60">
+                ({formatFileSize(att.size)})
+              </span>
+              {can('admin.access') && (
+                <button
+                  type="button"
+                  className="shrink-0 hover:text-red-600 transition-colors disabled:opacity-50"
+                  onClick={() => deleteMutation.mutate(att.id)}
+                  disabled={deleteMutation.isPending}
+                  title="Supprimer"
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Drop zone for admin */}
+      {can('admin.access') && (
+        <div
+          className={`w-full mt-1 border border-dashed rounded px-2 py-1.5 text-center text-xs transition-colors
+            ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50'}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}
+        </div>
+      )}
     </div>
   );
 }
@@ -195,6 +328,27 @@ interface MatchesListProps {
 }
 
 function MatchesList({ matches }: MatchesListProps) {
+  const matchKeys = matches.map(getMatchKey);
+
+  const { data: attachmentsData } = useQuery({
+    queryKey: ['match-attachments'],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      matchKeys.forEach((key) => params.append('matchKey', key));
+      return (await api.get('/sports/match-attachments', { params })).data as MatchAttachment[];
+    },
+    enabled: matches.length > 0,
+  });
+
+  const attachmentsByKey = new Map<string, MatchAttachment[]>();
+  if (attachmentsData) {
+    for (const att of attachmentsData) {
+      const existing = attachmentsByKey.get(att.matchKey) || [];
+      existing.push(att);
+      attachmentsByKey.set(att.matchKey, existing);
+    }
+  }
+
   if (matches.length === 0) {
     return (
       <p className="text-sm text-muted-foreground text-center py-4">
@@ -218,7 +372,11 @@ function MatchesList({ matches }: MatchesListProps) {
 
             <div className="divide-y">
               {compMatches.map((match, idx) => (
-                <MatchRow key={`${match.homeTeam}-${match.awayTeam}-${idx}`} match={match} />
+                <MatchRow
+                  key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
+                  match={match}
+                  attachments={attachmentsByKey.get(getMatchKey(match)) || []}
+                />
               ))}
             </div>
           </div>
