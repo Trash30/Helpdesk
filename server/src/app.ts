@@ -22,6 +22,7 @@ import organisationsRouter from './routes/organisations';
 import polesRouter from './routes/poles';
 import ticketTypesRouter from './routes/ticketTypes';
 import sportsRouter from './routes/sports';
+import matchAttachmentsRouter from './routes/matchAttachments';
 
 const app = express();
 
@@ -78,6 +79,7 @@ app.use('/api', organisationsRouter);
 app.use('/api', polesRouter);
 app.use('/api', ticketTypesRouter);
 app.use('/api/sports', sportsRouter);
+app.use('/api/sports', matchAttachmentsRouter);
 
 // ─── 404 handler ────────────────────────────────────────────────────────────
 
