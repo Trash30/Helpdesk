@@ -256,16 +256,32 @@ router.delete(
       return;
     }
 
-    const openCount = existing._count.tickets;
-    if (openCount > 0) {
+    const activeCount = existing._count.tickets;
+    if (activeCount > 0) {
       res.status(400).json({
-        error: `Impossible de supprimer ce client : ${openCount} ticket(s) en cours`,
-        count: openCount,
+        error: `Impossible de supprimer ce client : ${activeCount} ticket(s) en cours`,
+        count: activeCount,
       });
       return;
     }
 
-    await prisma.client.delete({ where: { id: req.params.id } });
+    // Supprime en cascade les tickets fermés et leurs enfants, puis le client
+    await prisma.$transaction(async (tx) => {
+      const ticketIds = (
+        await tx.ticket.findMany({ where: { clientId: req.params.id }, select: { id: true } })
+      ).map((t) => t.id);
+
+      if (ticketIds.length > 0) {
+        await tx.activityLog.deleteMany({ where: { ticketId: { in: ticketIds } } });
+        await tx.attachment.deleteMany({ where: { ticketId: { in: ticketIds } } });
+        await tx.comment.deleteMany({ where: { ticketId: { in: ticketIds } } });
+        await tx.surveyResponse.deleteMany({ where: { ticketId: { in: ticketIds } } });
+        await tx.surveySend.deleteMany({ where: { ticketId: { in: ticketIds } } });
+        await tx.ticket.deleteMany({ where: { id: { in: ticketIds } } });
+      }
+
+      await tx.client.delete({ where: { id: req.params.id } });
+    });
     res.json({ data: { message: 'Client supprimé' } });
   }
 );

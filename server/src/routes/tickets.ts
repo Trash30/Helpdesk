@@ -248,6 +248,12 @@ router.get(
       return;
     }
 
+    const isViewAll = hasPermission(req.user!, 'tickets.viewAll');
+    if (!isViewAll && ticket.assignedToId !== req.user!.id) {
+      res.status(403).json({ error: 'Accès refusé' });
+      return;
+    }
+
     res.json({ data: ticket });
   }
 );
@@ -272,7 +278,18 @@ router.put(
       return;
     }
 
+    const isViewAll = hasPermission(req.user!, 'tickets.viewAll');
+    if (!isViewAll && existing.assignedToId !== req.user!.id) {
+      res.status(403).json({ error: 'Accès refusé' });
+      return;
+    }
+
     const updates = parse.data;
+
+    if (updates.assignedToId !== undefined && !hasPermission(req.user!, 'tickets.assign')) {
+      res.status(403).json({ error: 'Permission insuffisante pour modifier l\'assignation' });
+      return;
+    }
     const activityEntries: Array<{
       ticketId: string;
       userId: string;
@@ -341,7 +358,8 @@ router.patch(
 
     const schema = z.object({
       status: z.nativeEnum(Status),
-      closingNote: z.string().optional(),
+      closingNote: z.string().max(2000).optional(),
+      pendingNote: z.string().max(2000).optional(),
     });
     const parse = schema.safeParse(req.body);
     if (!parse.success) {
@@ -357,7 +375,13 @@ router.patch(
       return;
     }
 
-    const { status, closingNote } = parse.data;
+    const isViewAllScope = hasPermission(req.user!, 'tickets.viewAll');
+    if (!isViewAllScope && existing.assignedToId !== req.user!.id) {
+      res.status(403).json({ error: 'Accès refusé' });
+      return;
+    }
+
+    const { status, closingNote, pendingNote } = parse.data;
 
     // Closing note is mandatory when transitioning to CLOSED
     if (status === 'CLOSED' && (!closingNote || !closingNote.trim())) {
@@ -365,6 +389,10 @@ router.patch(
       return;
     }
 
+    if (status === 'PENDING' && (!pendingNote || !pendingNote.trim())) {
+      res.status(400).json({ error: 'Un motif de mise en attente est obligatoire' });
+      return;
+    }
     const extra: any = {};
     if (status === 'CLOSED') {
       if (!existing.resolvedAt) extra.resolvedAt = new Date();
@@ -398,6 +426,17 @@ router.patch(
         newValue: status,
       },
     });
+
+    if (status === 'PENDING' && pendingNote) {
+      await prisma.comment.create({
+        data: {
+          ticketId: existing.id,
+          authorId: req.user!.id,
+          content: pendingNote.trim(),
+          isInternal: true,
+        },
+      });
+    }
 
     res.json({ data: ticket });
   }
