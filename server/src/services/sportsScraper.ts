@@ -22,7 +22,14 @@ interface CacheEntry {
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+// Cache expires at end of the day it was fetched (not a fixed TTL)
+// This ensures today's matches remain visible even after they've been played,
+// since sports websites move completed matches off their fixtures page.
+function getCacheExpiry(fetchedAt: number): number {
+  const end = new Date(fetchedAt);
+  end.setHours(23, 59, 59, 999);
+  return end.getTime();
+}
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -48,7 +55,7 @@ const cache: Record<string, CacheEntry> = {};
 function getCached(key: string): Match[] | null {
   const entry = cache[key];
   if (!entry) return null;
-  if (Date.now() - entry.fetchedAt > CACHE_TTL_MS) return null;
+  if (Date.now() > getCacheExpiry(entry.fetchedAt)) return null;
   return entry.data;
 }
 
