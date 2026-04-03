@@ -107,14 +107,15 @@ router.get(
       return;
     }
 
-    const matchKey = req.query.matchKey as string | undefined;
-    if (!matchKey) {
+    const raw = req.query.matchKey;
+    if (!raw) {
       res.status(400).json({ error: 'matchKey est requis' });
       return;
     }
+    const matchKeys = Array.isArray(raw) ? (raw as string[]) : [raw as string];
 
     const attachments = await prisma.matchAttachment.findMany({
-      where: { matchKey },
+      where: { matchKey: { in: matchKeys } },
       orderBy: { createdAt: 'desc' },
     });
 
