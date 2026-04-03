@@ -194,4 +194,47 @@ router.post(
   }
 );
 
+// ─── DELETE /api/admin/users/:id ──────────────────────────────────────────────
+
+router.delete(
+  '/users/:id',
+  requirePermission('admin.users'),
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    // Block self-deletion
+    if (req.user!.id === id) {
+      res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte.' });
+      return;
+    }
+
+    // Check user exists
+    const existing = await prisma.user.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: 'Agent introuvable' });
+      return;
+    }
+
+    // Block if agent has open assigned tickets
+    const openTicketsCount = await prisma.ticket.count({
+      where: {
+        assignedToId: id,
+        status: { in: ['OPEN', 'IN_PROGRESS', 'PENDING'] },
+        deletedAt: null,
+      },
+    });
+
+    if (openTicketsCount > 0) {
+      res
+        .status(400)
+        .json({ error: 'Cet agent a des tickets ouverts assignés. Réassignez-les avant de le supprimer.' });
+      return;
+    }
+
+    await prisma.user.delete({ where: { id } });
+
+    res.json({ data: { message: 'Agent supprimé avec succès' } });
+  }
+);
+
 export default router;
