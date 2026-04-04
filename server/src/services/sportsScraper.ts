@@ -394,6 +394,7 @@ const FRENCH_EPCR_CLUBS = [
   'Castres', 'Castres Olympique',
   'Pau', 'Section Paloise',
   'Racing', 'Stade Français', 'Lyon', 'LOU Rugby',
+  'Montpellier', 'Perpignan', 'USAP',
 ];
 
 function normalize(s: string): string {
@@ -462,14 +463,14 @@ async function scrapeEPCRCompetition(
         homeTeam,
         awayTeam,
         date: d.toISOString(),
-        time: `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`,
+        time: d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }),
         homeTeamLogo: typeof homeLogo === 'string' ? homeLogo : undefined,
         awayTeamLogo: typeof awayLogo === 'string' ? awayLogo : undefined,
       });
     }
 
-    const filtered = matches.filter(m => isInCurrentWeek(m.date) && isFrenchClub(m.homeTeam));
-    log(`${competition}: ${filtered.length} matches this week with French home team (out of ${matches.length} total)`);
+    const filtered = matches.filter(m => isInCurrentWeek(m.date) && (isFrenchClub(m.homeTeam) || isFrenchClub(m.awayTeam)));
+    log(`${competition}: ${filtered.length} matches this week with French club (out of ${matches.length} total)`);
     return filtered;
   } catch (err) {
     logError(`${competition} scraping failed:`, err instanceof Error ? err.message : err);
