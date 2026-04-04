@@ -73,11 +73,12 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  assignedTickets Ticket[]     @relation("AssignedTickets")
-  createdTickets  Ticket[]     @relation("CreatedTickets")
-  comments        Comment[]
-  attachments     Attachment[]
-  activityLogs    ActivityLog[]
+  assignedTickets    Ticket[]           @relation("AssignedTickets")
+  createdTickets     Ticket[]           @relation("CreatedTickets")
+  comments           Comment[]
+  attachments        Attachment[]
+  activityLogs       ActivityLog[]
+  matchAttachments   MatchAttachment[]
 }
 
 model ClientRole {
@@ -290,4 +291,17 @@ model TicketType {
   updatedAt DateTime @updatedAt
 
   tickets Ticket[]
+}
+
+model MatchAttachment {
+  id           String   @id @default(uuid())
+  matchKey     String   // cle composite : "{competition}_{homeTeam}_{awayTeam}_{date}"
+  matchDate    DateTime // date du match (pour la purge H+6)
+  filename     String   // nom genere sur disque (UUID + .pdf)
+  originalName String   // nom original du fichier uploade
+  size         Int      // taille en bytes
+  path         String   // chemin disque relatif
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
 }
