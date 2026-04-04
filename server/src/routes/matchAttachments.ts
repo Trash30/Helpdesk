@@ -97,25 +97,25 @@ router.post(
   }
 );
 
-// ─── GET /api/sports/match-attachments?matchKey=xxx ─────────────────────────
+// ─── POST /api/sports/match-attachments/query ────────────────────────────────
+// Accepts { matchKeys: string[] } in body to avoid URL length limits with many keys.
 
-router.get(
-  '/match-attachments',
+router.post(
+  '/match-attachments/query',
   async (req: Request, res: Response) => {
     if (!hasPermission(req.user!, 'admin.access')) {
       res.status(403).json({ error: 'Permission refusée' });
       return;
     }
 
-    const raw = req.query.matchKey;
-    if (!raw) {
-      res.status(400).json({ error: 'matchKey est requis' });
+    const { matchKeys } = req.body as { matchKeys?: unknown };
+    if (!Array.isArray(matchKeys) || matchKeys.length === 0) {
+      res.status(400).json({ error: 'matchKeys (array) est requis' });
       return;
     }
-    const matchKeys = Array.isArray(raw) ? (raw as string[]) : [raw as string];
 
     const attachments = await prisma.matchAttachment.findMany({
-      where: { matchKey: { in: matchKeys } },
+      where: { matchKey: { in: matchKeys as string[] } },
       orderBy: { createdAt: 'desc' },
     });
 
