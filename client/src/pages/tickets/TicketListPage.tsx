@@ -865,13 +865,15 @@ export function TicketListPage() {
                             <div className="font-medium">
                               {ticket.client.firstName} {ticket.client.lastName}
                             </div>
-                            {(ticket.client.organisation || ticket.client.club) && (
+                            {(ticket.client.organisation || ticket.client.club) ? (
                               <div className="text-xs text-muted-foreground">
                                 {[ticket.client.organisation?.name, ticket.client.club?.name]
                                   .filter(Boolean)
                                   .join(' · ')}
                               </div>
-                            )}
+                            ) : ticket.client.company ? (
+                              <div className="text-xs text-muted-foreground">{ticket.client.company}</div>
+                            ) : null}
                           </div>
                         ) : (
                           <span className="text-muted-foreground">--</span>
