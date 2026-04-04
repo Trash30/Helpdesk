@@ -865,9 +865,6 @@ export function TicketListPage() {
                             <div className="font-medium">
                               {ticket.client.firstName} {ticket.client.lastName}
                             </div>
-                            {ticket.client.phone && (
-                              <div className="text-xs text-muted-foreground">{ticket.client.phone}</div>
-                            )}
                             {(ticket.client.organisation || ticket.client.club) && (
                               <div className="text-xs text-muted-foreground">
                                 {[ticket.client.organisation?.name, ticket.client.club?.name]
