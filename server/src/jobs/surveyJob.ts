@@ -6,11 +6,14 @@ import { getBrandedEmailTemplate, sendEmail } from '../utils/email';
 async function checkAndSendSurveys(): Promise<void> {
   // Read settings
   const settings = await prisma.settings.findMany({
-    where: { key: { in: ['survey_delay_hours', 'survey_cooldown_days'] } },
+    where: { key: { in: ['survey_delay_hours', 'survey_cooldown_days', 'survey_enabled'] } },
   });
 
   const settingsMap: Record<string, string> = {};
   for (const s of settings) settingsMap[s.key] = s.value;
+
+  // Global kill-switch — default enabled if key not set
+  if (settingsMap['survey_enabled'] === 'false') return;
 
   const delayHours = parseInt(settingsMap['survey_delay_hours'] ?? '48', 10);
   const cooldownDays = parseInt(settingsMap['survey_cooldown_days'] ?? '10', 10);

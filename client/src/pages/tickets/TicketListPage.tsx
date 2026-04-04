@@ -302,7 +302,7 @@ interface Ticket {
   priority: string;
   createdAt: string;
   updatedAt: string;
-  client: { firstName: string; lastName: string; phone: string | null; company: string | null } | null;
+  client: { firstName: string; lastName: string; phone: string | null; company: string | null; organisation: { id: string; name: string } | null; club: { id: string; name: string } | null } | null;
   category: { name: string; color: string } | null;
   assignedTo: { id: string; firstName: string; lastName: string } | null;
 }
@@ -867,6 +867,13 @@ export function TicketListPage() {
                             </div>
                             {ticket.client.phone && (
                               <div className="text-xs text-muted-foreground">{ticket.client.phone}</div>
+                            )}
+                            {(ticket.client.organisation || ticket.client.club) && (
+                              <div className="text-xs text-muted-foreground">
+                                {[ticket.client.organisation?.name, ticket.client.club?.name]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              </div>
                             )}
                           </div>
                         ) : (

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import api from '@/lib/axios';
 import { getInitials } from '@/lib/utils';
+import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -85,6 +86,7 @@ const defaultForm = {
 
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
+  const currentUser = useAuthStore(s => s.user);
   const [filterRole, setFilterRole] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<User | null>(null);
@@ -93,6 +95,8 @@ export function AdminUsersPage() {
   const [saving, setSaving] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const { data: usersData } = useQuery<{ data: User[] }>({
     queryKey: ['admin-users', filterRole],
@@ -177,6 +181,18 @@ export function AdminUsersPage() {
     } finally { setSendingReset(false); setConfirmReset(false); }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/admin/users/${deleteTarget.id}`);
+      toast.success('Agent supprimé');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    } catch (err: any) {
+      toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
+    } finally { setDeleting(false); setDeleteTarget(null); }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -234,11 +250,17 @@ export function AdminUsersPage() {
                     {user.isActive ? 'Actif' : 'Inactif'}
                   </span>
                 </td>
-                <td className="p-3">
+                <td className="p-3 flex gap-1">
                   <Button variant="ghost" size="icon" className="h-7 w-7"
                     onClick={() => openEdit(user)}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
+                  {currentUser?.id !== user.id && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteTarget(user)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -386,6 +408,17 @@ export function AdminUsersPage() {
         confirmLabel="Envoyer"
         loading={sendingReset}
         onConfirm={handleSendReset}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={open => { if (!open) setDeleteTarget(null); }}
+        title="Supprimer un agent"
+        description={deleteTarget ? `Supprimer ${deleteTarget.firstName} ${deleteTarget.lastName} ? Cette action est irréversible.` : ''}
+        confirmLabel="Supprimer"
+        variant="destructive"
+        loading={deleting}
+        onConfirm={handleDelete}
       />
     </div>
   );

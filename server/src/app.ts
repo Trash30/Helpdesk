@@ -21,6 +21,8 @@ import clubsRouter from './routes/clubs';
 import organisationsRouter from './routes/organisations';
 import polesRouter from './routes/poles';
 import ticketTypesRouter from './routes/ticketTypes';
+import sportsRouter from './routes/sports';
+import matchAttachmentsRouter from './routes/matchAttachments';
 
 const app = express();
 
@@ -56,6 +58,10 @@ const uploadsPath = process.env.UPLOADS_PATH
   ? path.resolve(process.env.UPLOADS_PATH)
   : path.join(process.cwd(), 'uploads');
 
+// Block direct static access to match-attachments (served via authenticated API route)
+app.use('/uploads/match-attachments', (_req, res) => {
+  res.status(403).json({ error: 'Accès refusé' });
+});
 app.use('/uploads', express.static(uploadsPath));
 
 // ─── API routes ──────────────────────────────────────────────────────────────
@@ -76,6 +82,8 @@ app.use('/api', clubsRouter);
 app.use('/api', organisationsRouter);
 app.use('/api', polesRouter);
 app.use('/api', ticketTypesRouter);
+app.use('/api/sports', sportsRouter);
+app.use('/api/sports', matchAttachmentsRouter);
 
 // ─── 404 handler ────────────────────────────────────────────────────────────
 
