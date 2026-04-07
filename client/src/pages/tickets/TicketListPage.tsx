@@ -368,6 +368,12 @@ export function TicketListPage() {
 
   const debouncedSearch = useDebounce(search, 400);
 
+  const myTicketsActive = !!user && assignedToId === user.id;
+  const toggleMyTickets = useCallback(() => {
+    setAssignedToId(prev => (user && prev !== user.id ? user.id : ''));
+    setPage(1);
+  }, [user]);
+
   const hasFilters = statuses.length > 0 || priorities.length > 0 ||
     categoryId || assignedToId || dateFrom || dateTo || debouncedSearch ||
     clubId || organisationId;
@@ -650,6 +656,17 @@ export function TicketListPage() {
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+              <button
+                type="button"
+                onClick={toggleMyTickets}
+                className={`h-9 px-3 rounded-md border text-sm font-medium transition-colors ${
+                  myTicketsActive
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'border-input bg-background text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Mes tickets
+              </button>
               {can('tickets.assign') && (
                 <select
                   value={assignedToId}
@@ -732,6 +749,19 @@ export function TicketListPage() {
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
+
+            {/* Mes tickets toggle */}
+            <button
+              type="button"
+              onClick={toggleMyTickets}
+              className={`h-9 px-3 rounded-md border text-sm font-medium transition-colors shrink-0 ${
+                myTicketsActive
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-input bg-background text-muted-foreground hover:text-foreground hover:border-foreground/40'
+              }`}
+            >
+              Mes tickets
+            </button>
 
             {/* Agent select */}
             {can('tickets.assign') && (
