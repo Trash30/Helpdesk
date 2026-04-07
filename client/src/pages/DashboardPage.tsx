@@ -477,9 +477,8 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* ── ROW 3 — Bar chart + Recent activity ─────────────────────────── */}
+      {/* ── ROW 3 — Bar chart ───────────────────────────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Horizontal bar chart — 50% */}
         <Card className="flex-1 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Tickets par agent</CardTitle>
@@ -517,65 +516,6 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent activity — 50% */}
-        <Card className="flex-1 shadow-sm">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Activité récente</CardTitle>
-              <Link to="/tickets" className="text-xs text-primary hover:underline">Voir tout</Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {statsLoading ? (
-              <div className="px-6 space-y-3 py-2">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex gap-3 items-center">
-                    <Skeleton className="h-8 w-8 rounded-full shrink-0" />
-                    <div className="flex-1 space-y-1">
-                      <Skeleton className="h-3 w-24" />
-                      <Skeleton className="h-3 w-40" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (stats?.recentActivity ?? []).length === 0 ? (
-              <p className="px-6 py-4 text-sm text-muted-foreground">Aucune activité récente.</p>
-            ) : (
-              <ul className="divide-y">
-                {(stats?.recentActivity ?? []).map((log: any) => (
-                  <li key={log.id} className="flex items-start gap-3 px-6 py-3">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
-                      {log.user
-                        ? getInitials(log.user.firstName, log.user.lastName)
-                        : '?'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-tight">
-                        {log.user ? `${log.user.firstName} ${log.user.lastName}` : 'Système'}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {log.action}
-                        {log.ticket && (
-                          <> — <Link to={`/tickets/${log.ticketId}`} className="text-primary hover:underline">{log.ticket.ticketNumber}</Link></>
-                        )}
-                      </p>
-                    </div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-xs text-muted-foreground shrink-0 cursor-default">
-                            {timeAgo(log.createdAt)}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>{fullDate(log.createdAt)}</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* ── ROW 4 — Urgent tickets table ────────────────────────────────── */}
