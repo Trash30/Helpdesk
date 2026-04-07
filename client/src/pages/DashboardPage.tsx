@@ -7,8 +7,8 @@ import {
   BarChart, Bar,
 } from 'recharts';
 import {
-  Ticket as TicketIcon, Clock, CheckCircle, Star,
-  ExternalLink, AlertTriangle,
+  Ticket as TicketIcon, Clock, CheckCircle,
+  ExternalLink, AlertTriangle, CalendarDays,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthStore } from '@/stores/authStore';
@@ -22,12 +22,6 @@ import api from '@/lib/axios';
 import { SportsMatchesWidget } from '@/components/sports/SportsMatchesWidget';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function csatColor(score: number): string {
-  if (score < 50) return '#E24B4A';
-  if (score <= 75) return '#EF9F27';
-  return '#639922';
-}
 
 const PRIORITY_COLORS: Record<string, string> = {
   CRITICAL: '#E24B4A',
@@ -51,11 +45,15 @@ interface KpiCardProps {
   color: string;
   icon: React.ReactNode;
   children?: React.ReactNode;
+  onClick?: () => void;
 }
 
-function KpiCard({ label, value, color, icon, children }: KpiCardProps) {
+function KpiCard({ label, value, color, icon, children, onClick }: KpiCardProps) {
   return (
-    <Card className="shadow-sm overflow-hidden">
+    <Card
+      className={`shadow-sm overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      onClick={onClick}
+    >
       <div style={{ height: '3px', backgroundColor: color }} />
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
@@ -222,9 +220,18 @@ export function DashboardPage() {
     refetchInterval: 60000,
   });
 
-  const csat = stats?.csatGlobal;
-  const csatScore = csat?.score ?? 0;
-  const csatColorVal = csatColor(csatScore);
+  const { data: sportsData } = useQuery({
+    queryKey: ['sports-matches'],
+    queryFn: () => api.get('/sports/matches').then(r => r.data),
+    staleTime: 1000 * 60 * 60,
+  });
+  const sportsEventCount = sportsData?.data?.length ?? 0;
+
+  const today = new Date();
+  const todayEventCount = (sportsData?.data ?? []).filter((m: any) => {
+    const d = new Date(m.date);
+    return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
+  }).length;
 
   // Donut chart data
   const priorityData = stats?.ticketsByPriority
@@ -262,6 +269,7 @@ export function DashboardPage() {
               value={stats?.openTickets ?? 0}
               color="#0070C1"
               icon={<TicketIcon size={20} />}
+              onClick={() => navigate('/tickets?status[]=OPEN')}
             />
 
             <KpiCard
@@ -269,6 +277,7 @@ export function DashboardPage() {
               value={stats?.inProgressTickets ?? 0}
               color="#EF9F27"
               icon={<Clock size={20} />}
+              onClick={() => navigate('/tickets?status[]=IN_PROGRESS')}
             />
 
             <KpiCard
@@ -276,54 +285,30 @@ export function DashboardPage() {
               value={stats?.closedToday ?? stats?.resolvedToday ?? 0}
               color="#639922"
               icon={<CheckCircle size={20} />}
+              onClick={() => navigate('/tickets?status[]=CLOSED&status[]=RESOLVED')}
             />
 
-            {/* CSAT Card */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <KpiCard
-                      label="CSAT global"
-                      value={`${csatScore.toFixed(1)}%`}
-                      color={csatColorVal}
-                      icon={<Star size={20} />}
-                    >
-                      <div className="mt-2 space-y-1">
-                        {/* Progress bar */}
-                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${csatScore}%`, backgroundColor: csatColorVal }}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">{csat?.total ?? 0} réponses</span>
-                          {csat?.vsLastMonth !== undefined && csat.vsLastMonth !== 0 && (
-                            <span
-                              className="text-xs font-semibold px-1.5 py-0.5 rounded"
-                              style={{
-                                backgroundColor: csat.vsLastMonth > 0 ? '#EAF3DE' : '#FCEBEB',
-                                color: csat.vsLastMonth > 0 ? '#3B6D11' : '#A32D2D',
-                              }}
-                            >
-                              {csat.vsLastMonth > 0 ? '+' : ''}{csat.vsLastMonth.toFixed(1)}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </KpiCard>
-                  </div>
-                </TooltipTrigger>
-                {csat && (
-                  <TooltipContent className="space-y-1 text-xs" side="bottom">
-                    <p>Satisfaits (≥4) : <strong>{csat.satisfied}</strong></p>
-                    <p>Neutres (=3) : <strong>{csat.neutral}</strong></p>
-                    <p>Non satisfaits (≤2) : <strong>{csat.unsatisfied}</strong></p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+            {/* Événements aujourd'hui */}
+            <KpiCard
+              label="Événements aujourd'hui"
+              value={todayEventCount}
+              color="#0891B2"
+              icon={<CalendarDays size={20} />}
+              onClick={() => navigate('/evenements/aujourd-hui')}
+            >
+              <p className="text-xs text-muted-foreground mt-1">Sessions sportives du jour</p>
+            </KpiCard>
+
+            {/* Sports events this week */}
+            <KpiCard
+              label="Événements cette semaine"
+              value={sportsEventCount}
+              color="#7C3AED"
+              icon={<CalendarDays size={20} />}
+              onClick={() => { document.getElementById('sports-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+            >
+              <p className="text-xs text-muted-foreground mt-1">Matchs & sessions</p>
+            </KpiCard>
 
             {/* Stale tickets card */}
             {stats?.staleTickets !== undefined && (
@@ -477,9 +462,8 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      {/* ── ROW 3 — Bar chart + Recent activity ─────────────────────────── */}
+      {/* ── ROW 3 — Bar chart ───────────────────────────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Horizontal bar chart — 50% */}
         <Card className="flex-1 shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Tickets par agent</CardTitle>
@@ -517,65 +501,6 @@ export function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent activity — 50% */}
-        <Card className="flex-1 shadow-sm">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Activité récente</CardTitle>
-              <Link to="/tickets" className="text-xs text-primary hover:underline">Voir tout</Link>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {statsLoading ? (
-              <div className="px-6 space-y-3 py-2">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex gap-3 items-center">
-                    <Skeleton className="h-8 w-8 rounded-full shrink-0" />
-                    <div className="flex-1 space-y-1">
-                      <Skeleton className="h-3 w-24" />
-                      <Skeleton className="h-3 w-40" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (stats?.recentActivity ?? []).length === 0 ? (
-              <p className="px-6 py-4 text-sm text-muted-foreground">Aucune activité récente.</p>
-            ) : (
-              <ul className="divide-y">
-                {(stats?.recentActivity ?? []).map((log: any) => (
-                  <li key={log.id} className="flex items-start gap-3 px-6 py-3">
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
-                      {log.user
-                        ? getInitials(log.user.firstName, log.user.lastName)
-                        : '?'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium leading-tight">
-                        {log.user ? `${log.user.firstName} ${log.user.lastName}` : 'Système'}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {log.action}
-                        {log.ticket && (
-                          <> — <Link to={`/tickets/${log.ticketId}`} className="text-primary hover:underline">{log.ticket.ticketNumber}</Link></>
-                        )}
-                      </p>
-                    </div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="text-xs text-muted-foreground shrink-0 cursor-default">
-                            {timeAgo(log.createdAt)}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>{fullDate(log.createdAt)}</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* ── ROW 4 — Urgent tickets table ────────────────────────────────── */}
@@ -668,7 +593,9 @@ export function DashboardPage() {
       )}
 
       {/* ── ROW 7 — Sports Matches Widget ─────────────────────────────────── */}
-      <SportsMatchesWidget />
+      <div id="sports-section">
+        <SportsMatchesWidget />
+      </div>
     </div>
   );
 }
