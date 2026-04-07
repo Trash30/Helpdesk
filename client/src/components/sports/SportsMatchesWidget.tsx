@@ -269,8 +269,8 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
         </div>
       )}
 
-      {/* Drop zone admin */}
-      {can('admin.access') && (
+      {/* Drop zone — tous les agents peuvent uploader */}
+      {can('tickets.create') && (
         <div
           className={`w-full border border-dashed rounded px-2 py-1.5 text-center text-xs transition-colors
             ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
@@ -423,8 +423,8 @@ function MatchRow({ match, attachments }: MatchRowProps) {
         </div>
       )}
 
-      {/* Drop zone for admin */}
-      {can('admin.access') && (
+      {/* Drop zone — tous les agents peuvent uploader */}
+      {can('tickets.create') && (
         <div
           className={`w-full mt-1 border border-dashed rounded px-2 py-1.5 text-center text-xs transition-colors
             ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
