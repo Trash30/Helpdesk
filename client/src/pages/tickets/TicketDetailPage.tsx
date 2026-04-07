@@ -6,6 +6,7 @@ import rehypeSanitize from 'rehype-sanitize';
 import {
   Phone, Mail, ExternalLink, Paperclip, Download, Trash2,
   XCircle, RefreshCw, Bold, Italic, Code, X, Pencil,
+  SlidersHorizontal,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -25,6 +26,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '@/components/ui/sheet';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -620,6 +624,7 @@ export function TicketDetailPage() {
 
   const [confirmAction, setConfirmAction] = useState<'close' | 'reopen' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const [closingNoteOpen, setClosingNoteOpen] = useState(false);
   const [closingNote, setClosingNote] = useState('');
   const [closingLoading, setClosingLoading] = useState(false);
@@ -1192,6 +1197,111 @@ export function TicketDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile floating action button + Sheet */}
+      <Button
+        size="icon"
+        className="fixed bottom-4 right-4 z-40 lg:hidden h-12 w-12 rounded-full shadow-lg"
+        onClick={() => setMobileActionsOpen(true)}
+      >
+        <SlidersHorizontal className="h-5 w-5" />
+      </Button>
+
+      <Sheet open={mobileActionsOpen} onOpenChange={setMobileActionsOpen}>
+        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Actions rapides</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 pt-4">
+            <FieldRow label="Statut">
+              <select
+                value={ticket.status}
+                onChange={e => {
+                  if (e.target.value === 'CLOSED') {
+                    setMobileActionsOpen(false);
+                    setClosingNote('');
+                    setClosingNoteOpen(true);
+                    e.target.value = ticket.status;
+                  } else if (e.target.value === 'PENDING') {
+                    setMobileActionsOpen(false);
+                    setPendingNote('');
+                    setPendingNoteOpen(true);
+                    e.target.value = ticket.status;
+                  } else {
+                    updateStatus(e.target.value);
+                  }
+                }}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                {['OPEN', 'IN_PROGRESS', 'PENDING', 'CLOSED'].map(s => (
+                  <option key={s} value={s}>
+                    {s === 'OPEN' ? 'Ouvert' :
+                     s === 'IN_PROGRESS' ? 'En cours' :
+                     s === 'PENDING' ? 'En attente' : 'Fermé'}
+                  </option>
+                ))}
+              </select>
+            </FieldRow>
+
+            <FieldRow label="Priorité">
+              <select
+                value={ticket.priority}
+                onChange={e => updateField({ priority: e.target.value })}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="CRITICAL">Critique</option>
+                <option value="HIGH">Haute</option>
+                <option value="MEDIUM">Moyenne</option>
+                <option value="LOW">Basse</option>
+              </select>
+            </FieldRow>
+
+            <FieldRow label="Catégorie">
+              <select
+                value={ticket.category?.id ?? ''}
+                onChange={e => updateField({ categoryId: e.target.value || null })}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Sans catégorie</option>
+                {categories?.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </FieldRow>
+
+            <FieldRow label="Pôle">
+              <select
+                value={ticket.pole?.id ?? ''}
+                onChange={e => updateField({ poleId: e.target.value || null })}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Aucun pôle</option>
+                {poles?.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </FieldRow>
+
+            <FieldRow label="Assigné à">
+              <select
+                value={ticket.assignedTo?.id ?? ''}
+                onChange={e => updateAssign(e.target.value || null)}
+                disabled={!canAssign}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Non assigné</option>
+                {agents?.map(a => (
+                  <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
+                ))}
+              </select>
+            </FieldRow>
+          </div>
+        </SheetContent>
+      </Sheet>
 
     </TooltipProvider>
   );

@@ -2,14 +2,17 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Search, Plus, ChevronDown, ChevronLeft, ChevronRight,
+  Search, Plus, ChevronDown,
   TicketIcon, RotateCcw, Download, FileText, FileSpreadsheet, SlidersHorizontal,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useAuthStore } from '@/stores/authStore';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
+import { MultiSelect } from '@/components/common/MultiSelect';
+import { Pagination } from '@/components/common/Pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,15 +23,6 @@ import toast from 'react-hot-toast';
 // ── helpers ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_STATUSES = ['OPEN', 'IN_PROGRESS', 'PENDING'];
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
 
 function relativeTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -62,128 +56,6 @@ const PRIORITY_LABELS: Record<string, string> = {
   MEDIUM: 'Moyenne',
   LOW: 'Basse',
 };
-
-// ── MultiSelect ──────────────────────────────────────────────────────────────
-
-interface MultiSelectProps {
-  options: { value: string; label: string }[];
-  value: string[];
-  onChange: (v: string[]) => void;
-  placeholder: string;
-}
-
-function MultiSelect({ options, value, onChange, placeholder }: MultiSelectProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function outside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', outside);
-    return () => document.removeEventListener('mousedown', outside);
-  }, []);
-
-  const toggle = (v: string) =>
-    onChange(value.includes(v) ? value.filter(x => x !== v) : [...value, v]);
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="flex h-9 min-w-[150px] items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-sm"
-      >
-        <span className="text-muted-foreground truncate">
-          {value.length === 0 ? placeholder : `${value.length} sélectionné${value.length > 1 ? 's' : ''}`}
-        </span>
-        <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[170px] rounded-md border bg-popover shadow-md py-1">
-          {options.map(opt => (
-            <label
-              key={opt.value}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-accent"
-            >
-              <input
-                type="checkbox"
-                checked={value.includes(opt.value)}
-                onChange={() => toggle(opt.value)}
-                className="h-4 w-4 rounded border-input"
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Pagination ───────────────────────────────────────────────────────────────
-
-function Pagination({
-  page,
-  totalPages,
-  onChange,
-}: {
-  page: number;
-  totalPages: number;
-  onChange: (p: number) => void;
-}) {
-  const pages: number[] = [];
-  const start = Math.max(1, page - 2);
-  const end = Math.min(totalPages, page + 2);
-  for (let i = start; i <= end; i++) pages.push(i);
-
-  if (totalPages <= 1) return null;
-
-  return (
-    <div className="flex items-center gap-1">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onChange(page - 1)}
-        disabled={page === 1}
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      {start > 1 && (
-        <>
-          <Button variant={page === 1 ? 'default' : 'outline'} size="sm" onClick={() => onChange(1)}>1</Button>
-          {start > 2 && <span className="px-2 text-muted-foreground">...</span>}
-        </>
-      )}
-      {pages.map(p => (
-        <Button
-          key={p}
-          variant={p === page ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onChange(p)}
-        >
-          {p}
-        </Button>
-      ))}
-      {end < totalPages && (
-        <>
-          {end < totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
-          <Button variant={page === totalPages ? 'default' : 'outline'} size="sm" onClick={() => onChange(totalPages)}>
-            {totalPages}
-          </Button>
-        </>
-      )}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => onChange(page + 1)}
-        disabled={page === totalPages}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-    </div>
-  );
-}
 
 // ── Skeletons ────────────────────────────────────────────────────────────────
 
@@ -649,7 +521,7 @@ export function TicketListPage() {
               <select
                 value={categoryId}
                 onChange={e => setCategoryId(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
               >
                 <option value="">Toutes les catégories</option>
                 {categories?.map(c => (
@@ -671,7 +543,7 @@ export function TicketListPage() {
                 <select
                   value={assignedToId}
                   onChange={e => setAssignedToId(e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
                 >
                   <option value="">Tous les agents</option>
                   {agents?.map(a => (
@@ -682,7 +554,7 @@ export function TicketListPage() {
               <select
                 value={organisationId}
                 onChange={e => setOrganisationId(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
               >
                 <option value="">Organisation</option>
                 {organisations?.map(o => (
@@ -692,7 +564,7 @@ export function TicketListPage() {
               <select
                 value={clubId}
                 onChange={e => setClubId(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
               >
                 <option value="">Club / Ville</option>
                 {clubs?.map(c => (
@@ -742,7 +614,7 @@ export function TicketListPage() {
             <select
               value={categoryId}
               onChange={e => setCategoryId(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
             >
               <option value="">Toutes les catégories</option>
               {categories?.map(c => (
@@ -768,7 +640,7 @@ export function TicketListPage() {
               <select
                 value={assignedToId}
                 onChange={e => setAssignedToId(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
               >
                 <option value="">Tous les agents</option>
                 {agents?.map(a => (
@@ -781,7 +653,7 @@ export function TicketListPage() {
             <select
               value={organisationId}
               onChange={e => setOrganisationId(e.target.value)}
-              className="h-9 max-w-[160px] rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              className="h-9 max-w-[160px] rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
             >
               <option value="">Organisation</option>
               {organisations?.map(o => (
@@ -793,7 +665,7 @@ export function TicketListPage() {
             <select
               value={clubId}
               onChange={e => setClubId(e.target.value)}
-              className="h-9 max-w-[160px] rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
+              className="h-9 max-w-[160px] rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
             >
               <option value="">Club / Ville</option>
               {clubs?.map(c => (
