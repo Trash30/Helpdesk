@@ -17,6 +17,7 @@ interface Match {
   date: string;
   time: string;
   venue?: string;
+  country?: string;
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;
@@ -86,6 +87,14 @@ function formatFileSize(bytes: number): string {
   return kb < 1 ? '< 1 Ko' : `${kb} Ko`;
 }
 
+function countryCodeToFlag(code: string): string {
+  return code
+    .toUpperCase()
+    .split('')
+    .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
+    .join('');
+}
+
 function groupAndSort(matches: Match[]): Map<Competition, Match[]> {
   const grouped = new Map<Competition, Match[]>();
 
@@ -131,6 +140,149 @@ function TeamLogo({ logoUrl, teamName }: TeamLogoProps) {
       className="w-6 h-6 object-contain rounded-sm shrink-0"
       onError={() => setHasError(true)}
     />
+  );
+}
+
+interface ElmsMatchRowProps {
+  match: Match;
+  attachments: MatchAttachment[];
+}
+
+function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const { can } = usePermissions();
+  const queryClient = useQueryClient();
+  const matchKey = getMatchKey(match);
+
+  // Nettoyer le nom de l'epreuve : enlever le prefixe "ELMS " si present
+  const eventName = match.homeTeam.replace(/^ELMS\s+/i, '');
+
+  // Badge couleur : bleu pour Qualifying, orange pour Race
+  const isRace = match.awayTeam === 'Race';
+  const sessionBadgeClass = isRace
+    ? 'bg-orange-100 text-orange-700 border border-orange-200'
+    : 'bg-blue-100 text-blue-700 border border-blue-200';
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('matchKey', matchKey);
+      formData.append('matchDate', match.date);
+      return (await api.post('/sports/match-attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
+      toast.success('PDF ajouté avec succès');
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.error ?? "Erreur lors de l'envoi du fichier");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return (await api.delete(`/sports/match-attachments/${id}`)).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
+      toast.success('PDF supprimé');
+    },
+    onError: () => {
+      toast.error('Erreur lors de la suppression');
+    },
+  });
+
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); }, []);
+  const handleDragLeave = useCallback(() => setIsDragOver(false), []);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      if (file.type !== 'application/pdf') { toast.error('Seuls les fichiers PDF sont acceptés'); return; }
+      uploadMutation.mutate(file);
+    },
+    [uploadMutation],
+  );
+
+  return (
+    <div className="flex flex-col gap-1 py-2.5 px-3">
+      {/* Ligne principale : flag + nom epreuve + badge session */}
+      <div className="flex items-center gap-2">
+        {/* Logo ELMS */}
+        {match.homeTeamLogo && (
+          <img
+            src={match.homeTeamLogo}
+            alt="ELMS"
+            className="w-5 h-5 object-contain shrink-0"
+          />
+        )}
+        {/* Drapeau pays */}
+        {match.country && (
+          <span className="text-base leading-none shrink-0" title={match.country}>
+            {countryCodeToFlag(match.country)}
+          </span>
+        )}
+        {/* Nom de l'epreuve */}
+        <span className="text-sm font-medium truncate flex-1">{eventName}</span>
+        {/* Badge session */}
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${sessionBadgeClass}`}>
+          {match.awayTeam}
+        </span>
+      </div>
+
+      {/* Date/heure */}
+      <div className="text-xs text-muted-foreground pl-0.5">
+        {formatMatchDate(match.date, match.time)}
+      </div>
+
+      {/* PDFs attaches */}
+      {attachments.length > 0 && (
+        <div className="w-full space-y-0.5">
+          {attachments.map((att) => (
+            <div key={att.id} className="flex items-center gap-1.5 text-xs text-muted-foreground px-1">
+              <span className="shrink-0">📄</span>
+              <button
+                type="button"
+                className="truncate hover:text-foreground hover:underline transition-colors text-left"
+                onClick={() => window.open(`/api/sports/match-attachments/${att.id}/download`, '_blank')}
+                title={att.originalName}
+              >
+                {att.originalName}
+              </button>
+              <span className="shrink-0 text-muted-foreground/60">({formatFileSize(att.size)})</span>
+              {can('admin.access') && (
+                <button
+                  type="button"
+                  className="shrink-0 hover:text-red-600 transition-colors disabled:opacity-50"
+                  onClick={() => deleteMutation.mutate(att.id)}
+                  disabled={deleteMutation.isPending}
+                  title="Supprimer"
+                >
+                  🗑️
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Drop zone admin */}
+      {can('admin.access') && (
+        <div
+          className={`w-full border border-dashed rounded px-2 py-1.5 text-center text-xs transition-colors
+            ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50'}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -380,13 +532,21 @@ function MatchesList({ matches }: MatchesListProps) {
             </div>
 
             <div className="divide-y">
-              {compMatches.map((match, idx) => (
-                <MatchRow
-                  key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
-                  match={match}
-                  attachments={attachmentsByKey.get(getMatchKey(match)) || []}
-                />
-              ))}
+              {compMatches.map((match, idx) =>
+                match.competition === 'ELMS' ? (
+                  <ElmsMatchRow
+                    key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
+                    match={match}
+                    attachments={attachmentsByKey.get(getMatchKey(match)) || []}
+                  />
+                ) : (
+                  <MatchRow
+                    key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
+                    match={match}
+                    attachments={attachmentsByKey.get(getMatchKey(match)) || []}
+                  />
+                )
+              )}
             </div>
           </div>
         );
