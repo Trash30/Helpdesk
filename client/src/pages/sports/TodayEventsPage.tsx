@@ -79,7 +79,7 @@ export function TodayEventsPage() {
   });
 
   // Sort by time
-  const sorted = [...todayMatches].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...todayMatches].sort((a, b) => a.time.localeCompare(b.time));
 
   // Build matchKeys for attachment query
   const matchKeys = sorted.map(getMatchKey);

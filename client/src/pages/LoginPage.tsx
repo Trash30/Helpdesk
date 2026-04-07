@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useBranding } from '@/hooks/useBranding';
 import { useAuthStore } from '@/stores/authStore';
@@ -49,7 +49,7 @@ export function LoginPage() {
         </div>
 
         {/* Form card */}
-        <div className="bg-card rounded-lg border shadow-sm p-6 space-y-5">
+        <div className="bg-card rounded-lg border shadow-sm p-6 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
           <h2 className="text-lg font-semibold text-center">Connexion</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -75,6 +75,11 @@ export function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
               />
+            </div>
+            <div className="flex justify-end">
+              <Link to="/reset-password" className="text-sm text-primary hover:underline">
+                Mot de passe oublié ?
+              </Link>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Connexion...' : 'Se connecter'}

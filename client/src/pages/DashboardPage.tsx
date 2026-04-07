@@ -267,7 +267,7 @@ export function DashboardPage() {
             <KpiCard
               label="Tickets ouverts"
               value={stats?.openTickets ?? 0}
-              color="#0070C1"
+              color="var(--kpi-open)"
               icon={<TicketIcon size={20} />}
               onClick={() => navigate('/tickets?status[]=OPEN')}
             />
@@ -275,7 +275,7 @@ export function DashboardPage() {
             <KpiCard
               label="En cours"
               value={stats?.inProgressTickets ?? 0}
-              color="#EF9F27"
+              color="var(--kpi-progress)"
               icon={<Clock size={20} />}
               onClick={() => navigate('/tickets?status[]=IN_PROGRESS')}
             />
@@ -283,7 +283,7 @@ export function DashboardPage() {
             <KpiCard
               label="Fermés aujourd'hui"
               value={stats?.closedToday ?? stats?.resolvedToday ?? 0}
-              color="#639922"
+              color="var(--kpi-closed)"
               icon={<CheckCircle size={20} />}
               onClick={() => navigate('/tickets?status[]=CLOSED&status[]=RESOLVED')}
             />
@@ -292,7 +292,7 @@ export function DashboardPage() {
             <KpiCard
               label="Événements aujourd'hui"
               value={todayEventCount}
-              color="#0891B2"
+              color="var(--kpi-events-today)"
               icon={<CalendarDays size={20} />}
               onClick={() => navigate('/evenements/aujourd-hui')}
             >
@@ -303,7 +303,7 @@ export function DashboardPage() {
             <KpiCard
               label="Événements cette semaine"
               value={sportsEventCount}
-              color="#7C3AED"
+              color="var(--kpi-events-week)"
               icon={<CalendarDays size={20} />}
               onClick={() => { document.getElementById('sports-section')?.scrollIntoView({ behavior: 'smooth' }); }}
             >
@@ -312,52 +312,28 @@ export function DashboardPage() {
 
             {/* Stale tickets card */}
             {stats?.staleTickets !== undefined && (
-              <Card
-                className={`cursor-pointer transition-colors hover:shadow-md ${
-                  (stats.staleTickets ?? 0) > 0
-                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50'
-                    : 'hover:bg-muted/40'
-                }`}
+              <KpiCard
+                label="Tickets en attente de MAJ"
+                value={stats.staleTickets ?? 0}
+                color="var(--kpi-warning)"
+                icon={<AlertTriangle size={20} />}
                 onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5')}
               >
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-muted-foreground font-medium">Tickets en attente de MAJ</p>
-                    <span className={`opacity-80 ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
-                      <AlertTriangle size={20} />
-                    </span>
-                  </div>
-                  <p className={`text-3xl font-bold ${(stats.staleTickets ?? 0) > 0 ? 'text-amber-700 dark:text-amber-200' : 'text-foreground'}`}>
-                    {stats.staleTickets ?? 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Sans MAJ depuis &gt; 5 jours</p>
-                </CardContent>
-              </Card>
+                <p className="text-xs text-muted-foreground mt-1">Sans MAJ depuis &gt; 5 jours</p>
+              </KpiCard>
             )}
 
             {/* My stale tickets card (agents only) */}
             {!isAdmin && stats?.myStaleTickets !== undefined && (
-              <Card
-                className={`cursor-pointer transition-colors hover:shadow-md ${
-                  (stats.myStaleTickets ?? 0) > 0
-                    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50'
-                    : 'hover:bg-muted/40'
-                }`}
+              <KpiCard
+                label="Mes tickets en attente de MAJ"
+                value={stats.myStaleTickets ?? 0}
+                color="var(--kpi-warning)"
+                icon={<Clock size={20} />}
                 onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5&assignedToMe=true')}
               >
-                <CardContent className="p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-muted-foreground font-medium">Mes tickets en attente de MAJ</p>
-                    <span className={`opacity-80 ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
-                      <Clock size={20} />
-                    </span>
-                  </div>
-                  <p className={`text-3xl font-bold ${(stats.myStaleTickets ?? 0) > 0 ? 'text-amber-700 dark:text-amber-200' : 'text-foreground'}`}>
-                    {stats.myStaleTickets ?? 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Mes tickets sans MAJ &gt; 5j</p>
-                </CardContent>
-              </Card>
+                <p className="text-xs text-muted-foreground mt-1">Mes tickets sans MAJ &gt; 5j</p>
+              </KpiCard>
             )}
           </>
         )}
