@@ -26,6 +26,12 @@
     --input: 0 0% 89%;
     --ring: 205 100% 37.8%;
     --radius: 0.5rem;
+    --kpi-open: #0070C1;
+    --kpi-progress: #EF9F27;
+    --kpi-closed: #639922;
+    --kpi-events-today: #0891B2;
+    --kpi-events-week: #7C3AED;
+    --kpi-warning: #D97706;
   }
 
   .dark {
@@ -48,6 +54,12 @@
     --border: 0 0% 17%;
     --input: 0 0% 17%;
     --ring: 205 100% 50%;
+    --kpi-open: #3B9EE8;
+    --kpi-progress: #F5BA5A;
+    --kpi-closed: #7BC244;
+    --kpi-events-today: #22C4E8;
+    --kpi-events-week: #A78BFA;
+    --kpi-warning: #FBBF24;
   }
 }
 
