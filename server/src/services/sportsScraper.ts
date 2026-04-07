@@ -10,6 +10,7 @@ export interface Match {
   date: string;       // ISO date string
   time: string;       // "HH:mm" or "" if unknown
   venue?: string;
+  country?: string;        // code ISO 2 lettres, ex: "FR", "ES"
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;  // URL logo diffuseur TV
@@ -795,6 +796,24 @@ function extractLocalTime(isoStr: string): string {
   return d.toISOString().slice(11, 16);
 }
 
+const ELMS_COUNTRY_BY_SLUG: Record<string, string> = {
+  barcelona:    'ES',
+  castellet:    'FR',
+  imola:        'IT',
+  spa:          'BE',
+  silverstone:  'GB',
+  portimao:     'PT',
+  portimão:     'PT',
+};
+
+function getElmsCountry(slug: string): string | undefined {
+  const lower = slug.toLowerCase();
+  for (const [keyword, code] of Object.entries(ELMS_COUNTRY_BY_SLUG)) {
+    if (lower.includes(keyword)) return code;
+  }
+  return undefined;
+}
+
 async function scrapeELMS(): Promise<Match[]> {
   const client = createClient();
   const seasonUrl = 'https://www.europeanlemansseries.com/en/season/2026';
@@ -860,6 +879,8 @@ async function scrapeELMS(): Promise<Match[]> {
             date: session.startDate,
             time: extractLocalTime(session.startDate),
             venue: locationName,
+            country: getElmsCountry(slug),
+            homeTeamLogo: 'https://www.europeanlemansseries.com/favicon.ico',
           });
         }
 
@@ -877,6 +898,8 @@ async function scrapeELMS(): Promise<Match[]> {
             date: firstQual.startDate,
             time: extractLocalTime(firstQual.startDate),
             venue: locationName,
+            country: getElmsCountry(slug),
+            homeTeamLogo: 'https://www.europeanlemansseries.com/favicon.ico',
           });
         }
 
