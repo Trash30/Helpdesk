@@ -36,6 +36,7 @@ import { AdminOrganisationsPage } from '@/pages/admin/AdminOrganisationsPage';
 import { AdminClubsPage } from '@/pages/admin/AdminClubsPage';
 import { AdminPolesPage } from '@/pages/admin/AdminPolesPage';
 import { AdminTicketTypesPage } from '@/pages/admin/AdminTicketTypesPage';
+import { TodayEventsPage } from '@/pages/sports/TodayEventsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -94,6 +95,9 @@ export default function App() {
                 }
               />
               <Route path="/tickets/:id" element={<TicketDetailPage />} />
+
+              {/* Evenements sportifs */}
+              <Route path="/evenements/aujourd-hui" element={<TodayEventsPage />} />
 
               {/* Clients */}
               <Route
