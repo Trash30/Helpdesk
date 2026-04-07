@@ -216,6 +216,7 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
       const file = e.target.files?.[0];
       if (!file) return;
       if (file.type !== 'application/pdf') { toast.error('Seuls les fichiers PDF sont acceptés'); return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error('Fichier trop volumineux (max 10 Mo)'); return; }
       uploadMutation.mutate(file);
       e.target.value = '';
     },
@@ -403,6 +404,7 @@ function MatchRow({ match, attachments }: MatchRowProps) {
       const file = e.target.files?.[0];
       if (!file) return;
       if (file.type !== 'application/pdf') { toast.error('Seuls les fichiers PDF sont acceptés'); return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error('Fichier trop volumineux (max 10 Mo)'); return; }
       uploadMutation.mutate(file);
       e.target.value = '';
     },

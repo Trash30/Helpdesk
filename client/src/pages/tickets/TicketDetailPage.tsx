@@ -1238,13 +1238,13 @@ export function TicketDetailPage() {
                   <option key={s} value={s}>
                     {s === 'OPEN' ? 'Ouvert' :
                      s === 'IN_PROGRESS' ? 'En cours' :
-                     s === 'PENDING' ? 'En attente' : 'Ferme'}
+                     s === 'PENDING' ? 'En attente' : 'Fermé'}
                   </option>
                 ))}
               </select>
             </FieldRow>
 
-            <FieldRow label="Priorite">
+            <FieldRow label="Priorité">
               <select
                 value={ticket.priority}
                 onChange={e => updateField({ priority: e.target.value })}
@@ -1258,42 +1258,42 @@ export function TicketDetailPage() {
               </select>
             </FieldRow>
 
-            <FieldRow label="Categorie">
+            <FieldRow label="Catégorie">
               <select
                 value={ticket.category?.id ?? ''}
                 onChange={e => updateField({ categoryId: e.target.value || null })}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Sans categorie</option>
+                <option value="">Sans catégorie</option>
                 {categories?.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </FieldRow>
 
-            <FieldRow label="Pole">
+            <FieldRow label="Pôle">
               <select
                 value={ticket.pole?.id ?? ''}
                 onChange={e => updateField({ poleId: e.target.value || null })}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Aucun pole</option>
+                <option value="">Aucun pôle</option>
                 {poles?.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </FieldRow>
 
-            <FieldRow label="Assigne a">
+            <FieldRow label="Assigné à">
               <select
                 value={ticket.assignedTo?.id ?? ''}
                 onChange={e => updateAssign(e.target.value || null)}
                 disabled={!canAssign}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Non assigne</option>
+                <option value="">Non assigné</option>
                 {agents?.map(a => (
                   <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
                 ))}
