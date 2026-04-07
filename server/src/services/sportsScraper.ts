@@ -814,6 +814,16 @@ function getElmsCountry(slug: string): string | undefined {
   return undefined;
 }
 
+function extractQualifyingClass(sessionName: string): string {
+  // "Qualifying session LMGT3" → "LMGT3"
+  let m = sessionName.match(/^Qualifying session\s+(.+)$/i);
+  if (m) return m[1].trim();
+  // "Qualifying - LMGT3 - 4 Hours of ..." → "LMGT3"
+  m = sessionName.match(/^Qualifying\s+-\s+([^-]+)/i);
+  if (m) return m[1].trim();
+  return 'Qualifying';
+}
+
 async function scrapeELMS(): Promise<Match[]> {
   const client = createClient();
   const seasonUrl = 'https://www.europeanlemansseries.com/en/season/2026';
@@ -832,7 +842,7 @@ async function scrapeELMS(): Promise<Match[]> {
       }
     });
 
-    const slugs = Array.from(slugSet);
+    const slugs = Array.from(slugSet).filter(s => !s.includes('official-test'));
     log(`ELMS: found ${slugs.length} race slugs`);
 
     if (slugs.length === 0) return [];
@@ -869,8 +879,10 @@ async function scrapeELMS(): Promise<Match[]> {
 
         const matches: Match[] = [];
 
-        // Find Race sessions (name starts with "Race - ")
-        const raceSessions = subEvents.filter((se) => se.name.startsWith('Race - '));
+        // Find Race sessions ("Race" or "Race - ..." or "Race– ...")
+        const raceSessions = subEvents.filter((se) =>
+          se.name === 'Race' || se.name.toLowerCase().startsWith('race -') || se.name.toLowerCase().startsWith('race–')
+        );
         for (const session of raceSessions) {
           matches.push({
             competition: 'ELMS',
@@ -884,19 +896,19 @@ async function scrapeELMS(): Promise<Match[]> {
           });
         }
 
-        // Find Qualifying: take the earliest session whose name starts with "Qualifying"
+        // Toutes les sessions qualifying (chaque classe = une ligne)
         const qualSessions = subEvents
-          .filter((se) => se.name.startsWith('Qualifying'))
+          .filter((se) => /^qualifying/i.test(se.name))
           .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
-        if (qualSessions.length > 0) {
-          const firstQual = qualSessions[0];
+        for (const session of qualSessions) {
+          const className = extractQualifyingClass(session.name);
           matches.push({
             competition: 'ELMS',
             homeTeam: eventName,
-            awayTeam: 'Qualifying',
-            date: firstQual.startDate,
-            time: extractLocalTime(firstQual.startDate),
+            awayTeam: `Qualif. ${className}`,
+            date: session.startDate,
+            time: extractLocalTime(session.startDate),
             venue: locationName,
             country: getElmsCountry(slug),
             homeTeamLogo: 'https://www.europeanlemansseries.com/favicon.ico',
