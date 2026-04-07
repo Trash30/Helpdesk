@@ -228,7 +228,7 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
         {/* Nom de l'epreuve */}
         <span className="text-sm font-medium truncate flex-1">{eventName}</span>
         {/* Badge session */}
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${sessionBadgeClass}`}>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 max-w-[130px] truncate ${sessionBadgeClass}`} title={match.awayTeam}>
           {match.awayTeam}
         </span>
       </div>
