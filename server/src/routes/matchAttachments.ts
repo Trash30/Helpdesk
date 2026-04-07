@@ -62,7 +62,7 @@ router.post(
   '/match-attachments',
   matchAttachmentUpload.single('file'),
   async (req: Request, res: Response) => {
-    if (!hasPermission(req.user!, 'admin.access')) {
+    if (!hasPermission(req.user!, 'tickets.create')) {
       res.status(403).json({ error: 'Permission refus\u00e9e' });
       return;
     }
@@ -80,6 +80,16 @@ router.post(
     }
 
     const { matchKey, matchDate } = parsed.data;
+
+    // Dédoublonnage : refuser si un fichier avec le même nom existe déjà sur ce match
+    const existing = await prisma.matchAttachment.findFirst({
+      where: { matchKey, originalName: file.originalname },
+    });
+    if (existing) {
+      fs.unlinkSync(file.path); // supprimer le fichier temporaire uploadé
+      res.status(409).json({ error: 'Un fichier avec ce nom existe déjà pour ce match' });
+      return;
+    }
 
     const matchAttachment = await prisma.matchAttachment.create({
       data: {
@@ -103,10 +113,7 @@ router.post(
 router.post(
   '/match-attachments/query',
   async (req: Request, res: Response) => {
-    if (!hasPermission(req.user!, 'admin.access')) {
-      res.status(403).json({ error: 'Permission refusée' });
-      return;
-    }
+    // Tout utilisateur authentifié peut consulter les pièces jointes des matchs
 
     const { matchKeys } = req.body as { matchKeys?: unknown };
     if (!Array.isArray(matchKeys) || matchKeys.length === 0) {
