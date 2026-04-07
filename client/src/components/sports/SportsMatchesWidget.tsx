@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE';
+type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'SUPER_LEAGUE' | 'LIGUE1' | 'ELMS';
 
 interface Match {
   competition: Competition;
@@ -37,15 +37,18 @@ interface MatchAttachment {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const COMPETITION_META: Record<Competition, { label: string; favicon: string }> = {
-  TOP14:  { label: 'Top 14',        favicon: 'https://top14.lnr.fr/favicon.ico' },
-  PRO_D2: { label: 'Pro D2',        favicon: 'https://prod2.lnr.fr/favicon.ico' },
-  EPCR:           { label: 'Champions Cup', favicon: 'https://media-cdn.incrowdsports.com/77535d85-bcdc-49b9-9dc9-879e70d9adba.svg' },
-  EPCR_CHALLENGE: { label: 'Challenge Cup', favicon: 'https://media-cdn.incrowdsports.com/96d27751-bc48-42e6-890e-a389508ab133.svg' },
-  LNH:            { label: 'Starligue',     favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg' },
+const COMPETITION_META: Record<Competition, { label: string; favicon: string; calendarUrl: string }> = {
+  LIGUE1:         { label: 'Ligue 1',       favicon: 'https://www.ligue1.com/favicon.ico',                                                          calendarUrl: 'https://www.ligue1.com/fr/calendar' },
+  TOP14:          { label: 'Top 14',        favicon: 'https://top14.lnr.fr/favicon.ico',                                                            calendarUrl: 'https://top14.lnr.fr/calendrier-et-resultats' },
+  PRO_D2:         { label: 'Pro D2',        favicon: 'https://prod2.lnr.fr/favicon.ico',                                                            calendarUrl: 'https://prod2.lnr.fr/calendrier-et-resultats' },
+  EPCR:           { label: 'Champions Cup', favicon: 'https://media-cdn.incrowdsports.com/77535d85-bcdc-49b9-9dc9-879e70d9adba.svg',                calendarUrl: 'https://www.epcrugby.com/fr/champions-cup/matchs' },
+  EPCR_CHALLENGE: { label: 'Challenge Cup', favicon: 'https://media-cdn.incrowdsports.com/96d27751-bc48-42e6-890e-a389508ab133.svg',                calendarUrl: 'https://www.epcrugby.com/fr/challenge-cup/matchs' },
+  SUPER_LEAGUE:   { label: 'Super League',  favicon: 'https://www.superleague.co.uk/favicon.ico',                                                   calendarUrl: 'https://www.superleague.co.uk/match-centre' },
+  LNH:            { label: 'Starligue',     favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg',                                         calendarUrl: 'https://www.lnh.fr/liquimoly-starligue/calendrier' },
+  ELMS:           { label: 'ELMS',          favicon: 'https://www.europeanlemansseries.com/favicon.ico',                                            calendarUrl: 'https://www.europeanlemansseries.com/en/season/2026' },
 };
 
-const COMPETITION_ORDER: Competition[] = ['TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH'];
+const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'SUPER_LEAGUE', 'LNH', 'ELMS'];
 
 const DAY_NAMES = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
 
@@ -366,7 +369,14 @@ function MatchesList({ matches }: MatchesListProps) {
           <div key={competition}>
             <div className="flex items-center gap-2 mb-2 pb-1.5 border-b">
               <CompetitionFavicon favicon={meta.favicon} label={meta.label} />
-              <span className="text-sm font-semibold">{meta.label}</span>
+              <a
+                href={meta.calendarUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-semibold hover:underline"
+              >
+                {meta.label}
+              </a>
             </div>
 
             <div className="divide-y">
