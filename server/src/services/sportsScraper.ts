@@ -503,8 +503,8 @@ async function scrapeEPCRCompetition(
       });
     }
 
-    const filtered = matches.filter(m => isInCurrentWeek(m.date) && (isFrenchClub(m.homeTeam) || isFrenchClub(m.awayTeam)));
-    log(`${competition}: ${filtered.length} matches this week with French club (out of ${matches.length} total)`);
+    const filtered = matches.filter(m => isInCurrentWeek(m.date) && isFrenchClub(m.homeTeam));
+    log(`${competition}: ${filtered.length} home matches this week with French club (out of ${matches.length} total)`);
     return filtered;
   } catch (err) {
     logError(`${competition} scraping failed:`, err instanceof Error ? err.message : err);
