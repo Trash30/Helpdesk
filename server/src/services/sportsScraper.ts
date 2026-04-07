@@ -930,9 +930,18 @@ async function scrapeELMS(): Promise<Match[]> {
       }
     }
 
+    // Deduplicate by (date + awayTeam) — safety net against duplicate slugs or JSON-LD entries
+    const seen = new Set<string>();
+    const deduped = allMatches.filter((m) => {
+      const key = `${m.date}|${m.awayTeam}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
     // Filter to current ISO week
-    const filtered = allMatches.filter((m) => isInCurrentWeek(m.date));
-    log(`ELMS: ${allMatches.length} total sessions, ${filtered.length} in current week`);
+    const filtered = deduped.filter((m) => isInCurrentWeek(m.date));
+    log(`ELMS: ${allMatches.length} total sessions → ${deduped.length} after dedup → ${filtered.length} in current week`);
     return filtered;
   } catch (err) {
     logError('ELMS scraping failed:', err instanceof Error ? err.message : err);
