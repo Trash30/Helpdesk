@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
   Ticket as TicketIcon, Clock, CheckCircle, Star,
-  ExternalLink, AlertTriangle,
+  ExternalLink, AlertTriangle, CalendarDays,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthStore } from '@/stores/authStore';
@@ -222,6 +222,13 @@ export function DashboardPage() {
     refetchInterval: 60000,
   });
 
+  const { data: sportsData } = useQuery({
+    queryKey: ['sports-matches'],
+    queryFn: () => api.get('/sports/matches').then(r => r.data),
+    staleTime: 1000 * 60 * 60,
+  });
+  const sportsEventCount = sportsData?.data?.length ?? 0;
+
   const csat = stats?.csatGlobal;
   const csatScore = csat?.score ?? 0;
   const csatColorVal = csatColor(csatScore);
@@ -324,6 +331,16 @@ export function DashboardPage() {
                 )}
               </Tooltip>
             </TooltipProvider>
+
+            {/* Sports events this week */}
+            <KpiCard
+              label="Événements cette semaine"
+              value={sportsEventCount}
+              color="#7C3AED"
+              icon={<CalendarDays size={20} />}
+            >
+              <p className="text-xs text-muted-foreground mt-1">Matchs & sessions</p>
+            </KpiCard>
 
             {/* Stale tickets card */}
             {stats?.staleTickets !== undefined && (
