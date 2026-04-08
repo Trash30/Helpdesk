@@ -243,4 +243,67 @@ router.post(
   }
 );
 
+// ─── POST /api/kb/from-ticket/:ticketId ──────────────────────────────────────
+// Crée un brouillon KB pré-rempli depuis un ticket
+router.post(
+  '/kb/from-ticket/:ticketId',
+  requirePermission('kb.write'),
+  async (req: Request, res: Response) => {
+    const ticket = await prisma.ticket.findFirst({
+      where: { id: req.params.ticketId, deletedAt: null },
+      include: {
+        category: true,
+        comments: {
+          where: { isInternal: false },
+          include: { author: { select: { firstName: true, lastName: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!ticket) {
+      res.status(404).json({ error: 'Ticket introuvable' });
+      return;
+    }
+
+    // Récupérer les IDs de commentaires sélectionnés (optionnel)
+    const selectedCommentIds: string[] = Array.isArray(req.body.commentIds)
+      ? req.body.commentIds
+      : [];
+
+    // Construire le contenu HTML pré-rempli
+    const selectedComments = selectedCommentIds.length > 0
+      ? ticket.comments.filter(c => selectedCommentIds.includes(c.id))
+      : ticket.comments;
+
+    let content = `<h2>Problème</h2><p>${ticket.description || ''}</p>`;
+    if (selectedComments.length > 0) {
+      content += `<h2>Résolution</h2>`;
+      selectedComments.forEach(c => {
+        content += `<p>${c.content}</p>`;
+      });
+    }
+
+    const article = await prisma.kbArticle.create({
+      data: {
+        title: ticket.title,
+        content,
+        categoryId: ticket.categoryId ?? null,
+        tags: [],
+        status: 'DRAFT',
+        sourceTicketId: ticket.id,
+        authorId: req.user!.id,
+        publishedAt: null,
+      },
+      include: {
+        category: true,
+        author: { select: { id: true, firstName: true, lastName: true, email: true } },
+        sourceTicket: { select: { id: true, ticketNumber: true, title: true } },
+      },
+    });
+
+    res.status(201).json({ data: article });
+  }
+);
+
 export default router;
