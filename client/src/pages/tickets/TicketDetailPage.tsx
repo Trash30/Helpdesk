@@ -1,12 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect, KeyboardEvent } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import {
   Phone, Mail, ExternalLink, Paperclip, Download, Trash2,
   XCircle, RefreshCw, Bold, Italic, Code, X, Pencil,
-  SlidersHorizontal,
+  SlidersHorizontal, BookOpen,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -632,6 +632,13 @@ export function TicketDetailPage() {
   const [pendingNoteOpen, setPendingNoteOpen] = useState(false);
   const [pendingNote, setPendingNote] = useState('');
   const [pendingLoading, setPendingLoading] = useState(false);
+
+  // KB modal state
+  const [kbModalOpen, setKbModalOpen] = useState(false);
+  const [kbTitle, setKbTitle] = useState('');
+  const [kbIncludeDescription, setKbIncludeDescription] = useState(true);
+  const [kbSelectedCommentIds, setKbSelectedCommentIds] = useState<string[]>([]);
+  const [kbStatus, setKbStatus] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT');
   const { data: ticket, isLoading, error } = useQuery<Ticket>({
     queryKey: ['ticket', id],
     queryFn: async () => (await api.get(`/tickets/${id}`)).data?.data,
@@ -699,6 +706,19 @@ export function TicketDetailPage() {
     }
   }, [id, invalidate]);
 
+  // KB: open modal after ticket close (only if kb.write permission)
+  const openKbModal = useCallback(() => {
+    if (!ticket) return;
+    setKbTitle(ticket.title);
+    setKbIncludeDescription(true);
+    const publicCommentIds = ticket.comments
+      .filter(c => !c.isInternal)
+      .map(c => c.id);
+    setKbSelectedCommentIds(publicCommentIds);
+    setKbStatus('DRAFT');
+    setKbModalOpen(true);
+  }, [ticket]);
+
   const handleAction = useCallback(async () => {
     if (!confirmAction) return;
     setActionLoading(true);
@@ -706,14 +726,18 @@ export function TicketDetailPage() {
       const statusMap = { close: 'CLOSED', reopen: 'OPEN' };
       await api.patch(`/tickets/${id}/status`, { status: statusMap[confirmAction] });
       invalidate();
-      toast.success('Statut mis à jour');
+      toast.success('Statut mis a jour');
+      // Propose KB creation when closing via this path
+      if (confirmAction === 'close' && can('kb.write')) {
+        setTimeout(() => openKbModal(), 300);
+      }
     } catch {
       toast.error('Erreur lors de l\'action');
     } finally {
       setActionLoading(false);
       setConfirmAction(null);
     }
-  }, [confirmAction, id, invalidate]);
+  }, [confirmAction, id, invalidate, can, openKbModal]);
 
   const handleClosingNote = useCallback(async () => {
     if (!closingNote.trim()) return;
@@ -721,15 +745,20 @@ export function TicketDetailPage() {
     try {
       await api.patch(`/tickets/${id}/status`, { status: 'CLOSED', closingNote: closingNote.trim() });
       invalidate();
-      toast.success('Ticket fermé');
+      toast.success('Ticket ferme');
       setClosingNoteOpen(false);
       setClosingNote('');
+      // Propose KB creation if user has permission
+      if (can('kb.write')) {
+        // Small delay to let ticket data refresh before opening KB modal
+        setTimeout(() => openKbModal(), 300);
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Erreur lors de la fermeture');
     } finally {
       setClosingLoading(false);
     }
-  }, [closingNote, id, invalidate]);
+  }, [closingNote, id, invalidate, can, openKbModal]);
 
   const handlePendingNote = useCallback(async () => {
     if (!pendingNote.trim()) return;
@@ -746,6 +775,38 @@ export function TicketDetailPage() {
       setPendingLoading(false);
     }
   }, [pendingNote, id, invalidate]);
+
+  const kbMutation = useMutation({
+    mutationFn: async (payload: { commentIds: string[] }) => {
+      const res = await api.post(`/kb/from-ticket/${id}`, payload);
+      return res.data?.data ?? res.data;
+    },
+    onSuccess: async (data) => {
+      const articleId = data?.id;
+      if (kbStatus === 'PUBLISHED' && articleId) {
+        try {
+          await api.put(`/kb/${articleId}`, { status: 'PUBLISHED' });
+        } catch {
+          // article created but publish failed - still show success
+        }
+      }
+      toast.success(
+        <span>
+          Article KB cree !{' '}
+          <a href={`/kb/${articleId}`} className="underline font-medium">Voir l&apos;article</a>
+        </span>
+      );
+      setKbModalOpen(false);
+    },
+    onError: () => {
+      toast.error('Ticket ferme, mais echec de la creation KB');
+      setKbModalOpen(false);
+    },
+  });
+
+  const handleKbCreate = useCallback(() => {
+    kbMutation.mutate({ commentIds: kbSelectedCommentIds });
+  }, [kbMutation, kbSelectedCommentIds]);
 
   if (isLoading) {
     return (
@@ -1302,6 +1363,122 @@ export function TicketDetailPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* KB creation modal */}
+      <Dialog open={kbModalOpen} onOpenChange={open => { if (!open) setKbModalOpen(false); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Documenter dans la base de connaissance ?
+            </DialogTitle>
+            <DialogDescription>
+              Ce ticket peut etre utile pour les prochaines fois.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Title */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Titre</label>
+              <input
+                type="text"
+                value={kbTitle}
+                onChange={e => setKbTitle(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            {/* Include description */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={kbIncludeDescription}
+                onChange={e => setKbIncludeDescription(e.target.checked)}
+                className="rounded border-input h-4 w-4"
+              />
+              <span className="text-sm">Inclure la description du ticket</span>
+            </label>
+
+            {/* Comment selection */}
+            {ticket && ticket.comments.filter(c => !c.isInternal).length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Commentaires a inclure</p>
+                <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2">
+                  {ticket.comments
+                    .filter(c => !c.isInternal)
+                    .map(c => (
+                      <label key={c.id} className="flex items-start gap-2 cursor-pointer py-1 hover:bg-muted/30 rounded px-1">
+                        <input
+                          type="checkbox"
+                          checked={kbSelectedCommentIds.includes(c.id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setKbSelectedCommentIds(prev => [...prev, c.id]);
+                            } else {
+                              setKbSelectedCommentIds(prev => prev.filter(x => x !== c.id));
+                            }
+                          }}
+                          className="rounded border-input h-4 w-4 mt-0.5 shrink-0"
+                        />
+                        <span className="text-sm text-muted-foreground leading-snug">
+                          <span className="font-medium text-foreground">
+                            {c.author.firstName} {c.author.lastName}
+                          </span>
+                          {' - '}
+                          {c.content.length > 80 ? c.content.slice(0, 80) + '...' : c.content}
+                          {' - '}
+                          <span className="text-xs">
+                            {new Date(c.createdAt).toLocaleDateString('fr-FR')}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Article status */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Statut de l&apos;article</p>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kb-status"
+                    checked={kbStatus === 'DRAFT'}
+                    onChange={() => setKbStatus('DRAFT')}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">Brouillon</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kb-status"
+                    checked={kbStatus === 'PUBLISHED'}
+                    onChange={() => setKbStatus('PUBLISHED')}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">Publier directement</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setKbModalOpen(false)}>
+              Ignorer
+            </Button>
+            <Button
+              onClick={handleKbCreate}
+              disabled={!kbTitle.trim() || kbMutation.isPending}
+            >
+              {kbMutation.isPending ? 'Creation...' : 'Creer l\'article KB'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </TooltipProvider>
   );

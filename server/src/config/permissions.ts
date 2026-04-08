@@ -32,6 +32,10 @@ export const PERMISSIONS = {
     CLIENT_ROLES: 'admin.clientRoles',
     SETTINGS: 'admin.settings',
   },
+  KB: {
+    READ: 'kb.read',
+    WRITE: 'kb.write',
+  },
 } as const;
 
 // Flat list for iteration / validation
@@ -41,6 +45,7 @@ export const PERMISSIONS_LIST: string[] = [
   ...Object.values(PERMISSIONS.COMMENTS),
   ...Object.values(PERMISSIONS.SURVEYS),
   ...Object.values(PERMISSIONS.ADMIN),
+  ...Object.values(PERMISSIONS.KB),
 ];
 
 // All admin sub-permissions that require admin.access automatically
@@ -122,6 +127,15 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: 'admin.categories', label: 'Gérer les catégories', description: 'Gérer les catégories de tickets' },
       { key: 'admin.clientRoles', label: 'Gérer les rôles clients', description: 'Gérer les rôles attribuables aux clients' },
       { key: 'admin.settings', label: 'Modifier les paramètres', description: 'Paramètres généraux, logo, branding' },
+    ],
+  },
+  {
+    key: 'kb',
+    label: 'Base de connaissance',
+    icon: 'BookOpen',
+    permissions: [
+      { key: 'kb.read', label: 'Consulter la KB', description: 'Accéder aux articles de la base de connaissance' },
+      { key: 'kb.write', label: 'Gérer la KB', description: 'Créer, modifier et supprimer des articles de la base de connaissance' },
     ],
   },
 ];
