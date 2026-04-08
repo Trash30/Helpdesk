@@ -54,8 +54,7 @@ const PERMISSION_GROUPS = [
     key: 'kb', label: 'Base de connaissance', Icon: BookOpen,
     permissions: [
       { key: 'kb.read', label: 'Lire les articles', description: 'Accéder à la base de connaissance et lire les articles' },
-      { key: 'kb.write', label: 'Créer / modifier des articles', description: 'Créer et modifier des articles dans la base de connaissance' },
-      { key: 'kb.delete', label: 'Supprimer des articles', description: 'Supprimer des articles de la base de connaissance' },
+      { key: 'kb.write', label: 'Créer / modifier / supprimer des articles', description: 'Créer, modifier et supprimer des articles de la base de connaissance' },
     ],
   },
   {
