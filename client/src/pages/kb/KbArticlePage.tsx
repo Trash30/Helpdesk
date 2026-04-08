@@ -238,13 +238,13 @@ export function KbArticlePage() {
 
   const { data: article, isLoading } = useQuery<KbArticle>({
     queryKey: ['kb-article', id],
-    queryFn: () => api.get(`/kb/${id}`).then((r) => r.data),
+    queryFn: () => api.get(`/kb/${id}`).then((r) => r.data?.data),
     enabled: !isNew,
   });
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => api.get('/categories').then((r) => r.data),
+    queryFn: () => api.get('/categories').then((r) => r.data?.data ?? []),
   });
 
   // -- TipTap editor -----------------------------------------------------
@@ -298,7 +298,7 @@ export function KbArticlePage() {
       status: string;
       tags: string[];
       categoryId: string | null;
-    }) => api.post('/kb', data).then((r) => r.data),
+    }) => api.post('/kb', data).then((r) => r.data?.data),
     onSuccess: (data: KbArticle) => {
       queryClient.invalidateQueries({ queryKey: ['kb-articles'] });
       toast.success('Article cree !');
@@ -350,7 +350,7 @@ export function KbArticlePage() {
           tags: [],
           categoryId: null,
         })
-        .then((r) => r.data),
+        .then((r) => r.data?.data),
     onSuccess: (data: KbArticle) => {
       setDraftArticleId(data.id);
     },
@@ -364,7 +364,7 @@ export function KbArticlePage() {
         .post(`/kb/${params.targetId}/images`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
-        .then((r) => r.data);
+        .then((r) => r.data?.data);
     },
     onSuccess: (data: { url: string }) => {
       if (editor) {

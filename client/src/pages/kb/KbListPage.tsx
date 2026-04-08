@@ -30,7 +30,7 @@ interface KbArticle {
 }
 
 interface KbListResponse {
-  articles: KbArticle[];
+  data: KbArticle[];
   total: number;
   page: number;
   totalPages: number;
@@ -113,7 +113,7 @@ export function KbListPage() {
   // Fetch categories for dropdown
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: () => api.get('/categories').then((r) => r.data),
+    queryFn: () => api.get('/categories').then((r) => r.data?.data ?? []),
   });
 
   // Fetch articles
@@ -133,7 +133,7 @@ export function KbListPage() {
         .then((r) => r.data),
   });
 
-  const articles = data?.articles ?? [];
+  const articles = data?.data ?? [];
   const totalPages = data?.totalPages ?? 1;
 
   // Reset page on filter change
