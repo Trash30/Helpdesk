@@ -43,6 +43,11 @@ enum QuestionType {
   multiselect
 }
 
+enum KbStatus {
+  DRAFT
+  PUBLISHED
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model Role {
@@ -79,6 +84,8 @@ model User {
   attachments        Attachment[]
   activityLogs       ActivityLog[]
   matchAttachments   MatchAttachment[]
+  kbArticles         KbArticle[]       @relation("KbAuthor")
+  kbAttachments      KbAttachment[]    @relation("KbAttachmentUploader")
 }
 
 model ClientRole {
@@ -127,7 +134,8 @@ model Category {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tickets Ticket[]
+  tickets    Ticket[]
+  kbArticles KbArticle[]
 }
 
 model Ticket {
@@ -159,6 +167,7 @@ model Ticket {
   attachments  Attachment[]
   activityLogs ActivityLog[]
   surveySends  SurveySend[]
+  kbArticles   KbArticle[]  @relation("KbSourceTicket")
 }
 
 model Comment {
@@ -304,4 +313,38 @@ model MatchAttachment {
   uploadedById String
   uploadedBy   User     @relation(fields: [uploadedById], references: [id])
   createdAt    DateTime @default(now())
+}
+
+model KbArticle {
+  id             String      @id @default(uuid())
+  title          String
+  content        String      // HTML riche (TipTap)
+  categoryId     String?
+  category       Category?   @relation(fields: [categoryId], references: [id])
+  tags           String[]
+  status         KbStatus    @default(DRAFT)
+  sourceTicketId String?
+  sourceTicket   Ticket?     @relation("KbSourceTicket", fields: [sourceTicketId], references: [id])
+  authorId       String
+  author         User        @relation("KbAuthor", fields: [authorId], references: [id])
+  publishedAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deletedAt      DateTime?
+
+  attachments    KbAttachment[]
+}
+
+model KbAttachment {
+  id           String    @id @default(uuid())
+  articleId    String
+  article      KbArticle @relation(fields: [articleId], references: [id])
+  filename     String
+  originalName String
+  mimetype     String
+  size         Int
+  path         String
+  uploadedById String
+  uploadedBy   User      @relation("KbAttachmentUploader", fields: [uploadedById], references: [id])
+  createdAt    DateTime  @default(now())
 }
