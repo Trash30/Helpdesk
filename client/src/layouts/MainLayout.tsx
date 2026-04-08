@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Ticket, Users, Settings, Tag, UserCheck,
   Shield, Users2, BarChart2, Plus, Search, LogOut, User,
-  ChevronRight, Moon, Sun, Menu, Building2, MapPin, Landmark, FileType,
+  ChevronRight, Moon, Sun, Menu, Building2, MapPin, Landmark, FileType, BookOpen,
 } from 'lucide-react';
 import { useBranding } from '@/hooks/useBranding';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -292,6 +292,9 @@ export function MainLayout() {
           <NavItem to="/tickets" icon={<Ticket size={18} />} label="Tickets" badge={stats?.openTickets} collapsed={collapsed} onNavigate={closeMobile} />
           {can('clients.view') && (
             <NavItem to="/clients" icon={<Users size={18} />} label="Clients" collapsed={collapsed} onNavigate={closeMobile} />
+          )}
+          {can('kb.read') && (
+            <NavItem to="/kb" icon={<BookOpen size={18} />} label="Base de connaissance" collapsed={collapsed} onNavigate={closeMobile} />
           )}
 
           {can('admin.access') && (
