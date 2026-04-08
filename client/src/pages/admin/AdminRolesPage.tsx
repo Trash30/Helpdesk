@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Plus, Copy, Trash2, Pencil, Shield, Ticket, Users, MessageSquare, BarChart2 } from 'lucide-react';
+import { Plus, Copy, Trash2, Pencil, Shield, Ticket, Users, MessageSquare, BarChart2, BookOpen } from 'lucide-react';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,14 @@ const PERMISSION_GROUPS = [
     permissions: [
       { key: 'surveys.view', label: 'Voir les résultats', description: 'Accéder aux résultats et statistiques des enquêtes' },
       { key: 'surveys.configure', label: 'Configurer le modèle', description: "Modifier les questions du modèle d'enquête" },
+    ],
+  },
+  {
+    key: 'kb', label: 'Base de connaissance', Icon: BookOpen,
+    permissions: [
+      { key: 'kb.read', label: 'Lire les articles', description: 'Accéder à la base de connaissance et lire les articles' },
+      { key: 'kb.write', label: 'Créer / modifier des articles', description: 'Créer et modifier des articles dans la base de connaissance' },
+      { key: 'kb.delete', label: 'Supprimer des articles', description: 'Supprimer des articles de la base de connaissance' },
     ],
   },
   {
