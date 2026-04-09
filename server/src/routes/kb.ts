@@ -254,7 +254,6 @@ router.post(
       include: {
         category: true,
         comments: {
-          where: { isInternal: false },
           include: { author: { select: { firstName: true, lastName: true } } },
           orderBy: { createdAt: 'asc' },
         },

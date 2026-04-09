@@ -711,10 +711,8 @@ export function TicketDetailPage() {
     if (!ticket) return;
     setKbTitle(ticket.title);
     setKbIncludeDescription(true);
-    const publicCommentIds = ticket.comments
-      .filter(c => !c.isInternal)
-      .map(c => c.id);
-    setKbSelectedCommentIds(publicCommentIds);
+    const allCommentIds = ticket.comments.map(c => c.id);
+    setKbSelectedCommentIds(allCommentIds);
     setKbStatus('DRAFT');
     setKbModalOpen(true);
   }, [ticket]);
@@ -1401,12 +1399,11 @@ export function TicketDetailPage() {
             </label>
 
             {/* Comment selection */}
-            {ticket && ticket.comments.filter(c => !c.isInternal).length > 0 && (
+            {ticket && ticket.comments.length > 0 && (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Commentaires a inclure</p>
                 <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2">
                   {ticket.comments
-                    .filter(c => !c.isInternal)
                     .map(c => (
                       <label key={c.id} className="flex items-start gap-2 cursor-pointer py-1 hover:bg-muted/30 rounded px-1">
                         <input
@@ -1422,6 +1419,11 @@ export function TicketDetailPage() {
                           className="rounded border-input h-4 w-4 mt-0.5 shrink-0"
                         />
                         <span className="text-sm text-muted-foreground leading-snug">
+                          {c.isInternal && (
+                            <span className="inline-flex items-center mr-1.5 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                              Note de résolution
+                            </span>
+                          )}
                           <span className="font-medium text-foreground">
                             {c.author.firstName} {c.author.lastName}
                           </span>
