@@ -31,7 +31,7 @@ export function MultiSelect({ options, value, onChange, placeholder }: MultiSele
         className="flex h-9 min-w-[150px] items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-sm"
       >
         <span className="text-muted-foreground truncate">
-          {value.length === 0 ? placeholder : `${value.length} sélectionné${value.length > 1 ? 's' : ''}`}
+          {placeholder}{value.length > 0 && <span className="ml-1 rounded-full bg-primary text-primary-foreground text-xs px-1.5 py-0.5">{value.length}</span>}
         </span>
         <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
       </button>
