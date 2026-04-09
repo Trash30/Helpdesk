@@ -711,8 +711,10 @@ export function TicketDetailPage() {
     if (!ticket) return;
     setKbTitle(ticket.title);
     setKbIncludeDescription(true);
-    const allCommentIds = ticket.comments.map(c => c.id);
-    setKbSelectedCommentIds(allCommentIds);
+    const publicCommentIds = ticket.comments
+      .filter(c => !c.isInternal)
+      .map(c => c.id);
+    setKbSelectedCommentIds(publicCommentIds);
     setKbStatus('DRAFT');
     setKbModalOpen(true);
   }, [ticket]);

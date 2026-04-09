@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { KbStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
-import { requirePermission } from '../middleware/permissions';
+import { requirePermission, hasPermission } from '../middleware/permissions';
 import { kbImageUpload } from '../utils/upload';
 import path from 'path';
 
@@ -262,6 +262,14 @@ router.post(
 
     if (!ticket) {
       res.status(404).json({ error: 'Ticket introuvable' });
+      return;
+    }
+
+    // Vérification d'accès : viewAll OU assigné OU créateur
+    const user = req.user!;
+    const canViewAll = hasPermission(user, 'tickets.viewAll');
+    if (!canViewAll && ticket.assignedToId !== user.id && ticket.createdById !== user.id) {
+      res.status(403).json({ error: 'Accès refusé à ce ticket' });
       return;
     }
 
