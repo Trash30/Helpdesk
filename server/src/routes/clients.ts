@@ -102,11 +102,6 @@ router.post(
 
     const data = parse.data;
 
-    if (!data.phone && !data.email) {
-      res.status(400).json({ error: 'Un téléphone ou un email est requis' });
-      return;
-    }
-
     const client = await prisma.client.create({
       data: {
         firstName: data.firstName,
@@ -196,11 +191,6 @@ router.put(
     }
 
     const data = parse.data;
-
-    if (!data.phone && !data.email) {
-      res.status(400).json({ error: 'Un téléphone ou un email est requis' });
-      return;
-    }
 
     const existing = await prisma.client.findUnique({ where: { id: req.params.id } });
     if (!existing) {
