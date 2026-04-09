@@ -93,15 +93,6 @@ router.get('/me', authMiddleware, (req: Request, res: Response) => {
 router.patch('/change-password', authMiddleware, async (req: Request, res: Response) => {
   const user = req.user!;
 
-  // Admins cannot change their own password through this route
-  if (hasPermission(user, 'admin.access')) {
-    res.status(403).json({
-      error:
-        'Les administrateurs ne peuvent pas modifier leur mot de passe via cette interface.',
-    });
-    return;
-  }
-
   const schema = z.object({
     currentPassword: z.string().optional(),
     newPassword: passwordRules,
