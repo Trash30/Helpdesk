@@ -115,14 +115,16 @@ router.post(
   async (req: Request, res: Response) => {
     // Tout utilisateur authentifié peut consulter les pièces jointes des matchs
 
-    const { matchKeys } = req.body as { matchKeys?: unknown };
-    if (!Array.isArray(matchKeys) || matchKeys.length === 0) {
-      res.status(400).json({ error: 'matchKeys (array) est requis' });
+    const schema = z.object({ matchKeys: z.array(z.string().min(1)).min(1).max(200) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'matchKeys (array de strings, max 200) est requis' });
       return;
     }
+    const { matchKeys } = parsed.data;
 
     const attachments = await prisma.matchAttachment.findMany({
-      where: { matchKey: { in: matchKeys as string[] } },
+      where: { matchKey: { in: matchKeys } },
       orderBy: { createdAt: 'desc' },
     });
 

@@ -11,7 +11,9 @@
 param(
     [switch]$WithDb,
     [switch]$RestartOnly,
-    [switch]$MigrateOnly
+    [switch]$MigrateOnly,
+    [string]$DbPassDev = "postgres",   # mot de passe DB dev local — surcharger si besoin : -DbPassDev "monmdp"
+    [string]$DbUserDev = "postgres"    # utilisateur DB dev local
 )
 $ErrorActionPreference = "Stop"
 
@@ -24,8 +26,8 @@ $APP_DIR      = "/opt/helpdesk"
 $DB_HOST      = "localhost"
 $DB_PORT      = "5432"
 $DB_NAME_DEV  = "helpdesk_dev"
-$DB_USER_DEV  = "postgres"
-$DB_PASS_DEV  = "postgres"
+$DB_USER_DEV  = $DbUserDev
+$DB_PASS_DEV  = $DbPassDev
 $DB_NAME_PROD = "helpdesk_prod"
 $DB_USER_PROD = "helpdesk_user"
 # ------------------------------------------------------------
