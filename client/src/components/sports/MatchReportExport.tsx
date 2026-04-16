@@ -26,6 +26,8 @@ interface MatchNoteReport {
 interface WeekReportResponse {
   weekNumber: number;
   year: number;
+  startOfWeek: string;
+  endOfWeek: string;
   notes: MatchNoteReport[];
 }
 
@@ -199,7 +201,7 @@ export function MatchReportExport() {
     setIsExporting(true);
     try {
       const response = await api.get('/sports/match-notes/report/week');
-      const { weekNumber, year, notes } = response.data.data as WeekReportResponse;
+      const { weekNumber, year, startOfWeek, endOfWeek, notes } = response.data.data as WeekReportResponse;
 
       const validNotes = notes.filter((n) => {
         const stripped = n.content?.replace(/<[^>]*>/g, '').trim();
@@ -234,10 +236,37 @@ export function MatchReportExport() {
       // ── Build document sections ──────────────────────────────────────────
       const sections: Paragraph[] = [];
 
+      // Title
       sections.push(
         new Paragraph({
           children: [new TextRun({ text: `CR SUPPORT SEMAINE ${weekNumber} \u2014 ${year}`, bold: true, size: 32 })],
           heading: HeadingLevel.HEADING_1,
+          spacing: { after: 200 },
+        })
+      );
+
+      // Metadata fields (editable by user)
+      const start = new Date(startOfWeek);
+      const end = new Date(endOfWeek);
+      const fmtDate = (d: Date) =>
+        d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      const weekRange = `du ${fmtDate(start)} au ${fmtDate(end)}`;
+
+      sections.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Techniciens : ', bold: true, size: 22 }),
+            new TextRun({ text: '', size: 22 }),
+          ],
+          spacing: { after: 80 },
+        })
+      );
+      sections.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: 'Date : ', bold: true, size: 22 }),
+            new TextRun({ text: weekRange, size: 22 }),
+          ],
           spacing: { after: 300 },
         })
       );
