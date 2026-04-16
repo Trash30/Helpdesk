@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -53,6 +53,13 @@ export function MatchNoteEditor({ matchKey, match, initialContent }: MatchNoteEd
       },
     },
   });
+
+  // Sync editor content when the saved note is loaded/updated from the server
+  useEffect(() => {
+    if (editor && !editor.isFocused) {
+      editor.commands.setContent(initialContent || '');
+    }
+  }, [editor, initialContent]);
 
   const saveMutation = useMutation({
     mutationFn: async (content: string) => {
