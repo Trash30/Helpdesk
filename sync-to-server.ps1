@@ -76,8 +76,8 @@ Write-Ok "Connexion SSH : $SERVER_USER@$SERVER_IP"
 # -- Mode : Restart seulement --------------------------------
 if ($RestartOnly) {
     Write-Step "Redemarrage PM2"
-    Invoke-Ssh "pm2 restart helpdesk-server"
-    Invoke-Ssh "pm2 status"
+    Invoke-Ssh "sudo pm2 restart helpdesk-server"
+    Invoke-Ssh "sudo pm2 status"
     Write-Ok "App redemarree"
     exit 0
 }
@@ -87,7 +87,7 @@ if ($MigrateOnly) {
     Write-Step "Migrations Prisma (ajout des nouvelles tables uniquement)"
     Invoke-Ssh "cd $APP_DIR/server ; npx prisma migrate deploy"
     Write-Ok "Migrations appliquees"
-    Invoke-Ssh "pm2 restart helpdesk-server"
+    Invoke-Ssh "sudo pm2 restart helpdesk-server"
     Write-Ok "App redemarree"
     exit 0
 }
@@ -188,8 +188,8 @@ if ($WithDb) {
 
 # -- 6. Redemarrage ------------------------------------------
 Write-Step "Redemarrage"
-Invoke-Ssh "pm2 restart helpdesk-server"
-Invoke-Ssh "pm2 status"
+Invoke-Ssh "sudo pm2 restart helpdesk-server"
+Invoke-Ssh "sudo pm2 status"
 Write-Ok "Application redemarree"
 
 Write-Host ""
