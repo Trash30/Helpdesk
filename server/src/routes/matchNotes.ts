@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
-import { hasPermission } from '../middleware/permissions';
+import { hasPermission, requirePermission } from '../middleware/permissions';
 import axios from 'axios';
 
 const router = Router();
@@ -29,6 +29,23 @@ const matchNoteBodySchema = z.object({
 // ─── GET /api/sports/match-notes/proxy-image ────────────────────────────────
 // Proxy d'images pour éviter les problèmes CORS lors de la génération du rapport Word
 
+// Plages d'adresses privées/locales interdites (RFC-1918, loopback, link-local)
+const BLOCKED_HOSTNAME_PATTERNS = [
+  /^localhost$/i,
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^169\.254\./,
+  /^::1$/,
+  /^fc00:/i,
+  /^fe80:/i,
+];
+
+function isPrivateHost(hostname: string): boolean {
+  return BLOCKED_HOSTNAME_PATTERNS.some((re) => re.test(hostname));
+}
+
 router.get('/proxy-image', async (req: Request, res: Response) => {
   const url = req.query.url as string;
   if (!url) { res.status(400).json({ error: 'url requis' }); return; }
@@ -42,6 +59,10 @@ router.get('/proxy-image', async (req: Request, res: Response) => {
 
   if (!['http:', 'https:'].includes(parsed.protocol)) {
     res.status(400).json({ error: 'Protocole non autorisé' }); return;
+  }
+
+  if (isPrivateHost(parsed.hostname)) {
+    res.status(403).json({ error: 'Hôte non autorisé' }); return;
   }
 
   try {
@@ -132,9 +153,9 @@ router.get('/report/week', async (_req: Request, res: Response) => {
 });
 
 // ─── PUT /api/sports/match-notes/:matchKey ──────────────────────────────────
-// Crée ou met à jour la note d'un match (upsert)
+// Crée ou met à jour la note d'un match (upsert) — nécessite tickets.create
 
-router.put('/:matchKey', async (req: Request, res: Response) => {
+router.put('/:matchKey', requirePermission('tickets.create'), async (req: Request, res: Response) => {
   const matchKey = decodeURIComponent(req.params.matchKey);
 
   const parsed = matchNoteBodySchema.safeParse(req.body);
