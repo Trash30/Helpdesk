@@ -84,6 +84,7 @@ model User {
   attachments        Attachment[]
   activityLogs       ActivityLog[]
   matchAttachments   MatchAttachment[]
+  matchNotes         MatchNote[]
   kbArticles         KbArticle[]       @relation("KbAuthor")
   kbAttachments      KbAttachment[]    @relation("KbAttachmentUploader")
 }
@@ -313,6 +314,24 @@ model MatchAttachment {
   uploadedById String
   uploadedBy   User     @relation(fields: [uploadedById], references: [id])
   createdAt    DateTime @default(now())
+}
+
+model MatchNote {
+  id           String   @id @default(uuid())
+  matchKey     String   @unique // "{competition}_{homeTeam}_{awayTeam}_{date}" — même format que MatchAttachment
+  content      String   // HTML Tiptap
+  matchDate    DateTime // pour le tri chronologique dans le rapport
+  competition  String   // ex: "TOP14", "LIGUE1", etc.
+  homeTeam     String
+  awayTeam     String
+  matchTime    String   // "HH:mm"
+  venue        String?
+  homeTeamLogo String?
+  awayTeamLogo String?
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model KbArticle {
