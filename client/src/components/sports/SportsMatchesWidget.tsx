@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { MatchNoteEditor } from './MatchNoteEditor';
+import { MatchReportExport } from './MatchReportExport';
 import api from '@/lib/axios';
 import { usePermissions } from '@/hooks/usePermissions';
 import toast from 'react-hot-toast';
@@ -38,9 +40,16 @@ interface MatchAttachment {
   createdAt: string;
 }
 
+interface MatchNoteData {
+  id: string;
+  matchKey: string;
+  content: string;
+  author: { id: string; name: string };
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const COMPETITION_META: Record<Competition, { label: string; favicon: string; calendarUrl: string }> = {
+export const COMPETITION_META: Record<Competition, { label: string; favicon: string; calendarUrl: string }> = {
   LIGUE1:         { label: 'Ligue 1',       favicon: 'https://www.ligue1.com/favicon.ico',                                                          calendarUrl: 'https://www.ligue1.com/fr/calendar' },
   TOP14:          { label: 'Top 14',        favicon: 'https://top14.lnr.fr/favicon.ico',                                                            calendarUrl: 'https://top14.lnr.fr/calendrier-et-resultats' },
   PRO_D2:         { label: 'Pro D2',        favicon: 'https://prod2.lnr.fr/favicon.ico',                                                            calendarUrl: 'https://prod2.lnr.fr/calendrier-et-resultats' },
@@ -148,9 +157,10 @@ function TeamLogo({ logoUrl, teamName }: TeamLogoProps) {
 interface ElmsMatchRowProps {
   match: Match;
   attachments: MatchAttachment[];
+  existingNote?: MatchNoteData;
 }
 
-function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
+function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -308,6 +318,13 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
         </div>
       )}
 
+      {/* Note editor */}
+      <MatchNoteEditor
+        matchKey={matchKey}
+        match={match}
+        initialContent={existingNote?.content}
+      />
+
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
@@ -331,9 +348,10 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
 interface MatchRowProps {
   match: Match;
   attachments: MatchAttachment[];
+  existingNote?: MatchNoteData;
 }
 
-function MatchRow({ match, attachments }: MatchRowProps) {
+function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
   const [broadcasterError, setBroadcasterError] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -502,6 +520,13 @@ function MatchRow({ match, attachments }: MatchRowProps) {
         </div>
       )}
 
+      {/* Note editor */}
+      <MatchNoteEditor
+        matchKey={matchKey}
+        match={match}
+        initialContent={existingNote?.content}
+      />
+
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
@@ -534,7 +559,10 @@ export function SportsMatchesWidget() {
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Matchs de la semaine</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Matchs de la semaine</CardTitle>
+          {data?.data && data.data.length > 0 && <MatchReportExport />}
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading && <LoadingSkeleton />}
@@ -576,12 +604,25 @@ function MatchesList({ matches }: MatchesListProps) {
     enabled: matches.length > 0,
   });
 
+  const { data: notesData } = useQuery({
+    queryKey: ['match-notes'],
+    queryFn: async () => (await api.get('/sports/match-notes')).data as MatchNoteData[],
+    enabled: matches.length > 0,
+  });
+
   const attachmentsByKey = new Map<string, MatchAttachment[]>();
   if (attachmentsData) {
     for (const att of attachmentsData) {
       const existing = attachmentsByKey.get(att.matchKey) || [];
       existing.push(att);
       attachmentsByKey.set(att.matchKey, existing);
+    }
+  }
+
+  const notesByKey = new Map<string, MatchNoteData>();
+  if (notesData) {
+    for (const note of notesData) {
+      notesByKey.set(note.matchKey, note);
     }
   }
 
@@ -620,12 +661,14 @@ function MatchesList({ matches }: MatchesListProps) {
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
+                    existingNote={notesByKey.get(getMatchKey(match))}
                   />
                 ) : (
                   <MatchRow
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
+                    existingNote={notesByKey.get(getMatchKey(match))}
                   />
                 )
               )}
