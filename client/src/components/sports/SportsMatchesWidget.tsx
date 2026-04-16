@@ -606,7 +606,7 @@ function MatchesList({ matches }: MatchesListProps) {
 
   const { data: notesData } = useQuery({
     queryKey: ['match-notes'],
-    queryFn: async () => (await api.get('/sports/match-notes')).data as MatchNoteData[],
+    queryFn: async () => ((await api.get('/sports/match-notes')).data?.data ?? []) as MatchNoteData[],
     enabled: matches.length > 0,
   });
 

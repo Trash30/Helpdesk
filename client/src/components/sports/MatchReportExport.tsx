@@ -166,8 +166,8 @@ export function MatchReportExport() {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const { data } = await api.get<WeekReportResponse>('/sports/match-notes/report/week');
-      const { weekNumber, year, notes } = data;
+      const response = await api.get('/sports/match-notes/report/week');
+      const { weekNumber, year, notes } = response.data.data as WeekReportResponse;
 
       // Filter notes with actual content (not empty)
       const validNotes = notes.filter((n) => {
