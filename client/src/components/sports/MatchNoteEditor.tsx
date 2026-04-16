@@ -128,18 +128,18 @@ export function MatchNoteEditor({ matchKey, match, initialContent }: MatchNoteEd
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className={`inline-flex items-center gap-1 text-xs transition-colors ${
+              className={`inline-flex items-center gap-1.5 text-xs transition-colors rounded px-1.5 py-0.5 ${
                 hasNote
-                  ? 'text-amber-500 hover:text-amber-600'
-                  : 'text-muted-foreground/40 hover:text-muted-foreground/70'
+                  ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                  : 'text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/50 border border-dashed border-muted-foreground/30 hover:border-muted-foreground/50'
               }`}
             >
-              <StickyNote className="h-4 w-4" />
-              {hasNote && <span className="text-amber-500/70">Note</span>}
+              <StickyNote className="h-3.5 w-3.5 shrink-0" />
+              <span>{hasNote ? 'Note' : 'Ajouter des notes'}</span>
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            {hasNote ? 'Voir/modifier la note' : 'Ajouter une note'}
+            {hasNote ? 'Voir/modifier la note' : 'Ajouter une note de support'}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

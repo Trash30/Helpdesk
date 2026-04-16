@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
 import { hasPermission } from '../middleware/permissions';
+import axios from 'axios';
 
 const router = Router();
 
@@ -23,6 +24,40 @@ const matchNoteBodySchema = z.object({
   venue: z.string().optional(),
   homeTeamLogo: z.string().optional(),
   awayTeamLogo: z.string().optional(),
+});
+
+// ─── GET /api/sports/match-notes/proxy-image ────────────────────────────────
+// Proxy d'images pour éviter les problèmes CORS lors de la génération du rapport Word
+
+router.get('/proxy-image', async (req: Request, res: Response) => {
+  const url = req.query.url as string;
+  if (!url) { res.status(400).json({ error: 'url requis' }); return; }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    res.status(400).json({ error: 'URL invalide' }); return;
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    res.status(400).json({ error: 'Protocole non autorisé' }); return;
+  }
+
+  try {
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      timeout: 5000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HelpDesk/1.0)' },
+    });
+
+    const contentType = (response.headers['content-type'] as string) || 'image/png';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(Buffer.from(response.data as ArrayBuffer));
+  } catch {
+    res.status(404).json({ error: 'Image introuvable' });
+  }
 });
 
 // ─── GET /api/sports/match-notes ────────────────────────────────────────────
