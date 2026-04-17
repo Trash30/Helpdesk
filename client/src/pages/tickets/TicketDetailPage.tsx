@@ -182,7 +182,7 @@ function InlineTitle({
       onClick={() => canEdit && setEditing(true)}
       title={canEdit ? 'Cliquer pour modifier' : undefined}
     >
-      <h1 className="text-2xl font-bold leading-snug">
+      <h1 className="text-xl sm:text-2xl font-bold leading-snug break-words">
         {value}
       </h1>
       {canEdit && (
@@ -552,8 +552,8 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
         </div>
       )}
 
-      <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/20">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-3 py-2 border-t bg-muted/20">
+        <div className="flex items-center gap-3 flex-wrap">
           <Switch
             id="internal-toggle"
             checked={isInternal}
@@ -570,7 +570,7 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1.5 py-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-            title={files.length >= 5 ? '5 fichiers maximum atteint' : 'Ajouter des pièces jointes'}
+            title={files.length >= 5 ? '5 fichiers maximum atteint' : 'Ajouter des pi\u00e8ces jointes'}
             disabled={files.length >= 5}
           >
             <Paperclip className="h-3.5 w-3.5" />
@@ -588,8 +588,9 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
           size="sm"
           onClick={submit}
           disabled={submitting || !canSubmit}
+          className="w-full sm:w-auto h-10 sm:h-8"
         >
-          {submitting ? 'Envoi...' : 'Ajouter un commentaire'}
+          {submitting ? 'Envoi...' : 'Commenter'}
         </Button>
       </div>
     </div>
@@ -916,8 +917,8 @@ export function TicketDetailPage() {
           <CommentInput ticketId={ticket.id} onAdded={invalidate} />
         </div>
 
-        {/* ── RIGHT COLUMN ────────────────────────────────────────────────── */}
-        <div className="space-y-5 lg:sticky lg:top-6 self-start">
+        {/* ── RIGHT COLUMN (hidden on mobile, shown via sheet instead) ──── */}
+        <div className="hidden lg:block space-y-5 lg:sticky lg:top-6 self-start">
 
           {/* Status, priority, category, assign */}
           <div className="border rounded-lg p-4 space-y-4">
@@ -1347,19 +1348,65 @@ export function TicketDetailPage() {
               </select>
             </FieldRow>
 
-            <FieldRow label="Assigné à">
+            <FieldRow label="Assign\u00e9 \u00e0">
               <select
                 value={ticket.assignedTo?.id ?? ''}
                 onChange={e => updateAssign(e.target.value || null)}
                 disabled={!canAssign}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Non assigné</option>
+                <option value="">Non assign\u00e9</option>
                 {agents?.map(a => (
                   <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
                 ))}
               </select>
             </FieldRow>
+
+            {/* Client info in mobile sheet */}
+            {ticket.client && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Client</p>
+                  <p className="font-semibold">{ticket.client.firstName} {ticket.client.lastName}</p>
+                  {ticket.client.phone && (
+                    <a href={`tel:${ticket.client.phone}`} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-3.5 w-3.5" />{ticket.client.phone}
+                    </a>
+                  )}
+                  {ticket.client.email && (
+                    <a href={`mailto:${ticket.client.email}`} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5" />{ticket.client.email}
+                    </a>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Action buttons in mobile sheet */}
+            <Separator />
+            <div className="space-y-2">
+              {canClose && ['OPEN', 'IN_PROGRESS', 'PENDING'].includes(ticket.status) && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 border-gray-400 text-gray-600"
+                  onClick={() => { setMobileActionsOpen(false); setClosingNote(''); setClosingNoteOpen(true); }}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Fermer le ticket
+                </Button>
+              )}
+              {canEdit && ticket.status === 'CLOSED' && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 border-blue-500 text-blue-700"
+                  onClick={() => { setMobileActionsOpen(false); setConfirmAction('reopen'); }}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Rouvrir
+                </Button>
+              )}
+            </div>
           </div>
         </SheetContent>
       </Sheet>
