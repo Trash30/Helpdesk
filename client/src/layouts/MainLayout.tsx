@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, Ticket, Users, Settings, Tag, UserCheck,
   Shield, Users2, BarChart2, Plus, Search, LogOut, User,
-  ChevronRight, Moon, Sun, Menu, Building2, MapPin, Landmark, FileType,
+  ChevronRight, Moon, Sun, Menu, Building2, MapPin, Landmark, FileType, BookOpen,
 } from 'lucide-react';
 import { useBranding } from '@/hooks/useBranding';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -134,7 +134,7 @@ function GlobalSearch() {
           aria-autocomplete="list"
           aria-label="Rechercher un ticket ou un client"
           aria-activedescendant={activeIndex >= 0 ? `search-result-${activeIndex}` : undefined}
-          className="w-full pl-9 pr-3 h-9 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className="w-full pl-9 pr-3 h-10 sm:h-9 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
@@ -256,7 +256,7 @@ export function MainLayout() {
   const closeMobile = () => setMobileOpen(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-[100dvh] overflow-hidden bg-background">
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
@@ -292,6 +292,9 @@ export function MainLayout() {
           <NavItem to="/tickets" icon={<Ticket size={18} />} label="Tickets" badge={stats?.openTickets} collapsed={collapsed} onNavigate={closeMobile} />
           {can('clients.view') && (
             <NavItem to="/clients" icon={<Users size={18} />} label="Clients" collapsed={collapsed} onNavigate={closeMobile} />
+          )}
+          {can('kb.read') && (
+            <NavItem to="/kb" icon={<BookOpen size={18} />} label="Base de connaissance" collapsed={collapsed} onNavigate={closeMobile} />
           )}
 
           {can('admin.access') && (
@@ -348,13 +351,13 @@ export function MainLayout() {
       {/* Main content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Topbar */}
-        <header className="flex items-center gap-4 px-4 h-14 border-b bg-card shrink-0">
+        <header className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 h-14 border-b bg-card shrink-0">
           <button
-            className="md:hidden flex items-center justify-center w-9 h-9 rounded-md hover:bg-accent"
+            className="md:hidden flex items-center justify-center w-11 h-11 rounded-md hover:bg-accent active:bg-accent/80"
             onClick={() => setMobileOpen(o => !o)}
             aria-label="Ouvrir le menu de navigation"
           >
-            <Menu size={18} />
+            <Menu size={20} />
           </button>
           <div className="flex-1 sm:flex-none">
             <GlobalSearch />
@@ -363,7 +366,7 @@ export function MainLayout() {
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={toggle}
-              className="flex items-center justify-center w-9 h-9 rounded-md border border-input hover:bg-accent transition-colors"
+              className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-md border border-input hover:bg-accent active:bg-accent/80 transition-colors"
               title={dark ? 'Mode clair' : 'Mode sombre'}
             >
               {dark ? <Sun size={16} /> : <Moon size={16} />}
@@ -404,7 +407,7 @@ export function MainLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-muted/40">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 bg-muted/40">
           <Outlet />
         </main>
       </div>

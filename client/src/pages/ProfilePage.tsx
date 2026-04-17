@@ -68,56 +68,46 @@ export function ProfilePage() {
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Sécurité</h2>
 
-        {isAdmin ? (
-          <div className="bg-muted rounded-md p-4 text-sm text-muted-foreground border">
-            <p className="font-medium text-foreground mb-1">Modification du mot de passe administrateur</p>
-            <p>
-              La modification du mot de passe administrateur doit être effectuée par un autre administrateur
-              depuis la gestion des utilisateurs.
-            </p>
+        <form onSubmit={handlePasswordChange} className="space-y-4 max-w-sm">
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword">Mot de passe actuel</Label>
+            <Input
+              id="currentPassword"
+              type="password"
+              required
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+            />
           </div>
-        ) : (
-          <form onSubmit={handlePasswordChange} className="space-y-4 max-w-sm">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Mot de passe actuel</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                required
-                value={currentPassword}
-                onChange={e => setCurrentPassword(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">Nouveau mot de passe</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                required
-                value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
-              />
-              <PasswordStrength password={newPassword} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-              />
-            </div>
-            <Button type="submit" variant="outline" disabled={pwLoading}>
-              {pwLoading ? 'Enregistrement...' : 'Changer le mot de passe'}
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              Après le changement, vous serez déconnecté et redirigé vers la page de connexion.
-            </p>
-          </form>
-        )}
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              required
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
+            />
+            <PasswordStrength password={newPassword} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              required
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+            />
+          </div>
+          <Button type="submit" variant="outline" disabled={pwLoading}>
+            {pwLoading ? 'Enregistrement...' : 'Changer le mot de passe'}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Après le changement, vous serez déconnecté et redirigé vers la page de connexion.
+          </p>
+        </form>
       </div>
     </div>
   );

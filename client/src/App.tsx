@@ -37,6 +37,8 @@ import { AdminClubsPage } from '@/pages/admin/AdminClubsPage';
 import { AdminPolesPage } from '@/pages/admin/AdminPolesPage';
 import { AdminTicketTypesPage } from '@/pages/admin/AdminTicketTypesPage';
 import { TodayEventsPage } from '@/pages/sports/TodayEventsPage';
+import { KbListPage } from '@/pages/kb/KbListPage';
+import { KbArticlePage } from '@/pages/kb/KbArticlePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -95,6 +97,33 @@ export default function App() {
                 }
               />
               <Route path="/tickets/:id" element={<TicketDetailPage />} />
+
+              {/* Knowledge Base */}
+              <Route
+                path="/kb"
+                element={
+                  <ProtectedRoute requiredPermission="kb.read">
+                    <KbListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/kb/new"
+                element={
+                  <ProtectedRoute requiredPermission="kb.write">
+                    <KbArticlePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/kb/:id"
+                element={
+                  <ProtectedRoute requiredPermission="kb.read">
+                    <KbArticlePage />
+                  </ProtectedRoute>
+                }
+              />
+
 
               {/* Evenements sportifs */}
               <Route path="/evenements/aujourd-hui" element={<TodayEventsPage />} />

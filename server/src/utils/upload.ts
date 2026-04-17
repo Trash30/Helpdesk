@@ -91,6 +91,38 @@ export const logoUpload = multer({
   },
 });
 
+// ─── KB image upload (single file, 5 MB, images only) ────────────────────────
+
+const ALLOWED_KB_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]);
+
+export const kbImageUpload = multer({
+  storage: multer.diskStorage({
+    destination(_req, _file, cb) {
+      const dir = path.join(getUploadsRoot(), 'kb');
+      ensureDir(dir);
+      cb(null, dir);
+    },
+    filename(_req, file, cb) {
+      const uuid = crypto.randomUUID();
+      const ext = path.extname(file.originalname);
+      cb(null, `${uuid}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter(_req: Request, file: Express.Multer.File, cb: FileFilterCallback) {
+    if (ALLOWED_KB_MIMES.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Format non autorisé (JPG, PNG, GIF, WebP uniquement)'));
+    }
+  },
+});
+
 export function getUploadsPath(...segments: string[]): string {
   return path.join(getUploadsRoot(), ...segments);
 }

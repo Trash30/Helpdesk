@@ -1,13 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Search, Plus, UserPlus, BellOff, Eye, Pencil, Ticket,
-  ChevronLeft, ChevronRight, ChevronDown, RotateCcw,
+  RotateCcw,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useClientPanel } from '@/contexts/ClientPanelContext';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useDebounce } from '@/hooks/useDebounce';
+import { MultiSelect } from '@/components/common/MultiSelect';
+import { Pagination } from '@/components/common/Pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,15 +18,6 @@ import {
 } from '@/components/ui/tooltip';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [d, setD] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setD(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return d;
-}
 
 function relativeTime(dateStr: string | null): string {
   if (!dateStr) return 'Jamais';
@@ -45,109 +39,6 @@ function stringToColor(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
   return `hsl(${Math.abs(hash) % 360}, 50%, 45%)`;
-}
-
-// ── MultiSelect ───────────────────────────────────────────────────────────────
-
-function MultiSelect({
-  options,
-  value,
-  onChange,
-  placeholder,
-}: {
-  options: { value: string; label: string }[];
-  value: string[];
-  onChange: (v: string[]) => void;
-  placeholder: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function outside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', outside);
-    return () => document.removeEventListener('mousedown', outside);
-  }, []);
-
-  const toggle = (v: string) =>
-    onChange(value.includes(v) ? value.filter(x => x !== v) : [...value, v]);
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        className="flex h-9 min-w-[150px] items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-sm"
-      >
-        <span className="text-muted-foreground truncate">
-          {value.length === 0 ? placeholder : `${value.length} sélectionné${value.length > 1 ? 's' : ''}`}
-        </span>
-        <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[170px] rounded-md border bg-popover shadow-md py-1">
-          {options.map(opt => (
-            <label
-              key={opt.value}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-accent"
-            >
-              <input
-                type="checkbox"
-                checked={value.includes(opt.value)}
-                onChange={() => toggle(opt.value)}
-                className="h-4 w-4 rounded border-input"
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Pagination ────────────────────────────────────────────────────────────────
-
-function Pagination({ page, totalPages, onChange }: {
-  page: number; totalPages: number; onChange: (p: number) => void;
-}) {
-  if (totalPages <= 1) return null;
-  const pages: number[] = [];
-  const start = Math.max(1, page - 2);
-  const end = Math.min(totalPages, page + 2);
-  for (let i = start; i <= end; i++) pages.push(i);
-
-  return (
-    <div className="flex items-center gap-1">
-      <Button variant="outline" size="sm" onClick={() => onChange(page - 1)} disabled={page === 1}>
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      {start > 1 && (
-        <>
-          <Button variant={page === 1 ? 'default' : 'outline'} size="sm" onClick={() => onChange(1)}>1</Button>
-          {start > 2 && <span className="px-2 text-muted-foreground">…</span>}
-        </>
-      )}
-      {pages.map(p => (
-        <Button key={p} variant={p === page ? 'default' : 'outline'} size="sm" onClick={() => onChange(p)}>
-          {p}
-        </Button>
-      ))}
-      {end < totalPages && (
-        <>
-          {end < totalPages - 1 && <span className="px-2 text-muted-foreground">…</span>}
-          <Button variant={page === totalPages ? 'default' : 'outline'} size="sm" onClick={() => onChange(totalPages)}>
-            {totalPages}
-          </Button>
-        </>
-      )}
-      <Button variant="outline" size="sm" onClick={() => onChange(page + 1)} disabled={page === totalPages}>
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-    </div>
-  );
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -260,10 +151,10 @@ export function ClientListPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Rechercher par nom, société, email, téléphone..."
+              placeholder="Rechercher par nom, email, t\u00e9l\u00e9phone..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full h-10 pl-9 pr-4 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full h-11 sm:h-10 pl-9 pr-4 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -316,19 +207,64 @@ export function ClientListPage() {
           </div>
         ) : (
           <>
-            <div className="rounded-lg border overflow-x-auto">
+            {/* Mobile card view */}
+            <div className="md:hidden space-y-2">
+              {data.data.map(client => (
+                <div
+                  key={client.id}
+                  onClick={() => navigate(`/clients/${client.id}`)}
+                  className="rounded-lg border bg-card p-3 active:bg-muted/40 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white text-xs font-semibold shrink-0"
+                      style={{ backgroundColor: stringToColor(`${client.firstName} ${client.lastName}`) }}
+                    >
+                      {getInitials(client.firstName, client.lastName)}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">{client.firstName} {client.lastName}</p>
+                      {client.company && <p className="text-xs text-muted-foreground truncate">{client.company}</p>}
+                    </div>
+                    {(client.openTicketsCount ?? 0) > 0 && (
+                      <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 shrink-0">
+                        {client.openTicketsCount}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {client.role && (
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-white"
+                        style={{ backgroundColor: client.role.color }}
+                      >
+                        {client.role.name}
+                      </span>
+                    )}
+                    {client.phone && (
+                      <a href={`tel:${client.phone}`} onClick={e => e.stopPropagation()} className="text-xs text-muted-foreground hover:text-foreground">
+                        {client.phone}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block rounded-lg border overflow-x-auto">
               <table className="w-full min-w-[600px] text-sm">
                 <thead className="bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <tr>
                     <th className="px-4 py-3 text-left">Nom</th>
-                    <th className="px-4 py-3 text-left hidden xl:table-cell">Société</th>
-                    <th className="px-4 py-3 text-left">Téléphone</th>
+                    <th className="px-4 py-3 text-left hidden xl:table-cell">Soci\u00e9t\u00e9</th>
+                    <th className="px-4 py-3 text-left">T\u00e9l\u00e9phone</th>
                     <th className="px-4 py-3 text-left hidden xl:table-cell">Email</th>
-                    <th className="px-4 py-3 text-left">Rôle</th>
-                    <th className="px-4 py-3 text-center hidden lg:table-cell">Enquêtes</th>
+                    <th className="px-4 py-3 text-left">R\u00f4le</th>
+                    <th className="px-4 py-3 text-center hidden lg:table-cell">Enqu\u00eates</th>
                     <th className="px-4 py-3 text-center">Ouverts</th>
                     <th className="px-4 py-3 text-center hidden lg:table-cell">Total</th>
-                    <th className="px-4 py-3 text-left hidden md:table-cell">Dernière activité</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">Derni\u00e8re activit\u00e9</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -352,18 +288,18 @@ export function ClientListPage() {
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground hidden xl:table-cell">
-                        {client.company || '—'}
+                        {client.company || '\u2014'}
                       </td>
                       <td className="px-4 py-3">
                         {client.phone
                           ? <a href={`tel:${client.phone}`} className="text-foreground hover:underline">{client.phone}</a>
-                          : <span className="text-muted-foreground">—</span>
+                          : <span className="text-muted-foreground">\u2014</span>
                         }
                       </td>
                       <td className="px-4 py-3 hidden xl:table-cell">
                         {client.email
                           ? <a href={`mailto:${client.email}`} className="text-foreground hover:underline truncate block max-w-[160px]">{client.email}</a>
-                          : <span className="text-muted-foreground">—</span>
+                          : <span className="text-muted-foreground">\u2014</span>
                         }
                       </td>
                       <td className="px-4 py-3">
@@ -375,7 +311,7 @@ export function ClientListPage() {
                             {client.role.name}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground">\u2014</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center hidden lg:table-cell">
@@ -386,7 +322,7 @@ export function ClientListPage() {
                                 <BellOff className="h-4 w-4 text-muted-foreground" />
                               </span>
                             </TooltipTrigger>
-                            <TooltipContent>Enquêtes désactivées</TooltipContent>
+                            <TooltipContent>Enqu\u00eates d\u00e9sactiv\u00e9es</TooltipContent>
                           </Tooltip>
                         ) : null}
                       </td>
@@ -403,7 +339,7 @@ export function ClientListPage() {
                       <td className="px-4 py-3 text-center text-muted-foreground hidden lg:table-cell">
                         {client._count.tickets}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell">
+                      <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
                         {relativeTime(client.lastActivityAt ?? null)}
                       </td>
                       <td className="px-4 py-3">
@@ -460,9 +396,9 @@ export function ClientListPage() {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {data.total} client{data.total !== 1 ? 's' : ''} au total
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs sm:text-sm text-muted-foreground shrink-0">
+                {data.total} client{data.total !== 1 ? 's' : ''}
               </p>
               <Pagination page={data.page} totalPages={data.totalPages} onChange={setPage} />
             </div>

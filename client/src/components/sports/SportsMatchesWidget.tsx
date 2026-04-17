@@ -1,7 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FileText, Trash2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { MatchNoteEditor } from './MatchNoteEditor';
+import { MatchReportExport } from './MatchReportExport';
 import api from '@/lib/axios';
 import { usePermissions } from '@/hooks/usePermissions';
 import toast from 'react-hot-toast';
@@ -36,9 +40,16 @@ interface MatchAttachment {
   createdAt: string;
 }
 
+interface MatchNoteData {
+  id: string;
+  matchKey: string;
+  content: string;
+  author: { id: string; name: string };
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const COMPETITION_META: Record<Competition, { label: string; favicon: string; calendarUrl: string }> = {
+export const COMPETITION_META: Record<Competition, { label: string; favicon: string; calendarUrl: string }> = {
   LIGUE1:         { label: 'Ligue 1',       favicon: 'https://www.ligue1.com/favicon.ico',                                                          calendarUrl: 'https://www.ligue1.com/fr/calendar' },
   TOP14:          { label: 'Top 14',        favicon: 'https://top14.lnr.fr/favicon.ico',                                                            calendarUrl: 'https://top14.lnr.fr/calendrier-et-resultats' },
   PRO_D2:         { label: 'Pro D2',        favicon: 'https://prod2.lnr.fr/favicon.ico',                                                            calendarUrl: 'https://prod2.lnr.fr/calendrier-et-resultats' },
@@ -146,10 +157,13 @@ function TeamLogo({ logoUrl, teamName }: TeamLogoProps) {
 interface ElmsMatchRowProps {
   match: Match;
   attachments: MatchAttachment[];
+  existingNote?: MatchNoteData;
 }
 
-function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
+function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { can } = usePermissions();
   const queryClient = useQueryClient();
   const matchKey = getMatchKey(match);
@@ -207,8 +221,20 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
     [uploadMutation],
   );
 
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.type !== 'application/pdf') { toast.error('Seuls les fichiers PDF sont acceptés'); return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error('Fichier trop volumineux (max 10 Mo)'); return; }
+      uploadMutation.mutate(file);
+      e.target.value = '';
+    },
+    [uploadMutation],
+  );
+
   return (
-    <div className="flex flex-col gap-1 py-2.5 px-3">
+    <div className="group flex flex-col gap-1 py-2.5 px-3">
       {/* Ligne principale : flag + nom epreuve + badge session */}
       <div className="flex items-center gap-2">
         {/* Logo ELMS */}
@@ -243,7 +269,7 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
         <div className="w-full space-y-0.5">
           {attachments.map((att) => (
             <div key={att.id} className="flex items-center gap-1.5 text-xs text-muted-foreground px-1">
-              <span className="shrink-0">📄</span>
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <button
                 type="button"
                 className="truncate hover:text-foreground hover:underline transition-colors text-left"
@@ -257,11 +283,11 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
                 <button
                   type="button"
                   className="shrink-0 hover:text-red-600 transition-colors disabled:opacity-50"
-                  onClick={() => deleteMutation.mutate(att.id)}
+                  onClick={() => setDeleteTarget(att.id)}
                   disabled={deleteMutation.isPending}
                   title="Supprimer"
                 >
-                  🗑️
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
@@ -272,16 +298,49 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
       {/* Drop zone — tous les agents peuvent uploader */}
       {can('tickets.create') && (
         <div
-          className={`w-full border border-dashed rounded px-2 py-1.5 text-center text-xs transition-colors
+          className={`w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all
+            opacity-0 group-hover:opacity-100 transition-opacity duration-150
             ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
-            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50'}`}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50'}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
         >
+          <input
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+          />
           {uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}
         </div>
       )}
+
+      {/* Note editor */}
+      <MatchNoteEditor
+        matchKey={matchKey}
+        match={match}
+        initialContent={existingNote?.content}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="Supprimer le fichier"
+        description="Cette action est irréversible."
+        confirmLabel="Supprimer"
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget, {
+              onSettled: () => setDeleteTarget(null),
+            });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -289,11 +348,14 @@ function ElmsMatchRow({ match, attachments }: ElmsMatchRowProps) {
 interface MatchRowProps {
   match: Match;
   attachments: MatchAttachment[];
+  existingNote?: MatchNoteData;
 }
 
-function MatchRow({ match, attachments }: MatchRowProps) {
+function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
   const [broadcasterError, setBroadcasterError] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { can } = usePermissions();
   const queryClient = useQueryClient();
   const matchKey = getMatchKey(match);
@@ -355,8 +417,20 @@ function MatchRow({ match, attachments }: MatchRowProps) {
     [uploadMutation],
   );
 
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.type !== 'application/pdf') { toast.error('Seuls les fichiers PDF sont acceptés'); return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error('Fichier trop volumineux (max 10 Mo)'); return; }
+      uploadMutation.mutate(file);
+      e.target.value = '';
+    },
+    [uploadMutation],
+  );
+
   return (
-    <div className="flex flex-col items-center gap-1 py-2.5 px-3">
+    <div className="group flex flex-col items-center gap-1 py-2.5 px-3">
       <div className="flex items-center justify-center gap-2 w-full">
         <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
           <span className="text-sm font-medium truncate text-right">{match.homeTeam}</span>
@@ -393,7 +467,7 @@ function MatchRow({ match, attachments }: MatchRowProps) {
               key={att.id}
               className="flex items-center gap-1.5 text-xs text-muted-foreground px-1"
             >
-              <span className="shrink-0">📄</span>
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <button
                 type="button"
                 className="truncate hover:text-foreground hover:underline transition-colors text-left"
@@ -411,11 +485,11 @@ function MatchRow({ match, attachments }: MatchRowProps) {
                 <button
                   type="button"
                   className="shrink-0 hover:text-red-600 transition-colors disabled:opacity-50"
-                  onClick={() => deleteMutation.mutate(att.id)}
+                  onClick={() => setDeleteTarget(att.id)}
                   disabled={deleteMutation.isPending}
                   title="Supprimer"
                 >
-                  🗑️
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
@@ -426,16 +500,49 @@ function MatchRow({ match, attachments }: MatchRowProps) {
       {/* Drop zone — tous les agents peuvent uploader */}
       {can('tickets.create') && (
         <div
-          className={`w-full mt-1 border border-dashed rounded px-2 py-1.5 text-center text-xs transition-colors
+          className={`w-full mt-1 border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all
+            opacity-0 group-hover:opacity-100 transition-opacity duration-150
             ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
-            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50'}`}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50'}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
         >
+          <input
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+          />
           {uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}
         </div>
       )}
+
+      {/* Note editor */}
+      <MatchNoteEditor
+        matchKey={matchKey}
+        match={match}
+        initialContent={existingNote?.content}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="Supprimer le fichier"
+        description="Cette action est irréversible."
+        confirmLabel="Supprimer"
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget, {
+              onSettled: () => setDeleteTarget(null),
+            });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -452,7 +559,10 @@ export function SportsMatchesWidget() {
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Matchs de la semaine</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Matchs de la semaine</CardTitle>
+          {data?.data && data.data.length > 0 && <MatchReportExport />}
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading && <LoadingSkeleton />}
@@ -494,12 +604,25 @@ function MatchesList({ matches }: MatchesListProps) {
     enabled: matches.length > 0,
   });
 
+  const { data: notesData } = useQuery({
+    queryKey: ['match-notes'],
+    queryFn: async () => ((await api.get('/sports/match-notes')).data?.data ?? []) as MatchNoteData[],
+    enabled: matches.length > 0,
+  });
+
   const attachmentsByKey = new Map<string, MatchAttachment[]>();
   if (attachmentsData) {
     for (const att of attachmentsData) {
       const existing = attachmentsByKey.get(att.matchKey) || [];
       existing.push(att);
       attachmentsByKey.set(att.matchKey, existing);
+    }
+  }
+
+  const notesByKey = new Map<string, MatchNoteData>();
+  if (notesData) {
+    for (const note of notesData) {
+      notesByKey.set(note.matchKey, note);
     }
   }
 
@@ -538,12 +661,14 @@ function MatchesList({ matches }: MatchesListProps) {
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
+                    existingNote={notesByKey.get(getMatchKey(match))}
                   />
                 ) : (
                   <MatchRow
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
+                    existingNote={notesByKey.get(getMatchKey(match))}
                   />
                 )
               )}

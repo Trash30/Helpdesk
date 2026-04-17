@@ -265,7 +265,7 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Prénom *</Label>
               <Input
@@ -285,7 +285,7 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Téléphone</Label>
               <Input
@@ -306,7 +306,7 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Société</Label>
               <Input
@@ -661,7 +661,7 @@ export function TicketNewPage() {
             <p className="text-xs text-muted-foreground mt-1">Markdown supporté : **gras**, *italique*, `code`</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="category">Catégorie</Label>
               <select
@@ -692,7 +692,7 @@ export function TicketNewPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="assignedTo">Assigner à</Label>
               <select
@@ -721,9 +721,6 @@ export function TicketNewPage() {
                 ))}
               </select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="typeId">Type de ticket</Label>
               <select
