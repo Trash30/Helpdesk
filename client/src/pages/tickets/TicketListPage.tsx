@@ -451,14 +451,16 @@ export function TicketListPage() {
     <TooltipProvider>
       <div className="space-y-4">
         {/* Page header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Tickets</h1>
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold shrink-0">Tickets</h1>
           <div className="flex items-center gap-2">
-            <ExportDropdown onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
+            <div className="hidden sm:block">
+              <ExportDropdown onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
+            </div>
             {can('tickets.create') && (
-              <Button onClick={() => navigate('/tickets/new')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nouveau ticket
+              <Button onClick={() => navigate('/tickets/new')} size="sm" className="sm:size-default h-9 sm:h-10">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Nouveau ticket</span>
               </Button>
             )}
           </div>
@@ -484,7 +486,7 @@ export function TicketListPage() {
                 placeholder="Rechercher un ticket, client..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full h-9 pl-9 pr-4 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full h-10 sm:h-9 pl-9 pr-4 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             <Button
@@ -731,18 +733,59 @@ export function TicketListPage() {
           </div>
         ) : (
           <>
-            <div className="rounded-lg border overflow-x-auto">
+            {/* Mobile card view */}
+            <div className="md:hidden space-y-2">
+              {displayedTickets.map(ticket => (
+                <div
+                  key={ticket.id}
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  className="rounded-lg border bg-card p-3 active:bg-muted/40 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-mono text-xs text-primary font-medium shrink-0">{ticket.ticketNumber}</span>
+                        <span className="text-xs text-muted-foreground">{relativeTime(ticket.createdAt)}</span>
+                      </div>
+                      <p className="text-sm font-medium leading-snug line-clamp-2">{ticket.title}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                    <PriorityBadge priority={ticket.priority} />
+                    <StatusBadge status={ticket.status} />
+                    {ticket.category && (
+                      <CategoryBadge name={ticket.category.name} color={ticket.category.color} />
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                    <span>
+                      {ticket.client
+                        ? `${ticket.client.firstName} ${ticket.client.lastName}`
+                        : '--'}
+                    </span>
+                    <span>
+                      {ticket.assignedTo
+                        ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
+                        : 'Non assign\u00e9'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block rounded-lg border overflow-x-auto">
               <table className="w-full min-w-[600px] text-sm">
                 <thead className="bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <tr>
                     <th className="px-4 py-3 text-left">#</th>
                     <th className="px-4 py-3 text-left">Client</th>
                     <th className="px-4 py-3 text-left">Titre</th>
-                    <th className="px-4 py-3 text-left hidden xl:table-cell">Catégorie</th>
-                    <th className="px-4 py-3 text-left">Priorité</th>
+                    <th className="px-4 py-3 text-left hidden xl:table-cell">Cat\u00e9gorie</th>
+                    <th className="px-4 py-3 text-left">Priorit\u00e9</th>
                     <th className="px-4 py-3 text-left">Statut</th>
-                    <th className="px-4 py-3 text-left hidden lg:table-cell">Assigné</th>
-                    <th className="px-4 py-3 text-left hidden md:table-cell">Créé le</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">Assign\u00e9</th>
+                    <th className="px-4 py-3 text-left">Cr\u00e9\u00e9 le</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -771,7 +814,7 @@ export function TicketListPage() {
                               <div className="text-xs text-muted-foreground">
                                 {[ticket.client.organisation?.name, ticket.client.club?.name]
                                   .filter(Boolean)
-                                  .join(' · ')}
+                                  .join(' \u00b7 ')}
                               </div>
                             ) : ticket.client.company ? (
                               <div className="text-xs text-muted-foreground">{ticket.client.company}</div>
@@ -810,10 +853,10 @@ export function TicketListPage() {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-xs">Non assigné</span>
+                          <span className="text-muted-foreground text-xs">Non assign\u00e9</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
+                      <td className="px-4 py-3 text-muted-foreground">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="text-xs cursor-default">{relativeTime(ticket.createdAt)}</span>
@@ -830,9 +873,9 @@ export function TicketListPage() {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {data.total} ticket{data.total !== 1 ? 's' : ''} au total
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs sm:text-sm text-muted-foreground shrink-0">
+                {data.total} ticket{data.total !== 1 ? 's' : ''}
               </p>
               <Pagination
                 page={data.page}

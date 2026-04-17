@@ -8,6 +8,7 @@
     "build": "npm run build --prefix server && npm run build --prefix client"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "xlsx": "^0.18.5"
   }
 }

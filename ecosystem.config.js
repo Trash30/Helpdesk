@@ -2,9 +2,10 @@ module.exports = {
   apps: [
     {
       name: 'helpdesk-server',
-      script: './server/dist/index.js',
+      script: './server/dist/src/index.js',
       cwd: '/opt/helpdesk',
       instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
       max_memory_restart: '512M',

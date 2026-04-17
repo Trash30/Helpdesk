@@ -191,15 +191,15 @@ export function ClientDetailPage() {
         </Link>
 
         {/* Header */}
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-3 sm:gap-4">
           <div
-            className="h-16 w-16 rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0"
+            className="h-12 w-12 sm:h-16 sm:w-16 rounded-full flex items-center justify-center text-white text-lg sm:text-xl font-bold shrink-0"
             style={{ backgroundColor: stringToColor(`${client.firstName} ${client.lastName}`) }}
           >
             {getInitials(client.firstName, client.lastName)}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold">{client.firstName} {client.lastName}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold break-words">{client.firstName} {client.lastName}</h1>
             {client.role && (
               <span
                 className="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold text-white mt-1"
@@ -220,7 +220,7 @@ export function ClientDetailPage() {
         <Separator />
 
         {/* Info grid */}
-        <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Société</p>
             <p>{client.company || '—'}</p>
@@ -288,7 +288,7 @@ export function ClientDetailPage() {
 
         {/* Ticket history */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold">Historique des tickets</h2>
               <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium">
@@ -299,10 +299,11 @@ export function ClientDetailPage() {
               <Button
                 size="sm"
                 variant="outline"
+                className="w-full sm:w-auto h-10 sm:h-8"
                 onClick={() => navigate(`/tickets/new?clientId=${client.id}`)}
               >
                 <Plus className="h-4 w-4 mr-1.5" />
-                Créer un ticket pour ce client
+                Cr\u00e9er un ticket
               </Button>
             )}
           </div>
@@ -313,17 +314,48 @@ export function ClientDetailPage() {
               <p className="text-muted-foreground text-sm">Aucun ticket pour ce client</p>
             </div>
           ) : (
-            <div className="rounded-lg border overflow-hidden">
+            <>
+            {/* Mobile card view */}
+            <div className="md:hidden space-y-2">
+              {client.tickets.map(ticket => (
+                <div
+                  key={ticket.id}
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  className="rounded-lg border bg-card p-3 active:bg-muted/40 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-mono text-xs text-primary font-medium">{ticket.ticketNumber}</span>
+                    <span className="text-xs text-muted-foreground">{relativeTime(ticket.createdAt)}</span>
+                  </div>
+                  <p className="text-sm font-medium leading-snug line-clamp-2 mb-2">{ticket.title}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <PriorityBadge priority={ticket.priority} />
+                    <StatusBadge status={ticket.status} />
+                    {ticket.category && (
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-white"
+                        style={{ backgroundColor: ticket.category.color }}
+                      >
+                        {ticket.category.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block rounded-lg border overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <tr>
                     <th className="px-4 py-3 text-left">#</th>
                     <th className="px-4 py-3 text-left">Titre</th>
-                    <th className="px-4 py-3 text-left">Catégorie</th>
-                    <th className="px-4 py-3 text-left">Priorité</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">Cat\u00e9gorie</th>
+                    <th className="px-4 py-3 text-left">Priorit\u00e9</th>
                     <th className="px-4 py-3 text-left">Statut</th>
-                    <th className="px-4 py-3 text-left">Assigné</th>
-                    <th className="px-4 py-3 text-left">Créé le</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">Assign\u00e9</th>
+                    <th className="px-4 py-3 text-left">Cr\u00e9\u00e9 le</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -340,10 +372,10 @@ export function ClientDetailPage() {
                       </td>
                       <td className="px-4 py-3 max-w-[240px]">
                         <span className="truncate block">
-                          {ticket.title.length > 60 ? ticket.title.slice(0, 60) + '…' : ticket.title}
+                          {ticket.title.length > 60 ? ticket.title.slice(0, 60) + '\u2026' : ticket.title}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 hidden lg:table-cell">
                         {ticket.category ? (
                           <span
                             className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-white"
@@ -352,15 +384,15 @@ export function ClientDetailPage() {
                             {ticket.category.name}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground">\u2014</span>
                         )}
                       </td>
                       <td className="px-4 py-3"><PriorityBadge priority={ticket.priority} /></td>
                       <td className="px-4 py-3"><StatusBadge status={ticket.status} /></td>
-                      <td className="px-4 py-3 text-muted-foreground">
+                      <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">
                         {ticket.assignedTo
                           ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
-                          : '—'}
+                          : '\u2014'}
                       </td>
                       <td className="px-4 py-3">
                         <Tooltip>
@@ -379,6 +411,7 @@ export function ClientDetailPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
 
