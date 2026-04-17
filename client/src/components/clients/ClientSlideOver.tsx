@@ -164,9 +164,6 @@ export function ClientSlideOver() {
     const e: Record<string, string> = {};
     if (!form.firstName.trim()) e.firstName = 'Prénom requis';
     if (!form.lastName.trim()) e.lastName = 'Nom requis';
-    if (!form.phone.trim() && !form.email.trim()) {
-      e.contact = 'Au moins un contact requis (téléphone ou email)';
-    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };

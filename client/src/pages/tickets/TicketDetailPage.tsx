@@ -1,11 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect, KeyboardEvent } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import ReactMarkdown from 'react-markdown';
 import rehypeSanitize from 'rehype-sanitize';
 import {
   Phone, Mail, ExternalLink, Paperclip, Download, Trash2,
   XCircle, RefreshCw, Bold, Italic, Code, X, Pencil,
+  SlidersHorizontal, BookOpen,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -25,6 +26,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from '@/components/ui/sheet';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -178,7 +182,7 @@ function InlineTitle({
       onClick={() => canEdit && setEditing(true)}
       title={canEdit ? 'Cliquer pour modifier' : undefined}
     >
-      <h1 className="text-2xl font-bold leading-snug">
+      <h1 className="text-xl sm:text-2xl font-bold leading-snug break-words">
         {value}
       </h1>
       {canEdit && (
@@ -548,8 +552,8 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
         </div>
       )}
 
-      <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/20">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-3 py-2 border-t bg-muted/20">
+        <div className="flex items-center gap-3 flex-wrap">
           <Switch
             id="internal-toggle"
             checked={isInternal}
@@ -566,7 +570,7 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1.5 py-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-            title={files.length >= 5 ? '5 fichiers maximum atteint' : 'Ajouter des pièces jointes'}
+            title={files.length >= 5 ? '5 fichiers maximum atteint' : 'Ajouter des pi\u00e8ces jointes'}
             disabled={files.length >= 5}
           >
             <Paperclip className="h-3.5 w-3.5" />
@@ -584,8 +588,9 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
           size="sm"
           onClick={submit}
           disabled={submitting || !canSubmit}
+          className="w-full sm:w-auto h-10 sm:h-8"
         >
-          {submitting ? 'Envoi...' : 'Ajouter un commentaire'}
+          {submitting ? 'Envoi...' : 'Commenter'}
         </Button>
       </div>
     </div>
@@ -620,6 +625,7 @@ export function TicketDetailPage() {
 
   const [confirmAction, setConfirmAction] = useState<'close' | 'reopen' | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const [closingNoteOpen, setClosingNoteOpen] = useState(false);
   const [closingNote, setClosingNote] = useState('');
   const [closingLoading, setClosingLoading] = useState(false);
@@ -627,6 +633,13 @@ export function TicketDetailPage() {
   const [pendingNoteOpen, setPendingNoteOpen] = useState(false);
   const [pendingNote, setPendingNote] = useState('');
   const [pendingLoading, setPendingLoading] = useState(false);
+
+  // KB modal state
+  const [kbModalOpen, setKbModalOpen] = useState(false);
+  const [kbTitle, setKbTitle] = useState('');
+  const [kbIncludeDescription, setKbIncludeDescription] = useState(true);
+  const [kbSelectedCommentIds, setKbSelectedCommentIds] = useState<string[]>([]);
+  const [kbStatus, setKbStatus] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT');
   const { data: ticket, isLoading, error } = useQuery<Ticket>({
     queryKey: ['ticket', id],
     queryFn: async () => (await api.get(`/tickets/${id}`)).data?.data,
@@ -694,6 +707,19 @@ export function TicketDetailPage() {
     }
   }, [id, invalidate]);
 
+  // KB: open modal after ticket close (only if kb.write permission)
+  const openKbModal = useCallback(() => {
+    if (!ticket) return;
+    setKbTitle(ticket.title);
+    setKbIncludeDescription(true);
+    const publicCommentIds = ticket.comments
+      .filter(c => !c.isInternal)
+      .map(c => c.id);
+    setKbSelectedCommentIds(publicCommentIds);
+    setKbStatus('DRAFT');
+    setKbModalOpen(true);
+  }, [ticket]);
+
   const handleAction = useCallback(async () => {
     if (!confirmAction) return;
     setActionLoading(true);
@@ -701,14 +727,18 @@ export function TicketDetailPage() {
       const statusMap = { close: 'CLOSED', reopen: 'OPEN' };
       await api.patch(`/tickets/${id}/status`, { status: statusMap[confirmAction] });
       invalidate();
-      toast.success('Statut mis à jour');
+      toast.success('Statut mis a jour');
+      // Propose KB creation when closing via this path
+      if (confirmAction === 'close' && can('kb.write')) {
+        setTimeout(() => openKbModal(), 300);
+      }
     } catch {
       toast.error('Erreur lors de l\'action');
     } finally {
       setActionLoading(false);
       setConfirmAction(null);
     }
-  }, [confirmAction, id, invalidate]);
+  }, [confirmAction, id, invalidate, can, openKbModal]);
 
   const handleClosingNote = useCallback(async () => {
     if (!closingNote.trim()) return;
@@ -716,15 +746,20 @@ export function TicketDetailPage() {
     try {
       await api.patch(`/tickets/${id}/status`, { status: 'CLOSED', closingNote: closingNote.trim() });
       invalidate();
-      toast.success('Ticket fermé');
+      toast.success('Ticket ferme');
       setClosingNoteOpen(false);
       setClosingNote('');
+      // Propose KB creation if user has permission
+      if (can('kb.write')) {
+        // Small delay to let ticket data refresh before opening KB modal
+        setTimeout(() => openKbModal(), 300);
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Erreur lors de la fermeture');
     } finally {
       setClosingLoading(false);
     }
-  }, [closingNote, id, invalidate]);
+  }, [closingNote, id, invalidate, can, openKbModal]);
 
   const handlePendingNote = useCallback(async () => {
     if (!pendingNote.trim()) return;
@@ -741,6 +776,38 @@ export function TicketDetailPage() {
       setPendingLoading(false);
     }
   }, [pendingNote, id, invalidate]);
+
+  const kbMutation = useMutation({
+    mutationFn: async (payload: { commentIds: string[] }) => {
+      const res = await api.post(`/kb/from-ticket/${id}`, payload);
+      return res.data?.data ?? res.data;
+    },
+    onSuccess: async (data) => {
+      const articleId = data?.id;
+      if (kbStatus === 'PUBLISHED' && articleId) {
+        try {
+          await api.put(`/kb/${articleId}`, { status: 'PUBLISHED' });
+        } catch {
+          // article created but publish failed - still show success
+        }
+      }
+      toast.success(
+        <span>
+          Article KB cree !{' '}
+          <a href={`/kb/${articleId}`} className="underline font-medium">Voir l&apos;article</a>
+        </span>
+      );
+      setKbModalOpen(false);
+    },
+    onError: () => {
+      toast.error('Ticket ferme, mais echec de la creation KB');
+      setKbModalOpen(false);
+    },
+  });
+
+  const handleKbCreate = useCallback(() => {
+    kbMutation.mutate({ commentIds: kbSelectedCommentIds });
+  }, [kbMutation, kbSelectedCommentIds]);
 
   if (isLoading) {
     return (
@@ -850,8 +917,8 @@ export function TicketDetailPage() {
           <CommentInput ticketId={ticket.id} onAdded={invalidate} />
         </div>
 
-        {/* ── RIGHT COLUMN ────────────────────────────────────────────────── */}
-        <div className="space-y-5 lg:sticky lg:top-6 self-start">
+        {/* ── RIGHT COLUMN (hidden on mobile, shown via sheet instead) ──── */}
+        <div className="hidden lg:block space-y-5 lg:sticky lg:top-6 self-start">
 
           {/* Status, priority, category, assign */}
           <div className="border rounded-lg p-4 space-y-4">
@@ -1188,6 +1255,277 @@ export function TicketDetailPage() {
               disabled={!pendingNote.trim() || pendingLoading}
             >
               {pendingLoading ? 'Mise en attente...' : 'Confirmer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mobile floating action button + Sheet */}
+      <Button
+        size="icon"
+        className="fixed bottom-4 right-4 z-40 lg:hidden h-12 w-12 rounded-full shadow-lg"
+        onClick={() => setMobileActionsOpen(true)}
+      >
+        <SlidersHorizontal className="h-5 w-5" />
+      </Button>
+
+      <Sheet open={mobileActionsOpen} onOpenChange={setMobileActionsOpen}>
+        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Actions rapides</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 pt-4">
+            <FieldRow label="Statut">
+              <select
+                value={ticket.status}
+                onChange={e => {
+                  if (e.target.value === 'CLOSED') {
+                    setMobileActionsOpen(false);
+                    setClosingNote('');
+                    setClosingNoteOpen(true);
+                    e.target.value = ticket.status;
+                  } else if (e.target.value === 'PENDING') {
+                    setMobileActionsOpen(false);
+                    setPendingNote('');
+                    setPendingNoteOpen(true);
+                    e.target.value = ticket.status;
+                  } else {
+                    updateStatus(e.target.value);
+                  }
+                }}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                {['OPEN', 'IN_PROGRESS', 'PENDING', 'CLOSED'].map(s => (
+                  <option key={s} value={s}>
+                    {s === 'OPEN' ? 'Ouvert' :
+                     s === 'IN_PROGRESS' ? 'En cours' :
+                     s === 'PENDING' ? 'En attente' : 'Fermé'}
+                  </option>
+                ))}
+              </select>
+            </FieldRow>
+
+            <FieldRow label="Priorité">
+              <select
+                value={ticket.priority}
+                onChange={e => updateField({ priority: e.target.value })}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="CRITICAL">Critique</option>
+                <option value="HIGH">Haute</option>
+                <option value="MEDIUM">Moyenne</option>
+                <option value="LOW">Basse</option>
+              </select>
+            </FieldRow>
+
+            <FieldRow label="Catégorie">
+              <select
+                value={ticket.category?.id ?? ''}
+                onChange={e => updateField({ categoryId: e.target.value || null })}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Sans catégorie</option>
+                {categories?.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </FieldRow>
+
+            <FieldRow label="Pôle">
+              <select
+                value={ticket.pole?.id ?? ''}
+                onChange={e => updateField({ poleId: e.target.value || null })}
+                disabled={!canEdit}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Aucun pôle</option>
+                {poles?.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </FieldRow>
+
+            <FieldRow label="Assign\u00e9 \u00e0">
+              <select
+                value={ticket.assignedTo?.id ?? ''}
+                onChange={e => updateAssign(e.target.value || null)}
+                disabled={!canAssign}
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              >
+                <option value="">Non assign\u00e9</option>
+                {agents?.map(a => (
+                  <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
+                ))}
+              </select>
+            </FieldRow>
+
+            {/* Client info in mobile sheet */}
+            {ticket.client && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Client</p>
+                  <p className="font-semibold">{ticket.client.firstName} {ticket.client.lastName}</p>
+                  {ticket.client.phone && (
+                    <a href={`tel:${ticket.client.phone}`} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-3.5 w-3.5" />{ticket.client.phone}
+                    </a>
+                  )}
+                  {ticket.client.email && (
+                    <a href={`mailto:${ticket.client.email}`} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5" />{ticket.client.email}
+                    </a>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Action buttons in mobile sheet */}
+            <Separator />
+            <div className="space-y-2">
+              {canClose && ['OPEN', 'IN_PROGRESS', 'PENDING'].includes(ticket.status) && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 border-gray-400 text-gray-600"
+                  onClick={() => { setMobileActionsOpen(false); setClosingNote(''); setClosingNoteOpen(true); }}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Fermer le ticket
+                </Button>
+              )}
+              {canEdit && ticket.status === 'CLOSED' && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 border-blue-500 text-blue-700"
+                  onClick={() => { setMobileActionsOpen(false); setConfirmAction('reopen'); }}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Rouvrir
+                </Button>
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* KB creation modal */}
+      <Dialog open={kbModalOpen} onOpenChange={open => { if (!open) setKbModalOpen(false); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Documenter dans la base de connaissance ?
+            </DialogTitle>
+            <DialogDescription>
+              Ce ticket peut etre utile pour les prochaines fois.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Title */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Titre</label>
+              <input
+                type="text"
+                value={kbTitle}
+                onChange={e => setKbTitle(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            {/* Include description */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={kbIncludeDescription}
+                onChange={e => setKbIncludeDescription(e.target.checked)}
+                className="rounded border-input h-4 w-4"
+              />
+              <span className="text-sm">Inclure la description du ticket</span>
+            </label>
+
+            {/* Comment selection */}
+            {ticket && ticket.comments.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Commentaires a inclure</p>
+                <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2">
+                  {ticket.comments
+                    .map(c => (
+                      <label key={c.id} className="flex items-start gap-2 cursor-pointer py-1 hover:bg-muted/30 rounded px-1">
+                        <input
+                          type="checkbox"
+                          checked={kbSelectedCommentIds.includes(c.id)}
+                          onChange={e => {
+                            if (e.target.checked) {
+                              setKbSelectedCommentIds(prev => [...prev, c.id]);
+                            } else {
+                              setKbSelectedCommentIds(prev => prev.filter(x => x !== c.id));
+                            }
+                          }}
+                          className="rounded border-input h-4 w-4 mt-0.5 shrink-0"
+                        />
+                        <span className="text-sm text-muted-foreground leading-snug">
+                          {c.isInternal && (
+                            <span className="inline-flex items-center mr-1.5 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                              Note de résolution
+                            </span>
+                          )}
+                          <span className="font-medium text-foreground">
+                            {c.author.firstName} {c.author.lastName}
+                          </span>
+                          {' - '}
+                          {c.content.length > 80 ? c.content.slice(0, 80) + '...' : c.content}
+                          {' - '}
+                          <span className="text-xs">
+                            {new Date(c.createdAt).toLocaleDateString('fr-FR')}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Article status */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Statut de l&apos;article</p>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kb-status"
+                    checked={kbStatus === 'DRAFT'}
+                    onChange={() => setKbStatus('DRAFT')}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">Brouillon</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="kb-status"
+                    checked={kbStatus === 'PUBLISHED'}
+                    onChange={() => setKbStatus('PUBLISHED')}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">Publier directement</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setKbModalOpen(false)}>
+              Ignorer
+            </Button>
+            <Button
+              onClick={handleKbCreate}
+              disabled={!kbTitle.trim() || kbMutation.isPending}
+            >
+              {kbMutation.isPending ? 'Creation...' : 'Creer l\'article KB'}
             </Button>
           </DialogFooter>
         </DialogContent>

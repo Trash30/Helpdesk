@@ -158,7 +158,7 @@ router.post(
     }
 
     const rawToken = crypto.randomUUID();
-    const tokenHash = await hashPassword(rawToken);
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // +24h
 
     await prisma.user.update({

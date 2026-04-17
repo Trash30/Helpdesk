@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import crypto from 'crypto';
 import { prisma } from '../lib/prisma';
 import { signToken } from '../utils/jwt';
 import { hashPassword, comparePassword } from '../utils/password';
@@ -93,15 +94,6 @@ router.get('/me', authMiddleware, (req: Request, res: Response) => {
 router.patch('/change-password', authMiddleware, async (req: Request, res: Response) => {
   const user = req.user!;
 
-  // Admins cannot change their own password through this route
-  if (hasPermission(user, 'admin.access')) {
-    res.status(403).json({
-      error:
-        'Les administrateurs ne peuvent pas modifier leur mot de passe via cette interface.',
-    });
-    return;
-  }
-
   const schema = z.object({
     currentPassword: z.string().optional(),
     newPassword: passwordRules,
@@ -153,32 +145,24 @@ router.patch('/change-password', authMiddleware, async (req: Request, res: Respo
 
 router.get('/validate-reset-token/:token', authRateLimit, async (req: Request, res: Response) => {
   const { token } = req.params;
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
-  const users = await prisma.user.findMany({
-    where: { passwordResetToken: { not: null } },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      passwordResetToken: true,
-      passwordResetExpiry: true,
-    },
+  const user = await prisma.user.findFirst({
+    where: { passwordResetToken: tokenHash },
+    select: { id: true, email: true, firstName: true, passwordResetExpiry: true },
   });
 
-  for (const u of users) {
-    if (!u.passwordResetToken) continue;
-    const match = await comparePassword(token, u.passwordResetToken);
-    if (match) {
-      if (!u.passwordResetExpiry || u.passwordResetExpiry < new Date()) {
-        res.json({ data: { valid: false, reason: 'expired' } });
-        return;
-      }
-      res.json({ data: { valid: true, userEmail: u.email, firstName: u.firstName } });
-      return;
-    }
+  if (!user) {
+    res.json({ data: { valid: false, reason: 'invalid' } });
+    return;
   }
 
-  res.json({ data: { valid: false, reason: 'invalid' } });
+  if (!user.passwordResetExpiry || user.passwordResetExpiry < new Date()) {
+    res.json({ data: { valid: false, reason: 'expired' } });
+    return;
+  }
+
+  res.json({ data: { valid: true, userEmail: user.email, firstName: user.firstName } });
 });
 
 // ─── POST /api/auth/reset-password ───────────────────────────────────────────
@@ -203,19 +187,10 @@ router.post('/reset-password', authRateLimit, async (req: Request, res: Response
     return;
   }
 
-  const users = await prisma.user.findMany({
-    where: { passwordResetToken: { not: null } },
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const matched = await prisma.user.findFirst({
+    where: { passwordResetToken: tokenHash },
   });
-
-  let matched = null;
-  for (const u of users) {
-    if (!u.passwordResetToken) continue;
-    const match = await comparePassword(token, u.passwordResetToken);
-    if (match) {
-      matched = u;
-      break;
-    }
-  }
 
   if (!matched) {
     res.status(400).json({ error: 'Lien invalide' });
