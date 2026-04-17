@@ -20,7 +20,7 @@ const matchNoteBodySchema = z.object({
   competition: z.string().min(1, 'competition est requis'),
   homeTeam: z.string().min(1, 'homeTeam est requis'),
   awayTeam: z.string().min(1, 'awayTeam est requis'),
-  matchTime: z.string().min(1, 'matchTime est requis'),
+  matchTime: z.string().default(''),
   venue: z.string().optional(),
   homeTeamLogo: z.string().optional(),
   awayTeamLogo: z.string().optional(),
