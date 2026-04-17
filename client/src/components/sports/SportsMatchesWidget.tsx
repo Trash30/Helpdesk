@@ -12,9 +12,9 @@ import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'SUPER_LEAGUE' | 'LIGUE1' | 'ELMS';
+export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'SUPER_LEAGUE' | 'LIGUE1' | 'ELMS';
 
-interface Match {
+export interface Match {
   competition: Competition;
   homeTeam: string;
   awayTeam: string;
@@ -32,7 +32,7 @@ interface SportsMatchesResponse {
   lastUpdated: string;
 }
 
-interface MatchAttachment {
+export interface MatchAttachment {
   id: string;
   matchKey: string;
   originalName: string;
@@ -40,7 +40,7 @@ interface MatchAttachment {
   createdAt: string;
 }
 
-interface MatchNoteData {
+export interface MatchNoteData {
   id: string;
   matchKey: string;
   content: string;
@@ -89,7 +89,7 @@ function formatMatchDate(dateStr: string, time: string): string {
   return `${day} ${dd}/${mm} \u00B7 ${formattedTime}`;
 }
 
-function getMatchKey(match: Match): string {
+export function getMatchKey(match: Match): string {
   return `${match.competition}_${match.homeTeam}_${match.awayTeam}_${match.date}`;
 }
 
@@ -160,7 +160,7 @@ interface ElmsMatchRowProps {
   existingNote?: MatchNoteData;
 }
 
-function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowProps) {
+export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -351,7 +351,7 @@ interface MatchRowProps {
   existingNote?: MatchNoteData;
 }
 
-function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
+export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
   const [broadcasterError, setBroadcasterError] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
