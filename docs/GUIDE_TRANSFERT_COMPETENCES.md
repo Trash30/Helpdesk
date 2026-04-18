@@ -230,23 +230,38 @@ Les paramètres `seasons_id` et `key` du scraper LNH expirent chaque saison.
 
 ### 5.5 Déployer une mise à jour
 
+**Méthode recommandée (depuis Windows) :** utiliser le script PowerShell qui automatise build + SCP + migrations + redémarrage.
+
+```powershell
+# Depuis la machine de développement
+.\sync-to-server.ps1                  # build + sync
+.\sync-to-server.ps1 -WithDb          # + dump et restaure la DB
+.\sync-to-server.ps1 -RestartOnly     # juste pm2 restart
+.\sync-to-server.ps1 -MigrateOnly     # juste migrations Prisma
+```
+
+Le script gère automatiquement :
+- `chmod -R 755` sur `client/dist` après SCP (requis pour Nginx/www-data)
+- `npm ci`, `prisma generate`, `prisma migrate deploy` sur le serveur
+- Redémarrage PM2
+
+**Méthode manuelle (sur le serveur) :**
+
 ```bash
-# Sur le serveur de production
 cd /opt/helpdesk
+cd server && npm install && npx prisma migrate deploy && npm run build
+cd ../client && npm install && npm run build
+sudo pm2 restart helpdesk-server
+sudo chmod -R 755 /opt/helpdesk/client/dist  # si SCP manuel
+```
 
-git pull origin main
+**Prérequis SSH (Windows) :** clé SSH chargée dans l'agent.
 
-cd server
-npm install
-npx prisma migrate deploy    # Applique les nouvelles migrations
-npm run build                # Compile TypeScript → JavaScript
-
-cd ../client
-npm install
-npm run build                # Build React → dist/
-
-pm2 restart helpdesk-server
-# Nginx sert automatiquement le nouveau build client
+```powershell
+# En admin PowerShell (une seule fois) :
+Set-Service ssh-agent -StartupType Automatic
+Start-Service ssh-agent
+ssh-add $env:USERPROFILE\.ssh\id_ed25519
 ```
 
 ---
@@ -289,7 +304,9 @@ curl -b cookies.txt http://localhost:3001/api/tickets
 | Matchs sportifs absents | Cache scraper / compétition down | Redémarrer le serveur |
 | `ECONNREFUSED 5432` | PostgreSQL arrêté | `sudo service postgresql start` |
 | Emails non reçus | Config SMTP incorrecte | Vérifier `.env` SMTP_* |
-| Note de match disparue le lendemain | Scraper LNR — voir ci-dessous | Comportement géré automatiquement |
+| Note de match disparue le lendemain | Scraper LNR — voir ci-dessous | Ghost match reconstruit automatiquement |
+| Note absente sur match scrapé | Heure ISO différente entre scraper et DB | Lookup fuzzy par fingerprint date-only |
+| Matchs en doublon dans le widget | Ghost + scrapé même match heure différente | Déduplication par fingerprint date-only |
 
 ### Bug connu — notes Pro D2 / Top 14 disparaissent le lendemain
 
@@ -299,7 +316,19 @@ curl -b cookies.txt http://localhost:3001/api/tickets
 
 **Pourquoi LNH n'a pas ce problème :** le scraper Starligue utilise un endpoint AJAX qui retourne le calendrier complet de la saison (`days_id: all`) — les matchs passés restent donc visibles.
 
-**Fichier concerné :** `client/src/components/sports/SportsMatchesWidget.tsx` — fonction `MatchesList`, logique `ghostMatches`.
+**Fichier concerné :** `client/src/components/sports/SportsMatchesWidget.tsx` — fonction `MatchesList`, logiques `ghostMatches` et `getNoteForMatch`.
+
+### Bug connu — notes absentes sur match scrapé (doublons d'heure)
+
+**Cause :** le scraper LNR peut retourner un match avec une heure ISO légèrement différente de celle stockée en base lors de la création de la note (ex. `T20:00:00Z` vs `T19:00:00Z`). La clé exacte (`matchKey`) ne correspond plus → la note n'est pas affichée sur le match scrapé.
+
+**Solution implémentée (avril 2026) :** lookup en deux passes dans `getNoteForMatch()` :
+1. Recherche exacte par `matchKey`
+2. Si non trouvé, recherche par **fingerprint date-only** : `${competition}_${homeTeam}_${awayTeam}_${YYYY-MM-DD}`
+
+Cela résout aussi les faux doublons (ghost + scrapé affichés simultanément) : le ghost est exclu si le fingerprint existe déjà dans les résultats du scraper.
+
+**Fichier concerné :** `SportsMatchesWidget.tsx` — maps `notesByKey` + `notesByFingerprint`, helper `getNoteForMatch`.
 
 ---
 
