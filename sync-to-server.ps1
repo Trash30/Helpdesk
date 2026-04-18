@@ -20,7 +20,7 @@ $ErrorActionPreference = "Stop"
 # -- Config --------------------------------------------------
 $SERVER_IP    = "192.168.102.152"
 $SERVER_PORT  = "5173"
-$SERVER_USER  = "root"
+$SERVER_USER  = "supportadmin"
 $APP_DIR      = "/opt/helpdesk"
 
 $DB_HOST      = "localhost"
@@ -68,10 +68,9 @@ Write-Step "Verification de la connexion SSH"
 if (!(Get-Command ssh -ErrorAction SilentlyContinue)) {
     Write-Err "ssh introuvable. Activez OpenSSH dans Parametres > Applications."
 }
-ssh -o ConnectTimeout=5 -o BatchMode=yes "${SERVER_USER}@${SERVER_IP}" "echo ok" 2>$null
-if ($LASTEXITCODE -ne 0) {
-    Write-Warn "Pas de cle SSH -- saisie du mot de passe requise"
-    Write-Host "  (Conseil : ssh-copy-id ${SERVER_USER}@${SERVER_IP} pour eviter ca)" -ForegroundColor Gray
+$sshTest = ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no "${SERVER_USER}@${SERVER_IP}" "echo ok" 2>&1
+if ($sshTest -notmatch "ok") {
+    Write-Err "Connexion SSH impossible : $sshTest"
 }
 Write-Ok "Connexion SSH : $SERVER_USER@$SERVER_IP"
 
@@ -134,6 +133,7 @@ Invoke-Ssh "mkdir -p $APP_DIR/client/dist $APP_DIR/server/dist $APP_DIR/server/p
 Write-Host "  Envoi client/dist..." -ForegroundColor Gray
 scp -r "$PROJECT_ROOT\client\dist\*" "${SERVER_USER}@${SERVER_IP}:${APP_DIR}/client/dist/"
 if ($LASTEXITCODE -ne 0) { Write-Err "scp client echoue" }
+Invoke-Ssh "chmod -R 755 $APP_DIR/client/dist"
 Write-Ok "client/dist transfere"
 
 Write-Host "  Envoi server/dist..." -ForegroundColor Gray
@@ -152,7 +152,7 @@ Write-Ok "manifestes npm transferes"
 
 # -- 4. Deps + Migrations ------------------------------------
 Write-Step "4 -- Mise a jour sur le serveur"
-Invoke-Ssh "cd $APP_DIR/server ; npm ci --omit=dev --silent ; npx prisma generate --silent ; npx prisma migrate deploy"
+Invoke-Ssh "cd $APP_DIR/server && npm ci --omit=dev --silent && set -a && source .env && set +a && npx prisma generate && npx prisma migrate deploy"
 Write-Ok "Dependances et migrations a jour"
 
 # -- 5. DB optionnelle ---------------------------------------
@@ -190,8 +190,7 @@ if ($WithDb) {
 
 # -- 6. Redemarrage ------------------------------------------
 Write-Step "Redemarrage"
-Invoke-Ssh "sudo pm2 restart helpdesk-server"
-Invoke-Ssh "sudo pm2 status"
+Invoke-Ssh "sudo pm2 restart helpdesk-server && sudo pm2 status"
 Write-Ok "Application redemarree"
 
 Write-Host ""
