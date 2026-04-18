@@ -71,5 +71,24 @@
     @apply bg-background text-foreground;
     font-family: 'Red Hat Display', system-ui, -apple-system, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent Safari iOS zoom on input focus (font-size < 16px triggers zoom) */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  @media (min-width: 768px) {
+    input, select, textarea {
+      font-size: inherit !important;
+    }
+  }
+
+  /* Safe area insets for notched devices */
+  #root {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }

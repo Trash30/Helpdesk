@@ -124,6 +124,7 @@ export default function App() {
                 }
               />
 
+
               {/* Evenements sportifs */}
               <Route path="/evenements/aujourd-hui" element={<TodayEventsPage />} />
 

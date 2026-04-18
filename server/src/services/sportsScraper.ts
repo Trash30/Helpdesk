@@ -185,65 +185,102 @@ function parseLNRDate(rawDate: string, rawTime: string): string {
  *       img.club-line__icon-img[src]  → away logo
  *       a.club-line__name             → away team name
  */
+/**
+ * Parses match lines from a loaded cheerio instance for LNR pages.
+ */
+function parseLNRMatches(
+  $: ReturnType<typeof cheerio.load>,
+  competition: 'PRO_D2' | 'TOP14'
+): Match[] {
+  const matches: Match[] = [];
+  let currentDate = '';
+
+  $('.calendar-results__fixture-date, .match-line').each((_i, el) => {
+    const tagEl = $(el);
+
+    if (tagEl.hasClass('calendar-results__fixture-date')) {
+      currentDate = tagEl.text().trim();
+      return;
+    }
+
+    const homeClub = tagEl.find('.club-line--reversed');
+    const awayClub = tagEl.find('.club-line').not('.club-line--reversed').first();
+
+    const homeTeam = homeClub.find('.club-line__name').first().text().trim();
+    const awayTeam = awayClub.find('.club-line__name').first().text().trim();
+
+    if (!homeTeam || !awayTeam) return;
+
+    const homeLogoSrc = homeClub.find('img.club-line__icon-img').first().attr('src');
+    const awayLogoSrc = awayClub.find('img.club-line__icon-img').first().attr('src');
+    const broadcasterSrc = tagEl.find('img.match-line__broadcaster').first().attr('src');
+
+    const rawTime = tagEl.find('.match-line__time').first().text().trim();
+    const dateIso = parseLNRDate(currentDate, rawTime);
+
+    matches.push({
+      competition,
+      homeTeam,
+      awayTeam,
+      date: dateIso,
+      time: rawTime.replace('h', ':') || '',
+      homeTeamLogo: homeLogoSrc || undefined,
+      awayTeamLogo: awayLogoSrc || undefined,
+      broadcasterLogo: broadcasterSrc || undefined,
+    });
+  });
+
+  return matches;
+}
+
 async function scrapeLNR(
   url: string,
   competition: 'PRO_D2' | 'TOP14'
 ): Promise<Match[]> {
   const client = createClient();
-  const matches: Match[] = [];
 
   try {
     const resp = await client.get(url);
     const $ = cheerio.load(resp.data as string);
 
-    let currentDate = '';
-
-    // Iterate in document order: capture date headers then match lines
-    $('.calendar-results__fixture-date, .match-line').each((_i, el) => {
-      const tagEl = $(el);
-
-      if (tagEl.hasClass('calendar-results__fixture-date')) {
-        currentDate = tagEl.text().trim();
-        return;
-      }
-
-      // It's a .match-line
-      const homeClub = tagEl.find('.club-line--reversed');
-      const awayClub = tagEl.find('.club-line').not('.club-line--reversed').first();
-
-      const homeTeam = homeClub.find('.club-line__name').first().text().trim();
-      const awayTeam = awayClub.find('.club-line__name').first().text().trim();
-
-      if (!homeTeam || !awayTeam) return;
-
-      const homeLogoSrc = homeClub.find('img.club-line__icon-img').first().attr('src');
-      const awayLogoSrc = awayClub.find('img.club-line__icon-img').first().attr('src');
-      const broadcasterSrc = tagEl.find('img.match-line__broadcaster').first().attr('src');
-
-      const rawTime = tagEl.find('.match-line__time').first().text().trim();
-      const dateIso = parseLNRDate(currentDate, rawTime);
-
-      matches.push({
-        competition,
-        homeTeam,
-        awayTeam,
-        date: dateIso,
-        time: rawTime.replace('h', ':') || '',
-        homeTeamLogo: homeLogoSrc || undefined,
-        awayTeamLogo: awayLogoSrc || undefined,
-        broadcasterLogo: broadcasterSrc || undefined,
-      });
-    });
-
+    const matches = parseLNRMatches($, competition);
     log(`${competition}: scraped ${matches.length} total matches from ${url}`);
+
+    const filtered = matches.filter((m) => m.date && isInCurrentWeek(m.date));
+
+    // If no matches found in current week, the site is still showing the last
+    // completed round. Try to load the next round via /{seasonName}/j{N+1}.
+    if (filtered.length === 0) {
+      try {
+        const currentWeekRaw = $('filters-fixtures').attr(':current-week');
+        const currentSeasonRaw = $('filters-fixtures').attr(':current-season');
+        if (currentWeekRaw && currentSeasonRaw) {
+          const currentWeek = JSON.parse(currentWeekRaw) as { number: number; slug: string };
+          const currentSeason = JSON.parse(currentSeasonRaw) as { name: string };
+          const nextSlug = `j${currentWeek.number + 1}`;
+          const nextUrl = `${url}/${currentSeason.name}/${nextSlug}`;
+          log(`${competition}: no matches this week on default page (${currentWeek.slug}), trying ${nextSlug}`);
+
+          const nextResp = await client.get(nextUrl);
+          const $next = cheerio.load(nextResp.data as string);
+          const nextMatches = parseLNRMatches($next, competition);
+          log(`${competition}: scraped ${nextMatches.length} total matches from ${nextUrl}`);
+
+          const nextFiltered = nextMatches.filter((m) => m.date && isInCurrentWeek(m.date));
+          log(`${competition}: ${nextFiltered.length} matches in current week (${nextSlug})`);
+          return nextFiltered;
+        }
+      } catch (err) {
+        logError(`${competition} fallback to next round failed:`, err instanceof Error ? err.message : err);
+      }
+    }
+
+    log(`${competition}: ${filtered.length} matches in current week`);
+    return filtered;
   } catch (err) {
     logError(`${competition} scraping failed:`, err instanceof Error ? err.message : err);
     return [];
   }
-
-  const filtered = matches.filter((m) => m.date && isInCurrentWeek(m.date));
-  log(`${competition}: ${filtered.length} matches in current week`);
-  return filtered;
 }
 
 // ─── LNH Scraper (ajaxpost1 endpoint) ───────────────────────────────────────

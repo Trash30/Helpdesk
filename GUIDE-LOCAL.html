@@ -457,7 +457,7 @@
     <div class="cover-step active">5 · Tests</div>
   </div>
 
-  <div class="cover-footer">Version 1.0 · Mars 2026 · Usage interne</div>
+  <div class="cover-footer">Version 1.1 · Avril 2026 · Usage interne</div>
 </div>
 
 
@@ -696,6 +696,16 @@
       Modifiez <code>PORT=3002</code> dans <code>server/.env</code> si nécessaire.
     </div>
   </div>
+
+  <div class="note info">
+    <span class="note-icon">🌐</span>
+    <div>
+      <strong>Acc&egrave;s r&eacute;seau local</strong>
+      Le fichier <code>vite.config.ts</code> est configur&eacute; avec <code>host: true</code>.
+      L'application frontend est donc accessible depuis d'autres PC du m&ecirc;me r&eacute;seau local sur le port 5173
+      (ex : <code>http://192.168.x.x:5173</code>). Cette option est active uniquement en mode d&eacute;veloppement.
+    </div>
+  </div>
 </div>
 
 
@@ -850,6 +860,55 @@
       <div>
         <div class="ch-title">Résoudre le ticket</div>
         <div class="ch-desc">Changez le statut en <span class="badge res">RÉSOLU</span>. Vérifier la mise à jour du compteur "Résolus aujourd'hui" sur le Dashboard.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Filtre "Mes tickets"</div>
+        <div class="ch-desc">Dans la liste des tickets, activez le toggle "Mes tickets". Seuls les tickets assign&eacute;s &agrave; l'utilisateur connect&eacute; doivent s'afficher. D&eacute;sactivez le toggle pour revenir &agrave; la liste compl&egrave;te.</div>
+        <span class="ch-url">&rarr; http://localhost:5173/tickets</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>&#9917; Widget Sports &amp; &Eacute;v&eacute;nements</h3>
+  <div class="checklist">
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Widget "Matchs de la semaine"</div>
+        <div class="ch-desc">Sur le Dashboard, v&eacute;rifiez la pr&eacute;sence du widget "Matchs de la semaine". Il affiche les matchs des 8 comp&eacute;titions : Top 14, Pro D2, Champions Cup, Challenge Cup, Starligue, Super League, Ligue 1 et ELMS.</div>
+        <span class="ch-url">&rarr; http://localhost:5173/dashboard</span>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">KPI cliquables</div>
+        <div class="ch-desc">Cliquez sur chaque card KPI du dashboard. Chacune doit naviguer vers la page concern&eacute;e (liste des tickets, page &eacute;v&eacute;nements, etc.) ou scroller vers le widget Sports.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Pi&egrave;ces jointes sur les matchs</div>
+        <div class="ch-desc">Connect&eacute; en tant qu'agent, faites un drag &amp; drop d'un fichier PDF sur un match dans le widget. Le fichier doit appara&icirc;tre en pi&egrave;ce jointe et &ecirc;tre t&eacute;l&eacute;chargeable. Un doublon (m&ecirc;me nom) doit &ecirc;tre refus&eacute;.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Suppression pi&egrave;ce jointe (admin)</div>
+        <div class="ch-desc">Connect&eacute; en tant qu'admin, v&eacute;rifiez que le bouton de suppression appara&icirc;t sur les pi&egrave;ces jointes. En tant qu'agent, ce bouton ne doit pas &ecirc;tre visible.</div>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="chk"></div>
+      <div>
+        <div class="ch-title">Page "&Eacute;v&eacute;nements du jour"</div>
+        <div class="ch-desc">Cliquez sur la card KPI "&Eacute;v&eacute;nements aujourd'hui" ou acc&eacute;dez directement &agrave; l'URL. La page affiche les matchs du jour avec les pi&egrave;ces jointes t&eacute;l&eacute;chargeables.</div>
+        <span class="ch-url">&rarr; http://localhost:5173/evenements/aujourd-hui</span>
       </div>
     </div>
   </div>
@@ -1057,7 +1116,7 @@
 </div>
 
 <div class="footer">
-  HelpDesk v1.0 &nbsp;·&nbsp; Guide démarrage local &nbsp;·&nbsp; Mars 2026 &nbsp;·&nbsp; Usage interne
+  HelpDesk v1.1 &nbsp;·&nbsp; Guide d&eacute;marrage local &nbsp;·&nbsp; Avril 2026 &nbsp;·&nbsp; Usage interne
 </div>
 
 </div><!-- /page -->
