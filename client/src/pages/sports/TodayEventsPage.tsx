@@ -72,7 +72,7 @@ export function TodayEventsPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <h1 className="text-xl sm:text-2xl font-bold capitalize">
         Evenements du {dateLabel}
       </h1>
@@ -98,8 +98,8 @@ export function TodayEventsPage() {
           {Array.from(grouped.entries()).map(([comp, matches]) => {
             const meta = COMPETITION_META[comp as keyof typeof COMPETITION_META] ?? { label: comp, favicon: '', calendarUrl: '' };
             return (
-              <Card key={comp} className="shadow-sm">
-                <CardHeader className="pb-2 pt-4">
+              <Card key={comp} className="shadow-sm overflow-hidden">
+                <CardHeader className="pb-2 pt-4 px-3 sm:px-6">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     {meta.favicon && (
                       <img
@@ -112,7 +112,7 @@ export function TodayEventsPage() {
                     {meta.label}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 divide-y">
+                <CardContent className="pt-0 divide-y px-2 sm:px-6 overflow-x-hidden">
                   {matches.map((m, idx) => {
                     const key = getMatchKey(m);
                     return m.competition === 'ELMS' ? (

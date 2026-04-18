@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Trash2 } from 'lucide-react';
+import { FileText, Trash2, Upload } from 'lucide-react';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { MatchNoteEditor } from './MatchNoteEditor';
 import { MatchReportExport } from './MatchReportExport';
@@ -44,6 +44,14 @@ export interface MatchNoteData {
   id: string;
   matchKey: string;
   content: string;
+  competition: string;
+  homeTeam: string;
+  awayTeam: string;
+  matchDate: string;
+  matchTime: string;
+  venue?: string;
+  homeTeamLogo?: string;
+  awayTeamLogo?: string;
   author: { id: string; name: string };
 }
 
@@ -234,9 +242,9 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
   );
 
   return (
-    <div className="group flex flex-col gap-1 py-2.5 px-3">
+    <div className="group flex flex-col gap-1.5 sm:gap-1 py-3 sm:py-2.5 px-2 sm:px-3">
       {/* Ligne principale : flag + nom epreuve + badge session */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
         {/* Logo ELMS */}
         {match.homeTeamLogo && (
           <img
@@ -252,7 +260,7 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
           </span>
         )}
         {/* Nom de l'epreuve */}
-        <span className="text-sm font-medium truncate flex-1">{eventName}</span>
+        <span className="text-sm font-medium truncate flex-1 min-w-0">{eventName}</span>
         {/* Badge session */}
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 max-w-[130px] truncate ${sessionBadgeClass}`} title={match.awayTeam}>
           {match.awayTeam}
@@ -266,13 +274,13 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
 
       {/* PDFs attaches */}
       {attachments.length > 0 && (
-        <div className="w-full space-y-0.5">
+        <div className="w-full space-y-1 sm:space-y-0.5">
           {attachments.map((att) => (
-            <div key={att.id} className="flex items-center gap-1.5 text-xs text-muted-foreground px-1">
-              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <div key={att.id} className="flex items-center gap-2 sm:gap-1.5 text-sm sm:text-xs text-muted-foreground px-1">
+              <FileText className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
               <button
                 type="button"
-                className="truncate hover:text-foreground hover:underline transition-colors text-left"
+                className="truncate hover:text-foreground hover:underline transition-colors text-left flex-1 min-w-0 py-1 sm:py-0"
                 onClick={() => window.open(`/api/sports/match-attachments/${att.id}/download`, '_blank')}
                 title={att.originalName}
               >
@@ -282,12 +290,13 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
               {can('admin.access') && (
                 <button
                   type="button"
-                  className="shrink-0 hover:text-red-600 transition-colors disabled:opacity-50"
+                  className="shrink-0 inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto hover:text-red-600 transition-colors disabled:opacity-50"
                   onClick={() => setDeleteTarget(att.id)}
                   disabled={deleteMutation.isPending}
                   title="Supprimer"
+                  aria-label="Supprimer le PDF"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                 </button>
               )}
             </div>
@@ -295,26 +304,43 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
         </div>
       )}
 
-      {/* Drop zone — tous les agents peuvent uploader */}
+      {/* Shared file input — used by both mobile button and desktop dropzone */}
+      {can('tickets.create') && (
+        <input
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+        />
+      )}
+
+      {/* Mobile : bouton visible permanent */}
+      {can('tickets.create') && (
+        <button
+          type="button"
+          className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadMutation.isPending}
+        >
+          <Upload className="h-4 w-4" />
+          {uploadMutation.isPending ? 'Envoi...' : 'Joindre un PDF'}
+        </button>
+      )}
+
+      {/* Desktop : dropzone drag & drop (hover only) */}
       {can('tickets.create') && (
         <div
-          className={`w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all
+          className={`hidden sm:inline-flex w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
             opacity-0 group-hover:opacity-100 transition-opacity duration-150
             ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
-            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50'}`}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/40 text-muted-foreground/50 hover:border-muted-foreground/60'}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <input
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-          />
-          {uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}
+          <span>{uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}</span>
         </div>
       )}
 
@@ -430,7 +456,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
   );
 
   return (
-    <div className="group flex flex-col items-center gap-1 py-2.5 px-3">
+    <div className="group flex flex-col items-center gap-1.5 sm:gap-1 py-3 sm:py-2.5 px-2 sm:px-3">
       <div className="flex items-center justify-center gap-2 w-full">
         <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
           <span className="text-sm font-medium truncate text-right">{match.homeTeam}</span>
@@ -445,7 +471,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap justify-center">
         <span className="text-xs text-muted-foreground">
           {formatMatchDate(match.date, match.time)}
         </span>
@@ -461,16 +487,16 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
 
       {/* Attached PDFs */}
       {attachments.length > 0 && (
-        <div className="w-full mt-1 space-y-0.5">
+        <div className="w-full mt-1 space-y-1 sm:space-y-0.5">
           {attachments.map((att) => (
             <div
               key={att.id}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground px-1"
+              className="flex items-center gap-2 sm:gap-1.5 text-sm sm:text-xs text-muted-foreground px-1"
             >
-              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <FileText className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
               <button
                 type="button"
-                className="truncate hover:text-foreground hover:underline transition-colors text-left"
+                className="truncate hover:text-foreground hover:underline transition-colors text-left flex-1 min-w-0 py-1 sm:py-0"
                 onClick={() =>
                   window.open(`/api/sports/match-attachments/${att.id}/download`, '_blank')
                 }
@@ -484,12 +510,13 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
               {can('admin.access') && (
                 <button
                   type="button"
-                  className="shrink-0 hover:text-red-600 transition-colors disabled:opacity-50"
+                  className="shrink-0 inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto hover:text-red-600 transition-colors disabled:opacity-50"
                   onClick={() => setDeleteTarget(att.id)}
                   disabled={deleteMutation.isPending}
                   title="Supprimer"
+                  aria-label="Supprimer le PDF"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                 </button>
               )}
             </div>
@@ -497,26 +524,43 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
         </div>
       )}
 
-      {/* Drop zone — tous les agents peuvent uploader */}
+      {/* Shared file input */}
+      {can('tickets.create') && (
+        <input
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+        />
+      )}
+
+      {/* Mobile : bouton visible permanent */}
+      {can('tickets.create') && (
+        <button
+          type="button"
+          className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadMutation.isPending}
+        >
+          <Upload className="h-4 w-4" />
+          {uploadMutation.isPending ? 'Envoi...' : 'Joindre un PDF'}
+        </button>
+      )}
+
+      {/* Desktop : dropzone drag & drop (hover only) */}
       {can('tickets.create') && (
         <div
-          className={`w-full mt-1 border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all
+          className={`hidden sm:inline-flex w-full mt-1 border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
             opacity-0 group-hover:opacity-100 transition-opacity duration-150
             ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
-            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/30 text-muted-foreground/50 hover:border-muted-foreground/50'}`}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/40 text-muted-foreground/50 hover:border-muted-foreground/60'}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <input
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-          />
-          {uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}
+          <span>{uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}</span>
         </div>
       )}
 
@@ -557,14 +601,14 @@ export function SportsMatchesWidget() {
   });
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+    <Card className="shadow-sm overflow-hidden">
+      <CardHeader className="pb-3 px-3 sm:px-6">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <CardTitle className="text-base">Matchs de la semaine</CardTitle>
           {data?.data && data.data.length > 0 && <MatchReportExport />}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-2 sm:px-6 overflow-x-hidden">
         {isLoading && <LoadingSkeleton />}
 
         {isError && (
@@ -593,21 +637,66 @@ interface MatchesListProps {
   matches: Match[];
 }
 
+function getCurrentWeekBounds(): { monday: Date; sunday: Date } {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const day = now.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diffToMonday);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { monday, sunday };
+}
+
 function MatchesList({ matches }: MatchesListProps) {
-  const matchKeys = matches.map(getMatchKey);
-
-  const { data: attachmentsData } = useQuery({
-    queryKey: ['match-attachments'],
-    queryFn: async () => {
-      return ((await api.post('/sports/match-attachments/query', { matchKeys })).data?.data ?? []) as MatchAttachment[];
-    },
-    enabled: matches.length > 0,
-  });
-
+  // Toujours charger les notes — indépendamment des matchs scrapés,
+  // pour pouvoir reconstruire les matchs joués qui ont disparu du scraper.
   const { data: notesData } = useQuery({
     queryKey: ['match-notes'],
     queryFn: async () => ((await api.get('/sports/match-notes')).data?.data ?? []) as MatchNoteData[],
-    enabled: matches.length > 0,
+  });
+
+  // Reconstruire les matchs manquants depuis les notes de la semaine courante.
+  // Cas typique : le lendemain d'un match LNR, le site le déplace en "résultats"
+  // et le scraper ne le retourne plus — mais la note est en DB avec toutes les métadonnées.
+  //
+  // Comparaison floue sur competition+homeTeam+awayTeam+date-seule (sans l'heure)
+  // pour éviter les doublons quand le scraper retourne le même match avec une heure
+  // légèrement différente de celle stockée dans la note.
+  const scrapedFingerprints = new Set(
+    matches.map((m) => `${m.competition}_${m.homeTeam}_${m.awayTeam}_${m.date.slice(0, 10)}`)
+  );
+  const { monday, sunday } = getCurrentWeekBounds();
+
+  const ghostMatches: Match[] = (notesData ?? [])
+    .filter((note) => {
+      const fingerprint = `${note.competition}_${note.homeTeam}_${note.awayTeam}_${note.matchDate.slice(0, 10)}`;
+      if (scrapedFingerprints.has(fingerprint)) return false;
+      const d = new Date(note.matchDate);
+      return d >= monday && d <= sunday;
+    })
+    .map((note) => ({
+      competition: note.competition as Competition,
+      homeTeam: note.homeTeam,
+      awayTeam: note.awayTeam,
+      date: note.matchDate,
+      time: note.matchTime || '',
+      venue: note.venue,
+      homeTeamLogo: note.homeTeamLogo,
+      awayTeamLogo: note.awayTeamLogo,
+    }));
+
+  const allMatches = [...matches, ...ghostMatches];
+  const allMatchKeys = allMatches.map(getMatchKey);
+
+  const { data: attachmentsData } = useQuery({
+    queryKey: ['match-attachments', allMatchKeys],
+    queryFn: async () => {
+      return ((await api.post('/sports/match-attachments/query', { matchKeys: allMatchKeys })).data?.data ?? []) as MatchAttachment[];
+    },
+    enabled: allMatchKeys.length > 0,
   });
 
   const attachmentsByKey = new Map<string, MatchAttachment[]>();
@@ -620,13 +709,23 @@ function MatchesList({ matches }: MatchesListProps) {
   }
 
   const notesByKey = new Map<string, MatchNoteData>();
+  const notesByFingerprint = new Map<string, MatchNoteData>();
   if (notesData) {
     for (const note of notesData) {
       notesByKey.set(note.matchKey, note);
+      const fp = `${note.competition}_${note.homeTeam}_${note.awayTeam}_${note.matchDate.slice(0, 10)}`;
+      notesByFingerprint.set(fp, note);
     }
   }
 
-  if (matches.length === 0) {
+  const getNoteForMatch = (match: Match): MatchNoteData | undefined => {
+    return (
+      notesByKey.get(getMatchKey(match)) ??
+      notesByFingerprint.get(`${match.competition}_${match.homeTeam}_${match.awayTeam}_${match.date.slice(0, 10)}`)
+    );
+  };
+
+  if (allMatches.length === 0) {
     return (
       <p className="text-sm text-muted-foreground text-center py-4">
         Aucun match cette semaine
@@ -634,7 +733,7 @@ function MatchesList({ matches }: MatchesListProps) {
     );
   }
 
-  const grouped = groupAndSort(matches);
+  const grouped = groupAndSort(allMatches);
 
   return (
     <div className="space-y-4">
@@ -661,14 +760,14 @@ function MatchesList({ matches }: MatchesListProps) {
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
-                    existingNote={notesByKey.get(getMatchKey(match))}
+                    existingNote={getNoteForMatch(match)}
                   />
                 ) : (
                   <MatchRow
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
-                    existingNote={notesByKey.get(getMatchKey(match))}
+                    existingNote={getNoteForMatch(match)}
                   />
                 )
               )}

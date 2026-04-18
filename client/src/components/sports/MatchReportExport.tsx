@@ -375,9 +375,9 @@ export function MatchReportExport() {
       variant="outline"
       onClick={handleExport}
       disabled={isExporting}
-      className="h-8 text-xs gap-1.5"
+      className="h-11 sm:h-8 text-sm sm:text-xs gap-1.5 px-3"
     >
-      {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+      {isExporting ? <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin" /> : <Download className="h-4 w-4 sm:h-3.5 sm:w-3.5" />}
       Exporter CR
     </Button>
   );
