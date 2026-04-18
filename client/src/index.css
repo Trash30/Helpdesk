@@ -91,4 +91,9 @@
     padding-right: env(safe-area-inset-right);
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* Force 16px font inside TipTap editor on mobile to prevent Safari iOS zoom */
+  @media (max-width: 767px) {
+    .ProseMirror { font-size: 16px !important; }
+  }
 }
