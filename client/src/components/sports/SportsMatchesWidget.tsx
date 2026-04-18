@@ -709,11 +709,21 @@ function MatchesList({ matches }: MatchesListProps) {
   }
 
   const notesByKey = new Map<string, MatchNoteData>();
+  const notesByFingerprint = new Map<string, MatchNoteData>();
   if (notesData) {
     for (const note of notesData) {
       notesByKey.set(note.matchKey, note);
+      const fp = `${note.competition}_${note.homeTeam}_${note.awayTeam}_${note.matchDate.slice(0, 10)}`;
+      notesByFingerprint.set(fp, note);
     }
   }
+
+  const getNoteForMatch = (match: Match): MatchNoteData | undefined => {
+    return (
+      notesByKey.get(getMatchKey(match)) ??
+      notesByFingerprint.get(`${match.competition}_${match.homeTeam}_${match.awayTeam}_${match.date.slice(0, 10)}`)
+    );
+  };
 
   if (allMatches.length === 0) {
     return (
@@ -750,14 +760,14 @@ function MatchesList({ matches }: MatchesListProps) {
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
-                    existingNote={notesByKey.get(getMatchKey(match))}
+                    existingNote={getNoteForMatch(match)}
                   />
                 ) : (
                   <MatchRow
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
-                    existingNote={notesByKey.get(getMatchKey(match))}
+                    existingNote={getNoteForMatch(match)}
                   />
                 )
               )}
