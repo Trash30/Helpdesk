@@ -60,7 +60,7 @@ router.post('/login', authRateLimit, async (req: Request, res: Response) => {
 
   res.cookie('helpdesk_token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.COOKIE_SECURE === 'true',
     sameSite: 'lax',
     maxAge: 8 * 60 * 60 * 1000, // 8h
   });
@@ -221,7 +221,7 @@ router.post('/reset-password', authRateLimit, async (req: Request, res: Response
 router.post('/logout', (_req: Request, res: Response) => {
   res.clearCookie('helpdesk_token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.COOKIE_SECURE === 'true',
     sameSite: 'lax',
   });
   res.json({ data: { message: 'Déconnecté' } });
