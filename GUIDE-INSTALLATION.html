@@ -601,7 +601,7 @@
     </div>
 
     <div class="cover-footer">
-      Version 1.0 &nbsp;·&nbsp; Mars 2026 &nbsp;·&nbsp; Usage interne
+      Version 1.1 &nbsp;·&nbsp; Avril 2026 &nbsp;·&nbsp; Usage interne
     </div>
   </div>
 
@@ -683,6 +683,11 @@
 
     <div class="toc-item">
       <span class="toc-num">7</span>
+      <span class="toc-label">Widget Sports &amp; fonctionnalités du dashboard</span>
+    </div>
+
+    <div class="toc-item">
+      <span class="toc-num">8</span>
       <span class="toc-label">Résolution des problèmes courants</span>
     </div>
   </div>
@@ -1224,12 +1229,100 @@
 
 
   <!-- ══════════════════════════════════════
-       SECTION 7 — TROUBLESHOOTING
+       SECTION 7 — WIDGET SPORTS & DASHBOARD
+  ══════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="step-badge">7</div>
+      <h2>Widget Sports &amp; fonctionnalit&eacute;s du dashboard</h2>
+    </div>
+
+    <h3>7.1 &nbsp; Widget "Matchs de la semaine"</h3>
+    <p>
+      Le dashboard affiche automatiquement un widget <strong>"Matchs de la semaine"</strong> qui agr&egrave;ge les donn&eacute;es de 8 comp&eacute;titions sportives.
+      Aucune configuration suppl&eacute;mentaire n'est requise : toutes les donn&eacute;es proviennent de sources publiques (API et scraping).
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Comp&eacute;tition</th>
+          <th>Sport</th>
+          <th>Source</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Top 14</strong></td><td>Rugby</td><td>API LNR</td><td></td></tr>
+        <tr><td><strong>Pro D2</strong></td><td>Rugby</td><td>API LNR</td><td></td></tr>
+        <tr><td><strong>Champions Cup</strong></td><td>Rugby</td><td>EPCR</td><td>Clubs fran&ccedil;ais &agrave; domicile uniquement</td></tr>
+        <tr><td><strong>Challenge Cup</strong></td><td>Rugby</td><td>EPCR</td><td>Clubs fran&ccedil;ais &agrave; domicile uniquement</td></tr>
+        <tr><td><strong>Starligue</strong></td><td>Handball</td><td>API LNH</td><td><span class="tag yellow">Maintenance saisonni&egrave;re</span></td></tr>
+        <tr><td><strong>Super League</strong></td><td>Rugby XIII</td><td>API</td><td>Catalans Dragons domicile</td></tr>
+        <tr><td><strong>Ligue 1</strong></td><td>Football</td><td>API</td><td>AS Monaco domicile</td></tr>
+        <tr><td><strong>ELMS</strong></td><td>Automobile</td><td>Scraping JSON-LD</td><td>Sessions Qualifying + Race</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warning">
+      <span class="callout-icon">&#9888;&#65039;</span>
+      <div>
+        <strong>Maintenance Starligue (chaque saison)</strong>
+        L'API LNH Starligue n&eacute;cessite la mise &agrave; jour des param&egrave;tres <code>seasons_id</code> et <code>key</code>
+        dans le code source du scraper &agrave; chaque nouvelle saison. V&eacute;rifiez et mettez &agrave; jour ces valeurs en d&eacute;but de saison.
+      </div>
+    </div>
+
+    <h3>7.2 &nbsp; Pi&egrave;ces jointes sur les matchs</h3>
+    <p>
+      Les agents peuvent uploader des fichiers PDF sur les matchs (drag &amp; drop dans le widget).
+      Tous les utilisateurs connect&eacute;s peuvent consulter et t&eacute;l&eacute;charger ces pi&egrave;ces jointes.
+      Seuls les administrateurs peuvent les supprimer.
+    </p>
+
+    <div class="callout info">
+      <span class="callout-icon">&#8505;&#65039;</span>
+      <div>
+        <strong>Dossier de stockage</strong>
+        Les pi&egrave;ces jointes des matchs sont stock&eacute;es dans <code>server/uploads/match-attachments/</code>.
+        Ce dossier est cr&eacute;&eacute; automatiquement. Les fichiers sont purg&eacute;s automatiquement 6 heures apr&egrave;s la fin du match.
+        Les doublons (m&ecirc;me nom de fichier sur un m&ecirc;me match) sont refus&eacute;s.
+      </div>
+    </div>
+
+    <h3>7.3 &nbsp; Autres fonctionnalit&eacute;s du dashboard</h3>
+
+    <ul class="steps">
+      <li>
+        <div class="step-content">
+          <strong>KPI cliquables</strong>
+          <span>Toutes les cards KPI du dashboard sont cliquables et naviguent vers la page concern&eacute;e (liste des tickets, page &eacute;v&eacute;nements, etc.).</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Page "&Eacute;v&eacute;nements du jour"</strong>
+          <span>Accessible via la card KPI "&Eacute;v&eacute;nements aujourd'hui" ou directement &agrave; l'URL <code>/evenements/aujourd-hui</code>.
+          Affiche les matchs du jour avec les pi&egrave;ces jointes t&eacute;l&eacute;chargeables.</span>
+        </div>
+      </li>
+      <li>
+        <div class="step-content">
+          <strong>Filtre "Mes tickets"</strong>
+          <span>Dans la liste des tickets, un bouton toggle "Mes tickets" permet de filtrer uniquement les tickets assign&eacute;s &agrave; l'utilisateur connect&eacute;.</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       SECTION 8 — TROUBLESHOOTING
   ══════════════════════════════════════ -->
   <div class="section page-break">
     <div class="section-header">
-      <div class="step-badge">7</div>
-      <h2>Résolution des problèmes courants</h2>
+      <div class="step-badge">8</div>
+      <h2>R&eacute;solution des probl&egrave;mes courants</h2>
     </div>
 
     <h3>❌ <code>node</code> ou <code>npm</code> introuvable après installation</h3>
@@ -1290,7 +1383,7 @@
     <br />
 
     <div style="text-align:center; color: var(--gray-400); font-size: 9pt; padding-bottom: 32px;">
-      HelpDesk v1.0 &nbsp;·&nbsp; Guide d'installation &nbsp;·&nbsp; Mars 2026 &nbsp;·&nbsp; Usage interne
+      HelpDesk v1.1 &nbsp;·&nbsp; Guide d'installation &nbsp;·&nbsp; Avril 2026 &nbsp;·&nbsp; Usage interne
     </div>
   </div>
 

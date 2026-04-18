@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide de Mise en Production — Helpdesk VOGO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #1a1a2e;
+    background: #f8f9fa;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  .page-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    min-height: 100vh;
+  }
+
+  /* ---- HEADER ---- */
+  .header {
+    background: linear-gradient(135deg, #185FA5 0%, #1a4a80 100%);
+    color: #fff;
+    padding: 48px 40px 40px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+  .header .subtitle {
+    font-size: 15px;
+    opacity: 0.85;
+    font-weight: 400;
+  }
+  .header .version {
+    margin-top: 16px;
+    font-size: 12px;
+    opacity: 0.6;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ---- CONTENT ---- */
+  .content {
+    padding: 40px;
+  }
+
+  /* ---- ALERT BOX (read first) ---- */
+  .alert-read-first {
+    background: #fee2e2;
+    border-left: 5px solid #ef4444;
+    border-radius: 0 8px 8px 0;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+    font-weight: 500;
+  }
+  .alert-read-first strong {
+    color: #dc2626;
+    display: block;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+
+  /* ---- PHASE HEADER ---- */
+  .phase {
+    margin-top: 48px;
+    margin-bottom: 32px;
+    page-break-inside: avoid;
+  }
+  .phase:first-of-type {
+    margin-top: 0;
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .phase-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 18px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .phase-badge.phase-0 { background: #6b7280; }
+  .phase-badge.phase-1 { background: #185FA5; }
+  .phase-badge.phase-2 { background: #7c3aed; }
+  .phase-badge.phase-3 { background: #059669; }
+  .phase-badge.phase-4 { background: #0891b2; }
+  .phase-badge.phase-5 { background: #dc2626; }
+  .phase-badge.phase-cmd { background: #374151; }
+  .phase-badge.phase-check { background: #f59e0b; }
+
+  .phase-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+  .phase-title-sub {
+    font-size: 13px;
+    font-weight: 400;
+    color: #6b7280;
+  }
+
+  /* ---- HEADINGS ---- */
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #185FA5;
+    margin-top: 28px;
+    margin-bottom: 12px;
+  }
+
+  p {
+    margin-bottom: 12px;
+  }
+
+  strong {
+    font-weight: 600;
+  }
+
+  a {
+    color: #185FA5;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ---- CODE BLOCKS ---- */
+  pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 12px 0 16px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  pre .comment {
+    color: #6c7086;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 13px;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  /* ---- ALERTS ---- */
+  .alert-warning {
+    background: #fff3cd;
+    border-left: 5px solid #f59e0b;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .alert-warning strong {
+    color: #92400e;
+  }
+
+  .alert-danger {
+    background: #fee2e2;
+    border-left: 5px solid #ef4444;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .alert-danger strong {
+    color: #dc2626;
+  }
+
+  .alert-info {
+    background: #eff6ff;
+    border-left: 5px solid #185FA5;
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .alert-info strong {
+    color: #185FA5;
+  }
+
+  /* ---- TABLE ---- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 14px;
+  }
+  table th {
+    background: #f1f5f9;
+    text-align: left;
+    font-weight: 600;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+  }
+  table td {
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+  }
+
+  /* ---- STEP NUMBERING ---- */
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #185FA5;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-content {
+    flex: 1;
+  }
+
+  /* ---- WHY BOX ---- */
+  .why-box {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 12px 0 16px;
+    font-size: 14px;
+    color: #166534;
+  }
+
+  /* ---- PREP LIST ---- */
+  .prep-list {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin: 12px 0 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+  }
+
+  /* ---- CHECKLIST ---- */
+  .checklist {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+  }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .checklist li:hover {
+    background: #f8fafc;
+  }
+  .checklist li:last-child {
+    border-bottom: none;
+  }
+  .checklist input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #185FA5;
+    margin-top: 1px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .checklist label {
+    cursor: pointer;
+    flex: 1;
+  }
+  .checklist li.checked label {
+    text-decoration: line-through;
+    color: #9ca3af;
+  }
+
+  /* ---- SEPARATOR ---- */
+  .separator {
+    border: none;
+    height: 2px;
+    background: linear-gradient(90deg, #185FA5, #e5e7eb);
+    margin: 48px 0;
+  }
+
+  /* ---- FOOTER ---- */
+  .footer {
+    text-align: center;
+    padding: 32px 40px;
+    font-size: 12px;
+    color: #9ca3af;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  /* ---- OL ---- */
+  ol {
+    padding-left: 20px;
+    margin-bottom: 16px;
+    line-height: 2;
+  }
+
+  /* ---- PRINT ---- */
+  @media print {
+    body {
+      background: #fff;
+      font-size: 12px;
+    }
+    .page-wrapper {
+      max-width: 100%;
+    }
+    .header {
+      padding: 24px 30px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .content {
+      padding: 24px 30px;
+    }
+    pre {
+      background: #f8f8f8 !important;
+      color: #1a1a2e !important;
+      border: 1px solid #d1d5db;
+      font-size: 11px;
+      padding: 12px 14px;
+    }
+    pre .comment {
+      color: #6b7280 !important;
+    }
+    .phase-badge {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .alert-warning, .alert-danger, .alert-info, .alert-read-first, .why-box {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .phase {
+      page-break-inside: avoid;
+    }
+    .checklist li:hover {
+      background: none;
+    }
+    .separator {
+      margin: 32px 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <!-- ============ HEADER ============ -->
+  <div class="header">
+    <h1>GUIDE DE MISE EN PRODUCTION</h1>
+    <div class="subtitle">Helpdesk VOGO &mdash; Installation, configuration et maintenance</div>
+    <div class="version">Version 1.1 &mdash; Avril 2026</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ============ ALERT READ FIRST ============ -->
+    <div class="alert-read-first">
+      <strong>AVANT DE COMMENCER &mdash; LIS TOUT LE GUIDE</strong>
+      Ce guide est s&eacute;quentiel. Ne saute AUCUNE &eacute;tape. Si quelque chose ne correspond pas &agrave; ce qui est d&eacute;crit, <strong>STOP</strong> &mdash; appelle le Tech Lead avant de continuer.
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- PHASE 0 -->
+    <!-- ============================================================= -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-badge phase-0">0</div>
+        <div>
+          <div class="phase-title">PR&Eacute;REQUIS C&Ocirc;T&Eacute; D&Eacute;VELOPPEUR</div>
+          <div class="phase-title-sub">&Agrave; faire sur ton poste, AVANT le jour J</div>
+        </div>
+      </div>
+
+      <h3>0.1 &mdash; Merger les PRs dans le bon ordre</h3>
+      <p>Tu as 2 PRs ouvertes sur GitHub. Elles doivent &ecirc;tre merg&eacute;es dans cet ordre strict :</p>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <strong>&Eacute;tape 1 &mdash; Merger PR #2 en premier</strong><br>
+          URL : <a href="https://github.com/Trash30/Helpdesk/pull/2" target="_blank">https://github.com/Trash30/Helpdesk/pull/2</a><br>
+          Titre : <code>feat: motif obligatoire PENDING + exclusion stale</code><br>
+          Action : clique <strong>&laquo; Merge pull request &raquo;</strong> &rarr; <strong>&laquo; Confirm merge &raquo;</strong>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <strong>&Eacute;tape 2 &mdash; Rebaser PR #1 sur le nouveau main, puis merger</strong><br>
+          Apr&egrave;s le merge de PR #2, PR #1 a diverg&eacute;. Il faut la mettre &agrave; jour :
+          <pre><code>git checkout feat/client-organisation-tickettype
+git pull origin main
+git push origin feat/client-organisation-tickettype</code></pre>
+          Ensuite sur GitHub, PR #1 &rarr; <strong>&laquo; Merge pull request &raquo;</strong> &rarr; <strong>&laquo; Confirm merge &raquo;</strong>
+        </div>
+      </div>
+
+      <div class="why-box">
+        <strong>Pourquoi cet ordre ?</strong> PR #2 corrige un bug sur les tickets PENDING. Si tu merges PR #1 en premier, ce bug revient en prod.
+      </div>
+
+      <h3>0.2 &mdash; V&eacute;rifier que main est propre apr&egrave;s les merges</h3>
+      <pre><code>git checkout main
+git pull origin main
+git log --oneline -5</code></pre>
+      <p>Tu dois voir les commits des deux PRs en t&ecirc;te de main. Si ce n'est pas le cas, <strong>STOP</strong>.</p>
+
+      <h3>0.3 &mdash; V&eacute;rifier qu'il n'y a pas de fichiers de migrations Prisma</h3>
+      <pre><code>ls server/prisma/migrations/</code></pre>
+
+      <div class="alert-warning">
+        <strong>IMPORTANT :</strong> Si ce dossier est vide (comme c'est le cas actuellement), <code>deploy.sh</code> va &eacute;chouer &agrave; l'&eacute;tape migrations. Voir la correction en <strong>Phase 2 &eacute;tape 2.4</strong>.
+      </div>
+    </div>
+
+    <hr class="separator">
+
+    <!-- ============================================================= -->
+    <!-- PHASE 1 -->
+    <!-- ============================================================= -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-badge phase-1">1</div>
+        <div>
+          <div class="phase-title">PR&Eacute;REQUIS SERVEUR DE PRODUCTION</div>
+          <div class="phase-title-sub">Ce dont tu as besoin avant de commencer</div>
+        </div>
+      </div>
+
+      <h3>Configuration serveur requise</h3>
+      <table>
+        <thead>
+          <tr><th>&Eacute;l&eacute;ment</th><th>Requis</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Serveur Linux</td><td>Ubuntu 22.04 LTS</td></tr>
+          <tr><td>RAM</td><td>2 GB minimum (4 GB recommand&eacute;)</td></tr>
+          <tr><td>Disque</td><td>10 GB minimum</td></tr>
+          <tr><td>Acc&egrave;s</td><td>SSH root ou sudo</td></tr>
+          <tr><td>R&eacute;seau</td><td>Port 80 ouvert</td></tr>
+          <tr><td>DNS (optionnel)</td><td>Nom de domaine &rarr; IP serveur</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Informations &agrave; pr&eacute;parer AVANT de commencer</h3>
+      <div class="prep-list">
+        [ ] Adresse IP du serveur<br>
+        [ ] Mot de passe PostgreSQL helpdesk_user<br>
+        [ ] URL publique de l'app (ex: http://helpdesk.vogo.fr)<br>
+        [ ] H&ocirc;te SMTP (ex: smtp.gmail.com)<br>
+        [ ] Port SMTP (ex: 587)<br>
+        [ ] Utilisateur SMTP<br>
+        [ ] Mot de passe SMTP<br>
+        [ ] Email exp&eacute;diteur<br>
+        [ ] Nom affich&eacute; dans les emails (ex: Helpdesk VOGO)
+      </div>
+    </div>
+
+    <hr class="separator">
+
+    <!-- ============================================================= -->
+    <!-- PHASE 2 -->
+    <!-- ============================================================= -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-badge phase-2">2</div>
+        <div>
+          <div class="phase-title">INSTALLATION</div>
+          <div class="phase-title-sub">Premi&egrave;re fois uniquement</div>
+        </div>
+      </div>
+
+      <h3>2.1 &mdash; Se connecter au serveur</h3>
+      <pre><code>ssh root@&lt;IP_SERVEUR&gt;</code></pre>
+
+      <h3>2.2 &mdash; Cloner le d&eacute;p&ocirc;t</h3>
+      <pre><code>git clone https://github.com/Trash30/Helpdesk.git /opt/helpdesk
+cd /opt/helpdesk
+git checkout main</code></pre>
+
+      <h3>2.3 &mdash; Lancer l'installateur</h3>
+      <pre><code>sudo bash install.sh</code></pre>
+      <p>Le script va te poser des questions. R&eacute;ponds avec les informations pr&eacute;par&eacute;es en Phase 1.</p>
+
+      <div class="alert-danger">
+        <strong>STOP :</strong> Si le script s'arr&ecirc;te en erreur, lis le message, note-le exactement, et appelle le Tech Lead.
+      </div>
+
+      <h3>2.4 &mdash; CORRECTION MIGRATIONS (&eacute;tape manuelle obligatoire)</h3>
+
+      <div class="alert-warning">
+        <strong>ATTENTION :</strong> Le projet n'a pas encore de fichiers de migration Prisma. Avant de continuer, ex&eacute;cute cette commande manuellement.
+      </div>
+
+      <pre><code>cd /opt/helpdesk/server
+npx prisma migrate dev --name init</code></pre>
+      <p>Cette commande cr&eacute;e les fichiers de migration et applique le sch&eacute;ma &agrave; la base. Elle ne sera faite qu'une seule fois.</p>
+
+      <p>Ensuite, commite ces fichiers sur main :</p>
+      <pre><code>cd /opt/helpdesk
+git add server/prisma/migrations/
+git commit -m "chore: add initial prisma migration"
+git push origin main</code></pre>
+
+      <h3>2.5 &mdash; PURGE DE LA BASE DE DONN&Eacute;ES</h3>
+
+      <div class="alert-danger">
+        <strong>DANGER :</strong> Cette commande efface TOUTES les donn&eacute;es et recr&eacute;e la base from scratch avec le seed. &Agrave; n'ex&eacute;cuter QU'UNE SEULE FOIS, avant la mise en service. <strong>Jamais en prod avec de vraies donn&eacute;es.</strong>
+      </div>
+
+      <pre><code>cd /opt/helpdesk/server
+npx prisma migrate reset --force</code></pre>
+    </div>
+
+    <hr class="separator">
+
+    <!-- ============================================================= -->
+    <!-- PHASE 3 -->
+    <!-- ============================================================= -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-badge phase-3">3</div>
+        <div>
+          <div class="phase-title">V&Eacute;RIFICATIONS POST-INSTALLATION</div>
+          <div class="phase-title-sub">Lance chaque v&eacute;rification dans l'ordre. Si l'une &eacute;choue, STOP.</div>
+        </div>
+      </div>
+
+      <pre><code><span class="comment"># 1. PM2 tourne ?</span>
+pm2 status
+<span class="comment"># &rarr; "helpdesk-server" avec statut "online" (vert)</span>
+
+<span class="comment"># 2. L'API r&eacute;pond ?</span>
+curl http://localhost:3001/api/settings/public
+<span class="comment"># &rarr; Du JSON, pas une erreur</span>
+
+<span class="comment"># 3. Nginx tourne ?</span>
+systemctl status nginx
+<span class="comment"># &rarr; Active: active (running)</span>
+
+<span class="comment"># 4. Le frontend est accessible ?</span>
+curl -s -o /dev/null -w "%{http_code}" http://localhost
+<span class="comment"># &rarr; 200</span>
+
+<span class="comment"># 5. Depuis un navigateur sur ton poste</span>
+<span class="comment"># &rarr; Ouvre http://&lt;IP_SERVEUR&gt;</span>
+<span class="comment"># &rarr; La page de login doit s'afficher</span></code></pre>
+
+      <h3>V&eacute;rifier le widget Sports et les pi&egrave;ces jointes</h3>
+      <pre><code><span class="comment"># 6. Les endpoints sports r&eacute;pondent ?</span>
+curl http://localhost:3001/api/sports/matches
+<span class="comment"># &rarr; Du JSON avec les matchs de la semaine</span>
+
+<span class="comment"># 7. Le dossier des pi&egrave;ces jointes matchs existe ?</span>
+ls -la /opt/helpdesk/server/uploads/match-attachments/
+<span class="comment"># &rarr; Le dossier doit exister (cr&eacute;&eacute; automatiquement au premier upload)</span></code></pre>
+
+      <div class="alert-info">
+        <strong>Widget Sports :</strong> Le dashboard affiche un widget "Matchs de la semaine" avec 8 comp&eacute;titions (Top 14, Pro D2, Champions Cup, Challenge Cup, Starligue, Super League, Ligue 1, ELMS). Les donn&eacute;es proviennent de sources publiques, aucune configuration suppl&eacute;mentaire n'est requise.
+      </div>
+
+      <div class="alert-warning">
+        <strong>Starligue :</strong> Les param&egrave;tres <code>seasons_id</code> et <code>key</code> de l'API LNH doivent &ecirc;tre mis &agrave; jour dans le code source &agrave; chaque nouvelle saison.
+      </div>
+
+      <h3>Premier login et s&eacute;curisation</h3>
+      <p>Connecte-toi avec les identifiants par d&eacute;faut :</p>
+
+      <table>
+        <thead>
+          <tr><th>R&ocirc;le</th><th>Email</th><th>Mot de passe</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Admin</strong></td><td>admin@helpdesk.com</td><td>admin123</td></tr>
+          <tr><td><strong>Agent</strong></td><td>agent1@helpdesk.com</td><td>agent123</td></tr>
+        </tbody>
+      </table>
+
+      <div class="alert-danger">
+        <strong>IMM&Eacute;DIATEMENT apr&egrave;s :</strong> change ces mots de passe depuis l'interface. Ces identifiants sont dans le code source sur GitHub &mdash; ils sont publics.
+      </div>
+    </div>
+
+    <hr class="separator">
+
+    <!-- ============================================================= -->
+    <!-- PHASE 4 -->
+    <!-- ============================================================= -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-badge phase-4">4</div>
+        <div>
+          <div class="phase-title">MISES &Agrave; JOUR FUTURES</div>
+          <div class="phase-title-sub">D&eacute;ploiement des nouvelles versions</div>
+        </div>
+      </div>
+
+      <pre><code>ssh root@&lt;IP_SERVEUR&gt;
+cd /opt/helpdesk
+bash deploy.sh</code></pre>
+
+      <p>Ce script fait automatiquement :</p>
+      <ol>
+        <li><code>git pull</code> &mdash; r&eacute;cup&egrave;re le nouveau code depuis main</li>
+        <li><code>npm ci</code> &mdash; met &agrave; jour les d&eacute;pendances</li>
+        <li><code>prisma migrate deploy</code> &mdash; applique les nouvelles migrations</li>
+        <li>Build du frontend</li>
+        <li>Red&eacute;marre le serveur Node.js via PM2</li>
+        <li>Recharge Nginx</li>
+      </ol>
+
+      <div class="alert-info">
+        <strong>Dur&eacute;e estim&eacute;e :</strong> 2-5 minutes. Le service est bri&egrave;vement interrompu au red&eacute;marrage PM2.
+      </div>
+
+      <h3>Nouveaux endpoints API</h3>
+      <p>Les mises &agrave; jour r&eacute;centes ont ajout&eacute; les endpoints suivants :</p>
+      <table>
+        <thead>
+          <tr><th>Endpoint</th><th>M&eacute;thode</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>/api/sports/matches</code></td><td>GET</td><td>Matchs de la semaine (8 comp&eacute;titions)</td></tr>
+          <tr><td><code>/api/sports/matches/query</code></td><td>POST</td><td>Requ&ecirc;te de matchs par cl&eacute;s</td></tr>
+          <tr><td><code>/api/sports/match-attachments</code></td><td>GET / POST</td><td>Pi&egrave;ces jointes des matchs (PDF)</td></tr>
+          <tr><td><code>/api/sports/match-attachments/:id</code></td><td>DELETE</td><td>Suppression d'une pi&egrave;ce jointe (admin)</td></tr>
+          <tr><td><code>/evenements/aujourd-hui</code></td><td>Page</td><td>&Eacute;v&eacute;nements du jour (frontend)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="alert-warning">
+        <strong>Dossier uploads :</strong> Les pi&egrave;ces jointes des matchs sont stock&eacute;es dans <code>/opt/helpdesk/server/uploads/match-attachments/</code>. Ce dossier est cr&eacute;&eacute; automatiquement. Les fichiers sont purg&eacute;s 6h apr&egrave;s chaque match. V&eacute;rifiez que le dossier <code>uploads/</code> dispose de permissions d'&eacute;criture pour l'utilisateur Node.js.
+      </div>
+    </div>
+
+    <hr class="separator">
+
+    <!-- ============================================================= -->
+    <!-- PHASE 5 -->
+    <!-- ============================================================= -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-badge phase-5">5</div>
+        <div>
+          <div class="phase-title">PLAN DE ROLLBACK</div>
+          <div class="phase-title-sub">Si apr&egrave;s un d&eacute;ploiement l'application ne fonctionne plus</div>
+        </div>
+      </div>
+
+      <pre><code>cd /opt/helpdesk
+
+<span class="comment"># 1. Voir le commit en prod</span>
+git log --oneline -5
+
+<span class="comment"># 2. Revenir au commit pr&eacute;c&eacute;dent</span>
+git checkout &lt;COMMIT_HASH_PR&Eacute;C&Eacute;DENT&gt;
+
+<span class="comment"># 3. Rebuilder</span>
+npm ci --prefix server --omit=dev
+npm ci --prefix client
+npm run build --prefix client
+
+<span class="comment"># 4. Red&eacute;marrer</span>
+pm2 restart helpdesk-server --update-env</code></pre>
+
+      <div class="alert-warning">
+        <strong>Note :</strong> Les migrations Prisma ne se rollback pas automatiquement. Si tu as appliqu&eacute; une migration cass&eacute;e, appelle le Tech Lead.
+      </div>
+    </div>
+
+    <hr class="separator">
+
+    <!-- ============================================================= -->
+    <!-- COMMANDES DE SURVIE -->
+    <!-- ============================================================= -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-badge phase-cmd">&#9881;</div>
+        <div>
+          <div class="phase-title">COMMANDES DE SURVIE</div>
+          <div class="phase-title-sub">Commandes utiles au quotidien</div>
+        </div>
+      </div>
+
+      <pre><code><span class="comment"># Voir si l'app tourne</span>
+pm2 status
+
+<span class="comment"># Logs en temps r&eacute;el</span>
+pm2 logs helpdesk-server
+
+<span class="comment"># Red&eacute;marrer sans red&eacute;ployer</span>
+pm2 restart helpdesk-server
+
+<span class="comment"># Erreurs Nginx</span>
+tail -50 /var/log/nginx/error.log
+
+<span class="comment"># Espace disque</span>
+df -h
+
+<span class="comment"># M&eacute;moire</span>
+free -h</code></pre>
+    </div>
+
+    <hr class="separator">
+
+    <!-- ============================================================= -->
+    <!-- CHECKLIST JOUR J -->
+    <!-- ============================================================= -->
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-badge phase-check">&#10003;</div>
+        <div>
+          <div class="phase-title">CHECKLIST DU JOUR J</div>
+          <div class="phase-title-sub">Coche chaque &eacute;tape au fur et &agrave; mesure</div>
+        </div>
+      </div>
+
+      <ul class="checklist" id="checklist">
+        <li>
+          <input type="checkbox" id="c1">
+          <label for="c1">1. Merger PR #2 sur GitHub</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c2">
+          <label for="c2">2. Merger PR #1 sur GitHub (apr&egrave;s rebase)</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c3">
+          <label for="c3">3. V&eacute;rifier que main est propre : <code>git log --oneline -5</code></label>
+        </li>
+        <li>
+          <input type="checkbox" id="c4">
+          <label for="c4">4. SSH sur le serveur</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c5">
+          <label for="c5">5. <code>git clone</code> / <code>git checkout main</code></label>
+        </li>
+        <li>
+          <input type="checkbox" id="c6">
+          <label for="c6">6. <code>bash install.sh</code> (r&eacute;pondre aux questions)</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c7">
+          <label for="c7">7. <code>npx prisma migrate dev --name init</code></label>
+        </li>
+        <li>
+          <input type="checkbox" id="c8">
+          <label for="c8">8. <code>npx prisma migrate reset --force</code> (purge BDD)</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c9">
+          <label for="c9">9. <code>pm2 status</code> &rarr; "online"</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c10">
+          <label for="c10">10. <code>curl http://localhost:3001/api/settings/public</code> &rarr; JSON</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c11">
+          <label for="c11">11. Ouvrir <code>http://&lt;IP&gt;</code> dans le navigateur &rarr; page login</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c12">
+          <label for="c12">12. Changer les mots de passe admin et agent</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c13">
+          <label for="c13">13. Appeler le Tech Lead pour validation finale</label>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- FINAL NOTE -->
+    <!-- ============================================================= -->
+    <div class="alert-danger" style="margin-top: 40px;">
+      <strong>R&egrave;gle d'or :</strong> Si &agrave; n'importe quelle &eacute;tape tu vois quelque chose qui ne correspond pas &agrave; ce guide, arr&ecirc;te et contacte le Tech Lead. Une MEP rat&eacute;e est toujours r&eacute;cup&eacute;rable si on intervient t&ocirc;t.
+    </div>
+
+  </div>
+
+  <div class="footer">
+    Guide de Mise en Production &mdash; Helpdesk VOGO &mdash; Avril 2026
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.checklist input[type="checkbox"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var li = this.closest('li');
+      if (this.checked) {
+        li.classList.add('checked');
+      } else {
+        li.classList.remove('checked');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
