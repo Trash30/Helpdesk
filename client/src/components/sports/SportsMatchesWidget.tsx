@@ -304,28 +304,43 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
         </div>
       )}
 
-      {/* Drop zone — visible en permanence sur mobile, hover-only sur desktop */}
+      {/* Shared file input — used by both mobile button and desktop dropzone */}
+      {can('tickets.create') && (
+        <input
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+        />
+      )}
+
+      {/* Mobile : bouton visible permanent */}
+      {can('tickets.create') && (
+        <button
+          type="button"
+          className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadMutation.isPending}
+        >
+          <Upload className="h-4 w-4" />
+          {uploadMutation.isPending ? 'Envoi...' : 'Joindre un PDF'}
+        </button>
+      )}
+
+      {/* Desktop : dropzone drag & drop (hover only) */}
       {can('tickets.create') && (
         <div
-          className={`w-full border border-dashed rounded px-3 sm:px-2 py-2.5 sm:py-1.5 text-center text-sm sm:text-xs cursor-pointer transition-all inline-flex items-center justify-center gap-2 min-h-[44px] sm:min-h-0
-            opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150
+          className={`hidden sm:inline-flex w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
+            opacity-0 group-hover:opacity-100 transition-opacity duration-150
             ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
-            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/40 text-muted-foreground sm:text-muted-foreground/50 hover:border-muted-foreground/60'}`}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/40 text-muted-foreground/50 hover:border-muted-foreground/60'}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <input
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-          />
-          <Upload className="h-4 w-4 sm:hidden shrink-0" />
-          <span className="sm:hidden">{uploadMutation.isPending ? 'Envoi...' : 'Ajouter un PDF'}</span>
-          <span className="hidden sm:inline">{uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}</span>
+          <span>{uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}</span>
         </div>
       )}
 
@@ -509,28 +524,43 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
         </div>
       )}
 
-      {/* Drop zone — visible en permanence sur mobile, hover-only sur desktop */}
+      {/* Shared file input */}
+      {can('tickets.create') && (
+        <input
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+        />
+      )}
+
+      {/* Mobile : bouton visible permanent */}
+      {can('tickets.create') && (
+        <button
+          type="button"
+          className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadMutation.isPending}
+        >
+          <Upload className="h-4 w-4" />
+          {uploadMutation.isPending ? 'Envoi...' : 'Joindre un PDF'}
+        </button>
+      )}
+
+      {/* Desktop : dropzone drag & drop (hover only) */}
       {can('tickets.create') && (
         <div
-          className={`w-full mt-1 border border-dashed rounded px-3 sm:px-2 py-2.5 sm:py-1.5 text-center text-sm sm:text-xs cursor-pointer transition-all inline-flex items-center justify-center gap-2 min-h-[44px] sm:min-h-0
-            opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150
+          className={`hidden sm:inline-flex w-full mt-1 border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
+            opacity-0 group-hover:opacity-100 transition-opacity duration-150
             ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
-            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/40 text-muted-foreground sm:text-muted-foreground/50 hover:border-muted-foreground/60'}`}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/40 text-muted-foreground/50 hover:border-muted-foreground/60'}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <input
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-          />
-          <Upload className="h-4 w-4 sm:hidden shrink-0" />
-          <span className="sm:hidden">{uploadMutation.isPending ? 'Envoi...' : 'Ajouter un PDF'}</span>
-          <span className="hidden sm:inline">{uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}</span>
+          <span>{uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}</span>
         </div>
       )}
 
@@ -631,12 +661,19 @@ function MatchesList({ matches }: MatchesListProps) {
   // Reconstruire les matchs manquants depuis les notes de la semaine courante.
   // Cas typique : le lendemain d'un match LNR, le site le déplace en "résultats"
   // et le scraper ne le retourne plus — mais la note est en DB avec toutes les métadonnées.
-  const scrapedKeys = new Set(matches.map(getMatchKey));
+  //
+  // Comparaison floue sur competition+homeTeam+awayTeam+date-seule (sans l'heure)
+  // pour éviter les doublons quand le scraper retourne le même match avec une heure
+  // légèrement différente de celle stockée dans la note.
+  const scrapedFingerprints = new Set(
+    matches.map((m) => `${m.competition}_${m.homeTeam}_${m.awayTeam}_${m.date.slice(0, 10)}`)
+  );
   const { monday, sunday } = getCurrentWeekBounds();
 
   const ghostMatches: Match[] = (notesData ?? [])
     .filter((note) => {
-      if (scrapedKeys.has(note.matchKey)) return false;
+      const fingerprint = `${note.competition}_${note.homeTeam}_${note.awayTeam}_${note.matchDate.slice(0, 10)}`;
+      if (scrapedFingerprints.has(fingerprint)) return false;
       const d = new Date(note.matchDate);
       return d >= monday && d <= sunday;
     })
