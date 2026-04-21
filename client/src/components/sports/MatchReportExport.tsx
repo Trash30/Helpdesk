@@ -12,6 +12,7 @@ interface MatchNoteReport {
   id: string;
   matchKey: string;
   content: string;
+  status?: 'VERT' | 'ORANGE' | 'ROUGE';
   matchDate: string;
   competition: string;
   homeTeam: string;
@@ -204,6 +205,10 @@ export function MatchReportExport() {
       const { weekNumber, year, startOfWeek, endOfWeek, notes } = response.data.data as WeekReportResponse;
 
       const validNotes = notes.filter((n) => {
+        const status = n.status ?? 'VERT';
+        // Pour VERT : afficher même sans contenu (RAS)
+        if (status === 'VERT') return true;
+        // Pour ORANGE/ROUGE : exiger un contenu non vide
         const stripped = n.content?.replace(/<[^>]*>/g, '').trim();
         return stripped && stripped.length > 0;
       });
@@ -271,61 +276,109 @@ export function MatchReportExport() {
         })
       );
 
-      for (let i = 0; i < validNotes.length; i++) {
-        const note = validNotes[i];
-        const competitionLabel = getCompetitionLabel(note.competition);
-        const faviconImg = getImg(getCompetitionFavicon(note.competition));
-        const homeImg = getImg(note.homeTeamLogo);
-        const awayImg = getImg(note.awayTeamLogo);
+      // Grouper les notes par compétition (l'API les retourne déjà triées)
+      const grouped = validNotes.reduce((acc, note) => {
+        const comp = note.competition;
+        if (!acc[comp]) acc[comp] = [];
+        acc[comp].push(note);
+        return acc;
+      }, {} as Record<string, MatchNoteReport[]>);
 
-        // Competition + teams heading
-        // Line 1: [favicon] Compétition — homeTeam vs awayTeam
-        const headingChildren: (TextRun | ImageRun)[] = [];
+      const competitionEntries = Object.entries(grouped);
+      let globalIdx = 0;
+      const totalNotes = validNotes.length;
+
+      for (const [competition, compNotes] of competitionEntries) {
+        const competitionLabel = getCompetitionLabel(competition);
+        const faviconImg = getImg(getCompetitionFavicon(competition));
+
+        // Heading compétition (H2) — une seule fois par groupe
+        const compHeadingChildren: (TextRun | ImageRun)[] = [];
         if (faviconImg) {
-          headingChildren.push(makeImageRun(faviconImg, 16));
-          headingChildren.push(new TextRun({ text: '  ' }));
+          compHeadingChildren.push(makeImageRun(faviconImg, 20));
+          compHeadingChildren.push(new TextRun({ text: '  ' }));
         }
-        headingChildren.push(new TextRun({ text: `${competitionLabel}  \u2014  `, bold: true, size: 26 }));
-        if (homeImg) {
-          headingChildren.push(makeImageRun(homeImg, 20));
-          headingChildren.push(new TextRun({ text: ' ' }));
-        }
-        headingChildren.push(new TextRun({ text: note.homeTeam, bold: true, size: 26 }));
-        headingChildren.push(new TextRun({ text: '  vs  ', bold: false, size: 26, color: '888888' }));
-        if (awayImg) {
-          headingChildren.push(makeImageRun(awayImg, 20));
-          headingChildren.push(new TextRun({ text: ' ' }));
-        }
-        headingChildren.push(new TextRun({ text: note.awayTeam, bold: true, size: 26 }));
+        compHeadingChildren.push(new TextRun({ text: competitionLabel, bold: true, size: 30 }));
 
         sections.push(
           new Paragraph({
-            children: headingChildren,
+            children: compHeadingChildren,
             heading: HeadingLevel.HEADING_2,
-            spacing: { before: 300, after: 100 },
+            spacing: { before: 400, after: 200 },
           })
         );
 
-        // Date/time
-        sections.push(
-          new Paragraph({
-            children: [new TextRun({ text: formatNoteDate(note.matchDate, note.matchTime), italics: true, color: '888888', size: 20 })],
-            spacing: { after: 200 },
-          })
-        );
+        for (const note of compNotes) {
+          const homeImg = getImg(note.homeTeamLogo);
+          const awayImg = getImg(note.awayTeamLogo);
+          const noteStatus = note.status ?? 'VERT';
+          const shouldIncludeContent = noteStatus !== 'VERT';
 
-        // Note content
-        sections.push(...htmlToDocxParagraphs(note.content));
+          // Feu tricolore : pastille colorée + libellé
+          const statusColor = {
+            VERT: '00AA00',
+            ORANGE: 'FF8C00',
+            ROUGE: 'CC0000',
+          }[noteStatus];
+          const statusLabel =
+            noteStatus === 'VERT' ? 'RAS' : noteStatus === 'ORANGE' ? 'À surveiller' : "Point d'attention";
 
-        // Separator
-        if (i < validNotes.length - 1) {
           sections.push(
             new Paragraph({
-              children: [],
-              spacing: { before: 200, after: 200 },
-              border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' } },
+              children: [
+                new TextRun({ text: '●', color: statusColor, size: 28, bold: true }),
+                new TextRun({ text: '  ' + statusLabel, color: statusColor, size: 20 }),
+              ],
+              spacing: { before: 200, after: 100 },
             })
           );
+
+          // Heading du match : homeTeam vs awayTeam
+          const headingChildren: (TextRun | ImageRun)[] = [];
+          if (homeImg) {
+            headingChildren.push(makeImageRun(homeImg, 20));
+            headingChildren.push(new TextRun({ text: ' ' }));
+          }
+          headingChildren.push(new TextRun({ text: note.homeTeam, bold: true, size: 26 }));
+          headingChildren.push(new TextRun({ text: '  vs  ', bold: false, size: 26, color: '888888' }));
+          if (awayImg) {
+            headingChildren.push(makeImageRun(awayImg, 20));
+            headingChildren.push(new TextRun({ text: ' ' }));
+          }
+          headingChildren.push(new TextRun({ text: note.awayTeam, bold: true, size: 26 }));
+
+          sections.push(
+            new Paragraph({
+              children: headingChildren,
+              heading: HeadingLevel.HEADING_3,
+              spacing: { before: 200, after: 100 },
+            })
+          );
+
+          // Date/time
+          sections.push(
+            new Paragraph({
+              children: [new TextRun({ text: formatNoteDate(note.matchDate, note.matchTime), italics: true, color: '888888', size: 20 })],
+              spacing: { after: 200 },
+            })
+          );
+
+          // Contenu de la note — uniquement si status != VERT
+          if (shouldIncludeContent) {
+            sections.push(...htmlToDocxParagraphs(note.content));
+          }
+
+          // Separator
+          if (globalIdx < totalNotes - 1) {
+            sections.push(
+              new Paragraph({
+                children: [],
+                spacing: { before: 200, after: 200 },
+                border: { bottom: { style: BorderStyle.SINGLE, size: 1, color: 'CCCCCC' } },
+              })
+            );
+          }
+          globalIdx++;
         }
       }
 
