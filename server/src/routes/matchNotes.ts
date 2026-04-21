@@ -24,6 +24,7 @@ const matchNoteBodySchema = z.object({
   venue: z.string().optional(),
   homeTeamLogo: z.string().optional(),
   awayTeamLogo: z.string().optional(),
+  status: z.enum(['VERT', 'ORANGE', 'ROUGE']).optional(),
 });
 
 // ─── GET /api/sports/match-notes/proxy-image ────────────────────────────────
@@ -138,7 +139,7 @@ router.get('/report/week', async (_req: Request, res: Response) => {
         select: { id: true, firstName: true, lastName: true },
       },
     },
-    orderBy: [{ matchDate: 'asc' }, { matchTime: 'asc' }],
+    orderBy: [{ competition: 'asc' }, { matchDate: 'asc' }, { matchTime: 'asc' }],
   });
 
   res.json({
@@ -164,12 +165,13 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
     return;
   }
 
-  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo } = parsed.data;
+  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, status } = parsed.data;
 
   const note = await prisma.matchNote.upsert({
     where: { matchKey },
     update: {
       content,
+      status: status ?? 'VERT',
       updatedAt: new Date(),
     },
     create: {
@@ -183,6 +185,7 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
       venue: venue || null,
       homeTeamLogo: homeTeamLogo || null,
       awayTeamLogo: awayTeamLogo || null,
+      status: status ?? 'VERT',
       authorId: req.user!.id,
     },
     include: {
