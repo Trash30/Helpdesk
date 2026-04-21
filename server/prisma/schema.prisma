@@ -48,6 +48,12 @@ enum KbStatus {
   PUBLISHED
 }
 
+enum MatchNoteStatus {
+  VERT
+  ORANGE
+  ROUGE
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model Role {
@@ -328,6 +334,7 @@ model MatchNote {
   venue        String?
   homeTeamLogo String?
   awayTeamLogo String?
+  status       MatchNoteStatus @default(VERT)
   authorId     String
   author       User     @relation(fields: [authorId], references: [id])
   createdAt    DateTime @default(now())

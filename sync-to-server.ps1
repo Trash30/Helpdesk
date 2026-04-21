@@ -18,7 +18,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 # -- Config --------------------------------------------------
-$SERVER_IP    = "192.168.102.152"
+$SERVER_IP    = "192.168.102.90"
 $SERVER_PORT  = "5173"
 $SERVER_USER  = "supportadmin"
 $APP_DIR      = "/opt/helpdesk"
@@ -42,7 +42,7 @@ function Write-Err  { param($msg) Write-Host "`n[ERREUR] $msg`n" -ForegroundColo
 
 function Invoke-Ssh {
     param($cmd)
-    ssh "${SERVER_USER}@${SERVER_IP}" $cmd
+    ssh -o BatchMode=yes -o ConnectTimeout=10 -o LogLevel=ERROR "${SERVER_USER}@${SERVER_IP}" $cmd
     if ($LASTEXITCODE -ne 0) { Write-Err "Commande SSH echouee : $cmd" }
 }
 
@@ -68,10 +68,10 @@ Write-Step "Verification de la connexion SSH"
 if (!(Get-Command ssh -ErrorAction SilentlyContinue)) {
     Write-Err "ssh introuvable. Activez OpenSSH dans Parametres > Applications."
 }
-$sshTest = ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no "${SERVER_USER}@${SERVER_IP}" "echo ok" 2>&1
-if ($sshTest -notmatch "ok") {
-    Write-Err "Connexion SSH impossible : $sshTest"
-}
+$prev = $ProgressPreference; $ProgressPreference = 'SilentlyContinue'
+$tcpTest = Test-NetConnection -ComputerName $SERVER_IP -Port 22 -WarningAction SilentlyContinue -InformationLevel Quiet
+$ProgressPreference = $prev
+if (-not $tcpTest) { Write-Err "Port 22 inaccessible sur $SERVER_IP" }
 Write-Ok "Connexion SSH : $SERVER_USER@$SERVER_IP"
 
 # -- Mode : Restart seulement --------------------------------

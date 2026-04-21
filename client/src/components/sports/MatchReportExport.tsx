@@ -43,6 +43,66 @@ interface FetchedImage {
 
 const DAY_NAMES_FULL = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
 
+// ─── Traffic light PNG generator (canvas) ───────────────────────────────────
+
+async function createTrafficLightPng(status: 'VERT' | 'ORANGE' | 'ROUGE'): Promise<Uint8Array> {
+  return new Promise((resolve) => {
+    const W = 22, H = 56;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d')!;
+
+    // Housing
+    ctx.fillStyle = '#1c1c1c';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, W, H, 5);
+    ctx.fill();
+
+    // Border
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(0.5, 0.5, W - 1, H - 1, 5);
+    ctx.stroke();
+
+    const lights: { cy: number; on: string; off: string; active: 'ROUGE' | 'ORANGE' | 'VERT' }[] = [
+      { cy: 10, on: '#FF2222', off: '#3a0a0a', active: 'ROUGE' },
+      { cy: 28, on: '#FF9900', off: '#3a2200', active: 'ORANGE' },
+      { cy: 46, on: '#00DD44', off: '#003310', active: 'VERT' },
+    ];
+
+    for (const l of lights) {
+      const isOn = l.active === status;
+      if (isOn) {
+        // Glow
+        const grd = ctx.createRadialGradient(W / 2, l.cy, 1, W / 2, l.cy, 9);
+        grd.addColorStop(0, l.on);
+        grd.addColorStop(1, 'transparent');
+        ctx.beginPath();
+        ctx.arc(W / 2, l.cy, 9, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(W / 2, l.cy, 7, 0, Math.PI * 2);
+      ctx.fillStyle = isOn ? l.on : l.off;
+      ctx.fill();
+      if (isOn) {
+        // Highlight
+        ctx.beginPath();
+        ctx.arc(W / 2 - 2, l.cy - 2, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fill();
+      }
+    }
+
+    canvas.toBlob((blob) => {
+      blob!.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)));
+    }, 'image/png');
+  });
+}
+
 // ─── Image fetch via proxy (contourne CORS) ──────────────────────────────────
 
 async function fetchImageForDocx(url: string): Promise<FetchedImage | null> {
@@ -202,7 +262,7 @@ export function MatchReportExport() {
     setIsExporting(true);
     try {
       const response = await api.get('/sports/match-notes/report/week');
-      const { weekNumber, year, startOfWeek, endOfWeek, notes } = response.data.data as WeekReportResponse;
+      const { weekNumber, year, notes } = response.data.data as WeekReportResponse;
 
       const validNotes = notes.filter((n) => {
         const status = n.status ?? 'VERT';
@@ -218,6 +278,18 @@ export function MatchReportExport() {
         setIsExporting(false);
         return;
       }
+
+      // ── Generate traffic light PNGs ─────────────────────────────────────
+      const [tlVert, tlOrange, tlRouge] = await Promise.all([
+        createTrafficLightPng('VERT'),
+        createTrafficLightPng('ORANGE'),
+        createTrafficLightPng('ROUGE'),
+      ]);
+      const trafficLights: Record<'VERT' | 'ORANGE' | 'ROUGE', Uint8Array> = {
+        VERT: tlVert,
+        ORANGE: tlOrange,
+        ROUGE: tlRouge,
+      };
 
       // ── Prefetch all images concurrently ────────────────────────────────
       const allImageUrls = new Set<string>();
@@ -251,26 +323,11 @@ export function MatchReportExport() {
       );
 
       // Metadata fields (editable by user)
-      const start = new Date(startOfWeek);
-      const end = new Date(endOfWeek);
-      const fmtDate = (d: Date) =>
-        d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      const weekRange = `du ${fmtDate(start)} au ${fmtDate(end)}`;
-
       sections.push(
         new Paragraph({
           children: [
             new TextRun({ text: 'Techniciens : ', bold: true, size: 22 }),
             new TextRun({ text: '', size: 22 }),
-          ],
-          spacing: { after: 80 },
-        })
-      );
-      sections.push(
-        new Paragraph({
-          children: [
-            new TextRun({ text: 'Date : ', bold: true, size: 22 }),
-            new TextRun({ text: weekRange, size: 22 }),
           ],
           spacing: { after: 300 },
         })
@@ -314,20 +371,20 @@ export function MatchReportExport() {
           const noteStatus = note.status ?? 'VERT';
           const shouldIncludeContent = noteStatus !== 'VERT';
 
-          // Feu tricolore : pastille colorée + libellé
-          const statusColor = {
-            VERT: '00AA00',
-            ORANGE: 'FF8C00',
-            ROUGE: 'CC0000',
-          }[noteStatus];
+          // Feu tricolore : image canvas + libellé
+          const statusTextColor = { VERT: '007700', ORANGE: 'CC6600', ROUGE: 'BB0000' }[noteStatus];
           const statusLabel =
             noteStatus === 'VERT' ? 'RAS' : noteStatus === 'ORANGE' ? 'À surveiller' : "Point d'attention";
 
           sections.push(
             new Paragraph({
               children: [
-                new TextRun({ text: '●', color: statusColor, size: 28, bold: true }),
-                new TextRun({ text: '  ' + statusLabel, color: statusColor, size: 20 }),
+                new ImageRun({
+                  data: trafficLights[noteStatus],
+                  transformation: { width: 16, height: 40 },
+                  type: 'png',
+                }),
+                new TextRun({ text: '  ' + statusLabel, color: statusTextColor, size: 20, bold: true }),
               ],
               spacing: { before: 200, after: 100 },
             })
@@ -409,7 +466,7 @@ export function MatchReportExport() {
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = `CR_SUPPORT_SEMAINE_${weekNumber}_${year}.docx`;
+      a.download = `CR_S${String(weekNumber).padStart(2, '0')}.docx`;
       a.click();
       URL.revokeObjectURL(blobUrl);
 
