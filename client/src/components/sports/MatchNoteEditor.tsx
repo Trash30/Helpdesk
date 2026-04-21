@@ -24,17 +24,21 @@ interface MatchData {
   awayTeamLogo?: string;
 }
 
+type NoteStatus = 'VERT' | 'ORANGE' | 'ROUGE';
+
 interface MatchNoteEditorProps {
   matchKey: string;
   match: MatchData;
   initialContent?: string;
+  initialStatus?: NoteStatus;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export function MatchNoteEditor({ matchKey, match, initialContent }: MatchNoteEditorProps) {
+export function MatchNoteEditor({ matchKey, match, initialContent, initialStatus }: MatchNoteEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [status, setStatus] = useState<NoteStatus>(initialStatus ?? 'VERT');
   const { can } = usePermissions();
   const queryClient = useQueryClient();
   const hasNote = !!initialContent;
@@ -63,12 +67,20 @@ export function MatchNoteEditor({ matchKey, match, initialContent }: MatchNoteEd
     }
   }, [editor, initialContent]);
 
+  // Sync status when the note is loaded/updated from the server
+  useEffect(() => {
+    if (initialStatus) {
+      setStatus(initialStatus);
+    }
+  }, [initialStatus]);
+
   const saveMutation = useMutation({
     mutationFn: async (content: string) => {
       const encodedKey = encodeURIComponent(matchKey);
       return (
         await api.put(`/sports/match-notes/${encodedKey}`, {
           content,
+          status,
           matchDate: match.date,
           competition: match.competition,
           homeTeam: match.homeTeam,
@@ -149,6 +161,46 @@ export function MatchNoteEditor({ matchKey, match, initialContent }: MatchNoteEd
       {/* Expandable editor panel */}
       {isOpen && editor && (
         <div className="mt-2 bg-amber-50/50 border border-amber-200/60 rounded-md p-2 sm:p-3 space-y-2">
+          {/* Status selector — feu tricolore */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setStatus('VERT')}
+              className={`text-xs px-2 py-1 rounded-full transition-colors ${
+                status === 'VERT'
+                  ? 'bg-green-500 text-white'
+                  : 'border border-green-500 text-green-700 hover:bg-green-50'
+              }`}
+              aria-pressed={status === 'VERT'}
+            >
+              Vert
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatus('ORANGE')}
+              className={`text-xs px-2 py-1 rounded-full transition-colors ${
+                status === 'ORANGE'
+                  ? 'bg-orange-500 text-white'
+                  : 'border border-orange-500 text-orange-700 hover:bg-orange-50'
+              }`}
+              aria-pressed={status === 'ORANGE'}
+            >
+              Orange
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatus('ROUGE')}
+              className={`text-xs px-2 py-1 rounded-full transition-colors ${
+                status === 'ROUGE'
+                  ? 'bg-red-500 text-white'
+                  : 'border border-red-500 text-red-700 hover:bg-red-50'
+              }`}
+              aria-pressed={status === 'ROUGE'}
+            >
+              Rouge
+            </button>
+          </div>
+
           {/* Toolbar — boutons plus grands sur mobile (zone tactile confortable) */}
           <div className="flex items-center gap-1 sm:gap-0.5 flex-wrap">
             <Button

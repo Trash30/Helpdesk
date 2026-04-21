@@ -44,6 +44,7 @@ export interface MatchNoteData {
   id: string;
   matchKey: string;
   content: string;
+  status?: 'VERT' | 'ORANGE' | 'ROUGE';
   competition: string;
   homeTeam: string;
   awayTeam: string;
@@ -64,7 +65,7 @@ export const COMPETITION_META: Record<Competition, { label: string; favicon: str
   EPCR:           { label: 'Champions Cup', favicon: 'https://media-cdn.incrowdsports.com/77535d85-bcdc-49b9-9dc9-879e70d9adba.svg',                calendarUrl: 'https://www.epcrugby.com/fr/champions-cup/matchs' },
   EPCR_CHALLENGE: { label: 'Challenge Cup', favicon: 'https://media-cdn.incrowdsports.com/96d27751-bc48-42e6-890e-a389508ab133.svg',                calendarUrl: 'https://www.epcrugby.com/fr/challenge-cup/matchs' },
   SUPER_LEAGUE:   { label: 'Super League',  favicon: 'https://www.superleague.co.uk/favicon.ico',                                                   calendarUrl: 'https://www.superleague.co.uk/match-centre' },
-  LNH:            { label: 'Starligue',     favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg',                                         calendarUrl: 'https://www.lnh.fr/liquimoly-starligue/calendrier' },
+  LNH:            { label: 'Liqui Moly Starligue', favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg',                                    calendarUrl: 'https://www.lnh.fr/liquimoly-starligue/calendrier' },
   ELMS:           { label: 'ELMS',          favicon: 'https://www.europeanlemansseries.com/favicon.ico',                                            calendarUrl: 'https://www.europeanlemansseries.com/en/season/2026' },
 };
 
@@ -349,6 +350,7 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
         matchKey={matchKey}
         match={match}
         initialContent={existingNote?.content}
+        initialStatus={existingNote?.status}
       />
 
       <ConfirmDialog
@@ -569,6 +571,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
         matchKey={matchKey}
         match={match}
         initialContent={existingNote?.content}
+        initialStatus={existingNote?.status}
       />
 
       <ConfirmDialog
