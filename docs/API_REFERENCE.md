@@ -318,26 +318,45 @@ Retourne tous les matchs de la semaine (cache 1h par compétition).
 ```json
 [
   {
-    "competition": "TOP14",
-    "homeTeam": "Stade Aurillacois",
-    "awayTeam": "Castres Olympique",
-    "date": "2026-04-19T14:00:00.000Z",
-    "time": "16:00",
-    "venue": "Stade Jean Alric"
+    "competition": "LNH",
+    "homeTeam": "Paris Saint-Germain HB",
+    "awayTeam": "Montpellier HB",
+    "date": "2026-05-06T19:00:00.000Z",
+    "time": "21:00",
+    "venue": "Paris La Défense Arena",
+    "homeTeamLogo": "https://...",
+    "awayTeamLogo": "https://...",
+    "broadcasterLogo": "https://..."
   }
 ]
 ```
 
-### POST /api/sports/match-notes/:matchKey
-Crée ou met à jour la note d'un match (upsert). Retourne 201 à la création.
+> `broadcasterLogo` est l'URL du logo du diffuseur TV (chaîne qui retransmet le match). Champ optionnel — absent si le match n'a pas de diffuseur identifié.
+
+### PUT /api/sports/match-notes/:matchKey
+Crée ou met à jour la note d'un match (upsert). Permission requise : `tickets.create`
 
 **Body**
 ```json
-{ "content": "<p>Note HTML</p>", "matchDate": "2026-04-19", ... }
+{
+  "content": "<p>Note HTML TipTap</p>",
+  "status": "VERT",
+  "matchDate": "2026-05-06T19:00:00.000Z",
+  "competition": "LNH",
+  "homeTeam": "Paris Saint-Germain HB",
+  "awayTeam": "Montpellier HB",
+  "matchTime": "21:00",
+  "venue": "Paris La Défense Arena",
+  "homeTeamLogo": "https://...",
+  "awayTeamLogo": "https://...",
+  "broadcasterLogo": "https://..."
+}
 ```
 
+> `broadcasterLogo` est persisté en base à la création et mis à jour à chaque save. Il est ensuite inclus dans le CR exporté.
+
 ### GET /api/sports/match-notes/report/week
-Notes de la semaine ISO courante avec bornes lundi/dimanche.
+Notes de la semaine ISO courante avec bornes lundi/dimanche. Chaque note inclut `broadcasterLogo` si disponible.
 
 ### POST /api/sports/match-attachments
 Upload PDF pour un match (max 10 Mo). Dédoublonnage par matchKey + nom de fichier.
