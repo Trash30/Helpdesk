@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Trash2, Upload } from 'lucide-react';
+import { FileText, Trash2, Upload, RefreshCw } from 'lucide-react';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { MatchNoteEditor } from './MatchNoteEditor';
 import { MatchReportExport } from './MatchReportExport';
@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'SUPER_LEAGUE' | 'LIGUE1' | 'ELMS';
+export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS';
 
 export interface Match {
   competition: Competition;
@@ -65,12 +65,11 @@ export const COMPETITION_META: Record<Competition, { label: string; favicon: str
   PRO_D2:         { label: 'Pro D2',        favicon: 'https://prod2.lnr.fr/favicon.ico',                                                            calendarUrl: 'https://prod2.lnr.fr/calendrier-et-resultats' },
   EPCR:           { label: 'Champions Cup', favicon: 'https://media-cdn.incrowdsports.com/77535d85-bcdc-49b9-9dc9-879e70d9adba.svg',                calendarUrl: 'https://www.epcrugby.com/fr/champions-cup/matchs' },
   EPCR_CHALLENGE: { label: 'Challenge Cup', favicon: 'https://media-cdn.incrowdsports.com/96d27751-bc48-42e6-890e-a389508ab133.svg',                calendarUrl: 'https://www.epcrugby.com/fr/challenge-cup/matchs' },
-  SUPER_LEAGUE:   { label: 'Super League',  favicon: 'https://www.superleague.co.uk/favicon.ico',                                                   calendarUrl: 'https://www.superleague.co.uk/match-centre' },
   LNH:            { label: 'Liqui Moly Starligue', favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg',                                    calendarUrl: 'https://www.lnh.fr/liquimoly-starligue/calendrier' },
   ELMS:           { label: 'ELMS',          favicon: 'https://www.europeanlemansseries.com/favicon.ico',                                            calendarUrl: 'https://www.europeanlemansseries.com/en/season/2026' },
 };
 
-const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'SUPER_LEAGUE', 'LNH', 'ELMS'];
+const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS'];
 
 const DAY_NAMES = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
 
@@ -598,17 +597,39 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
 // ─── Main Widget ─────────────────────────────────────────────────────────────
 
 export function SportsMatchesWidget() {
+  const queryClient = useQueryClient();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['sports-matches'],
     queryFn: async () => (await api.get('/sports/matches')).data as SportsMatchesResponse,
     staleTime: 1000 * 60 * 60,
   });
 
+  const refreshMutation = useMutation({
+    mutationFn: async () => (await api.post('/sports/refresh')).data as SportsMatchesResponse,
+    onSuccess: (freshData) => {
+      queryClient.setQueryData(['sports-matches'], freshData);
+    },
+    onError: () => {
+      toast.error('Impossible de rafraîchir les matchs');
+    },
+  });
+
   return (
     <Card className="shadow-sm overflow-hidden">
       <CardHeader className="pb-3 px-3 sm:px-6">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <CardTitle className="text-base">Matchs de la semaine</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">Matchs de la semaine</CardTitle>
+            <button
+              onClick={() => refreshMutation.mutate()}
+              disabled={refreshMutation.isPending || isLoading}
+              className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              title="Rafraîchir les matchs"
+              type="button"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
           {data?.data && data.data.length > 0 && <MatchReportExport />}
         </div>
       </CardHeader>
