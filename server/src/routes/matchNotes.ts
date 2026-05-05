@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
 import { hasPermission, requirePermission } from '../middleware/permissions';
 import axios from 'axios';
+import { promises as dns } from 'dns';
 
 const router = Router();
 
@@ -67,10 +68,38 @@ router.get('/proxy-image', async (req: Request, res: Response) => {
     res.status(403).json({ error: 'Hôte non autorisé' }); return;
   }
 
+  // Pré-résolution DNS pour empêcher le DNS rebinding vers des IPs privées
+  try {
+    const resolvedIps: string[] = [];
+    try {
+      const ipv4 = await dns.resolve4(parsed.hostname);
+      resolvedIps.push(...ipv4);
+    } catch {
+      // Pas d'enregistrement A — non bloquant si IPv6 répond
+    }
+    try {
+      const ipv6 = await dns.resolve6(parsed.hostname);
+      resolvedIps.push(...ipv6);
+    } catch {
+      // IPv6 optionnel
+    }
+
+    if (resolvedIps.length === 0) {
+      res.status(404).json({ error: 'Hôte introuvable' }); return;
+    }
+
+    if (resolvedIps.some((ip) => isPrivateHost(ip))) {
+      res.status(403).json({ error: 'Hôte non autorisé' }); return;
+    }
+  } catch {
+    res.status(404).json({ error: 'Hôte introuvable' }); return;
+  }
+
   try {
     const response = await axios.get(url, {
       responseType: 'arraybuffer',
       timeout: 5000,
+      maxRedirects: 0,
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HelpDesk/1.0)' },
     });
 
