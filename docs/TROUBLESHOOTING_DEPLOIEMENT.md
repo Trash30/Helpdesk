@@ -207,3 +207,14 @@ sudo chmod -R 755 /opt/helpdesk/client/dist
 ```
 
 > Si la migration contient un `ALTER TABLE` sur une grosse table, prévoir une fenêtre de maintenance.
+
+### Variables d'environnement requises (server/.env)
+
+```
+DATABASE_URL=postgresql://hduser:hdpass123@localhost:5432/helpdesk_prod
+JWT_SECRET=<secret>
+NODE_ENV=production
+ALLOWED_ORIGINS=http://192.168.102.90:5173
+```
+
+`ALLOWED_ORIGINS` est obligatoire en production depuis le commit `50c752b`. Sans cette variable, le CORS bloque toutes les requêtes frontend.

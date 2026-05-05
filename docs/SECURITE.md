@@ -54,6 +54,7 @@ Les endpoints sensibles sont protégés par un rate limiter :
 |----------|--------|
 | POST /api/auth/login | 10 requêtes / 60 secondes / IP |
 | POST /api/auth/reset-password | 10 requêtes / 60 secondes / IP |
+| POST /api/sports/refresh | Cooldown 30 secondes (rejet 429 avec délai restant) |
 
 Au-delà : réponse `HTTP 429` avec message localisé.
 
@@ -183,7 +184,14 @@ Le middleware **Helmet.js** est activé et configure automatiquement les en-têt
 
 ## 7. Protection CORS
 
-Le middleware CORS est configuré pour n'autoriser que les origines légitimes. En production, seul le domaine interne de l'application est autorisé.
+Le middleware CORS est configuré via la variable d'environnement `ALLOWED_ORIGINS` (liste séparée par des virgules). En production, seules les origines listées dans cette variable sont autorisées. En développement (`NODE_ENV !== 'production'`), toutes les origines sont acceptées pour faciliter le travail local.
+
+```
+# .env (production)
+ALLOWED_ORIGINS=http://192.168.102.90:5173
+```
+
+`credentials: true` est activé pour permettre l'envoi du cookie `helpdesk_token`.
 
 ---
 
@@ -208,6 +216,9 @@ Le proxy d'images (utilisé pour les logos des équipes sportives, les favicons 
 - Les adresses link-local (169.254.x.x)
 - Les adresses IPv6 privées
 - Les protocoles autres que http/https
+- Les redirections HTTP (`maxRedirects: 0`) — empêche les redirections vers des ressources internes
+
+**Protection DNS rebinding** : avant d'envoyer la requête HTTP, le proxy résout le hostname en IPv4 (et IPv6 si disponible) et vérifie que l'IP résolue n'est pas privée. Cela bloque les domaines publics qui pointeraient vers une IP interne.
 
 Timeout de 5 secondes pour éviter les attaques de type Slowloris.
 
@@ -259,6 +270,8 @@ Les tickets et articles KB ne sont jamais vraiment supprimés — un champ `dele
 | Path traversal | Accès fichiers hors upload | `path.resolve()` + vérification préfixe |
 | Injection SQL | Lecture/modification BDD | Prisma ORM (requêtes préparées) |
 | Privilege escalation | Accès non autorisé | RBAC vérifié côté serveur à chaque requête |
-| SSRF | Appels internes via proxy | Blocage IP privées dans proxy image |
+| SSRF | Appels internes via proxy | Blocage IP privées + résolution DNS pre-request + maxRedirects:0 |
+| DNS rebinding | Contournement blocage IP via DNS | Résolution DNS pré-requête + vérification IP résolue |
+| Origine non autorisée | Requêtes cross-origin avec credentials | CORS allowlist via ALLOWED_ORIGINS en production |
 | Enumération token | Reset password brute force | Token haché SHA-256, one-time, 24h |
 | Permissions obsolètes | Token avec droits révoqués | Vérification `roleUpdatedAt` à chaque requête |
