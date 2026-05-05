@@ -246,7 +246,23 @@ Les paramètres `seasons_id` et `key` du scraper LNH expirent chaque saison.
 
 ### 5.5 Déployer une mise à jour
 
-**Méthode recommandée (depuis Windows) :** utiliser le script PowerShell qui automatise build + SCP + migrations + redémarrage.
+**Méthode recommandée (sur le serveur, via git) :**
+
+Le serveur de test est configuré comme repo git — récupérer les changements directement :
+
+```bash
+cd /opt/helpdesk
+git pull origin feat/client-organisation-tickettype
+
+cd server && npm ci && npx prisma migrate deploy && npm run build
+cd ../client && npm run build
+sudo pm2 restart helpdesk-server       # toujours sudo pm2 sur ce serveur
+sudo chmod -R 755 /opt/helpdesk/client/dist
+```
+
+> **Important :** utiliser `sudo pm2` pour toutes les opérations PM2 — le process tourne en `root`. Un `pm2` sans sudo crée une double instance et un conflit de port.
+
+**Méthode alternative (depuis Windows via SCP) :**
 
 ```powershell
 # Depuis la machine de développement
@@ -254,21 +270,6 @@ Les paramètres `seasons_id` et `key` du scraper LNH expirent chaque saison.
 .\sync-to-server.ps1 -WithDb          # + dump et restaure la DB
 .\sync-to-server.ps1 -RestartOnly     # juste pm2 restart
 .\sync-to-server.ps1 -MigrateOnly     # juste migrations Prisma
-```
-
-Le script gère automatiquement :
-- `chmod -R 755` sur `client/dist` après SCP (requis pour Nginx/www-data)
-- `npm ci`, `prisma generate`, `prisma migrate deploy` sur le serveur
-- Redémarrage PM2
-
-**Méthode manuelle (sur le serveur) :**
-
-```bash
-cd /opt/helpdesk
-cd server && npm install && npx prisma migrate deploy && npm run build
-cd ../client && npm install && npm run build
-sudo pm2 restart helpdesk-server
-sudo chmod -R 755 /opt/helpdesk/client/dist  # si SCP manuel
 ```
 
 **Prérequis SSH (Windows) :** clé SSH chargée dans l'agent.
@@ -279,6 +280,8 @@ Set-Service ssh-agent -StartupType Automatic
 Start-Service ssh-agent
 ssh-add $env:USERPROFILE\.ssh\id_ed25519
 ```
+
+**Configuration VITE_API_URL :** le fichier `client/.env` sur le serveur doit avoir `VITE_API_URL=` vide (ou absent). Nginx proxy `/api/*` vers le backend — une URL hardcodée contourne Nginx et casse le préfixe des routes.
 
 ---
 
@@ -409,6 +412,7 @@ refactor(auth): simplifier middleware validation token
 |-----------|-------------|
 | Documentation API | `docs/API_REFERENCE.md` |
 | Documentation sécurité | `docs/SECURITE.md` |
+| Troubleshooting déploiement | `docs/TROUBLESHOOTING_DEPLOIEMENT.md` |
 | Schéma base de données | `server/prisma/schema.prisma` |
 | Configuration déploiement | `ecosystem.config.js` |
 | Guide installation Linux | `GUIDE-DEPLOIEMENT-UBUNTU.html` |
