@@ -24,7 +24,7 @@ const matchNoteBodySchema = z.object({
   venue: z.string().optional(),
   homeTeamLogo: z.string().optional(),
   awayTeamLogo: z.string().optional(),
-  broadcasterLogo: z.string().optional(),
+  broadcasterLogo: z.string().url().optional(),
   status: z.enum(['VERT', 'ORANGE', 'ROUGE']).optional(),
 });
 
