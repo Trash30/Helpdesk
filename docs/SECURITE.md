@@ -202,7 +202,7 @@ Une entrée qui ne correspond pas au schéma attendu est rejetée avec `HTTP 400
 
 ## 9. Proxy image sécurisé
 
-Le proxy d'images (utilisé pour afficher les logos des équipes sportives) bloque :
+Le proxy d'images (utilisé pour les logos des équipes sportives, les favicons de compétition et les logos des diffuseurs TV) bloque :
 - Toutes les adresses IP privées (RFC 1918 : 10.x.x.x, 172.16-31.x.x, 192.168.x.x)
 - Les adresses de loopback (127.x.x.x)
 - Les adresses link-local (169.254.x.x)

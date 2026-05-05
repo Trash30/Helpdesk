@@ -199,9 +199,23 @@ Puis assigner la permission aux rôles via l'interface d'administration.
 type Competition = 'TOP14' | '...' | 'NOUVELLE_COMPETITION';
 
 // 2. Créer la fonction de scraping
+// La structure Match complète :
+interface Match {
+  competition: Competition;
+  homeTeam: string;
+  awayTeam: string;
+  date: string;           // ISO 8601
+  time: string;           // "HH:mm"
+  venue?: string;
+  homeTeamLogo?: string;  // URL logo équipe domicile
+  awayTeamLogo?: string;  // URL logo équipe extérieur
+  broadcasterLogo?: string; // URL logo chaîne TV diffuseur (optionnel)
+}
+
 async function scrapeNouvelleCompetition(): Promise<Match[]> {
   // Utiliser axios + cheerio pour parser le HTML
   // OU axios pour consommer une API JSON
+  // Extraire broadcasterLogo si disponible (ex: .tv-icon img src)
   return matchs.filter(m => isInCurrentWeek(m.date));
 }
 
@@ -213,6 +227,8 @@ async function scrapeNouvelleCompetition(): Promise<Match[]> {
 // client/src/components/sports/SportsMatchesWidget.tsx
 // 4. Ajouter dans COMPETITION_META et COMPETITION_ORDER
 ```
+
+> **Note diffuseur :** `broadcasterLogo` est automatiquement affiché dans le widget et persisté en base lors du premier save d'une note. Il apparaît ensuite dans le CR DOCX exporté sous la date du match (ligne `Diffuseur : [logo]`).
 
 ### 5.4 Mettre à jour les clés LNH (annuellement)
 
