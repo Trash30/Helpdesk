@@ -22,6 +22,7 @@ interface MatchData {
   venue?: string;
   homeTeamLogo?: string;
   awayTeamLogo?: string;
+  broadcasterLogo?: string;
 }
 
 type NoteStatus = 'VERT' | 'ORANGE' | 'ROUGE';
@@ -89,6 +90,7 @@ export function MatchNoteEditor({ matchKey, match, initialContent, initialStatus
           venue: match.venue,
           homeTeamLogo: match.homeTeamLogo,
           awayTeamLogo: match.awayTeamLogo,
+          broadcasterLogo: match.broadcasterLogo,
         })
       ).data;
     },

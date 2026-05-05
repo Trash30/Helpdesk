@@ -53,6 +53,7 @@ export interface MatchNoteData {
   venue?: string;
   homeTeamLogo?: string;
   awayTeamLogo?: string;
+  broadcasterLogo?: string;
   author: { id: string; name: string };
 }
 
@@ -689,6 +690,7 @@ function MatchesList({ matches }: MatchesListProps) {
       venue: note.venue,
       homeTeamLogo: note.homeTeamLogo,
       awayTeamLogo: note.awayTeamLogo,
+      broadcasterLogo: note.broadcasterLogo,
     }));
 
   const allMatches = [...matches, ...ghostMatches];

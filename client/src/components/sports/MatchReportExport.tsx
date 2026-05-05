@@ -21,6 +21,7 @@ interface MatchNoteReport {
   venue?: string;
   homeTeamLogo?: string;
   awayTeamLogo?: string;
+  broadcasterLogo?: string;
   author: { id: string; name: string };
 }
 
@@ -298,6 +299,7 @@ export function MatchReportExport() {
         if (favicon) allImageUrls.add(favicon);
         if (note.homeTeamLogo) allImageUrls.add(note.homeTeamLogo);
         if (note.awayTeamLogo) allImageUrls.add(note.awayTeamLogo);
+        if (note.broadcasterLogo) allImageUrls.add(note.broadcasterLogo);
       }
 
       const imageCache = new Map<string, FetchedImage | null>();
@@ -419,6 +421,20 @@ export function MatchReportExport() {
               spacing: { after: 200 },
             })
           );
+
+          // Diffuseur TV (si disponible)
+          const broadcasterImg = getImg(note.broadcasterLogo);
+          if (broadcasterImg) {
+            sections.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Diffuseur : ', bold: true, size: 20, color: '555555' }),
+                  makeImageRun(broadcasterImg, 20),
+                ],
+                spacing: { after: 200 },
+              })
+            );
+          }
 
           // Contenu de la note — uniquement si status != VERT
           if (shouldIncludeContent) {
