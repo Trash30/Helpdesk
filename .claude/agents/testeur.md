@@ -83,7 +83,7 @@ Exécute les tests supplémentaires indiqués par le Tech Lead dans son prompt.
 
 ### Étape 4 — Cleanup
 ```bash
-git checkout feat/match-notes-report 2>/dev/null || git checkout main
+git checkout feat/client-organisation-tickettype 2>/dev/null || git checkout main
 ```
 
 ### Étape 5 — Retourner le rapport
