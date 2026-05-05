@@ -28,6 +28,9 @@ import kbRouter from './routes/kb';
 
 const app = express();
 
+// Trust first proxy (Nginx) for correct client IP in rate-limiters and logs
+app.set('trust proxy', 1);
+
 // ─── Security & logging ──────────────────────────────────────────────────────
 
 app.use(
@@ -44,7 +47,9 @@ app.use(
 
 app.use(
   cors({
-    origin: true,
+    origin: process.env.NODE_ENV === 'production'
+      ? (process.env.ALLOWED_ORIGINS ?? '').split(',').filter(Boolean)
+      : true,
     credentials: true,
   })
 );
