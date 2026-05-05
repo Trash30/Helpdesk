@@ -353,10 +353,18 @@ Crée ou met à jour la note d'un match (upsert). Permission requise : `tickets.
 }
 ```
 
-> `broadcasterLogo` est persisté en base à la création et mis à jour à chaque save. Il est ensuite inclus dans le CR exporté.
+> `broadcasterLogo` doit être une URL valide (`https://...`). Il est persisté en base à la création et mis à jour à chaque save. Il est ensuite inclus dans le CR exporté.
 
 ### GET /api/sports/match-notes/report/week
 Notes de la semaine ISO courante avec bornes lundi/dimanche. Chaque note inclut `broadcasterLogo` si disponible.
+
+### POST /api/sports/refresh
+Vide le cache scraper et relance la collecte de tous les matchs de la semaine. Permission requise : `tickets.create`
+
+**Rate limit :** cooldown de 30 secondes. Si appelé avant la fin du cooldown, retourne `HTTP 429` avec le délai restant :
+```json
+{ "error": "Refresh disponible dans 18 secondes" }
+```
 
 ### POST /api/sports/match-attachments
 Upload PDF pour un match (max 10 Mo). Dédoublonnage par matchKey + nom de fichier.
