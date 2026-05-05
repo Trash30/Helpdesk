@@ -334,6 +334,7 @@ model MatchNote {
   venue        String?
   homeTeamLogo String?
   awayTeamLogo String?
+  broadcasterLogo String?
   status       MatchNoteStatus @default(VERT)
   authorId     String
   author       User     @relation(fields: [authorId], references: [id])
