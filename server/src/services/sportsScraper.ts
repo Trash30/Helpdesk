@@ -4,7 +4,7 @@ import * as cheerio from 'cheerio';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'SUPER_LEAGUE' | 'LIGUE1' | 'ELMS';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
@@ -62,6 +62,10 @@ function getCached(key: string): Match[] | null {
 
 function setCache(key: string, data: Match[]): void {
   cache[key] = { data, fetchedAt: Date.now() };
+}
+
+export function clearCache(): void {
+  Object.keys(cache).forEach((key) => delete cache[key]);
 }
 
 function getLastUpdated(): string {
@@ -549,169 +553,6 @@ async function scrapeEPCRCompetition(
   }
 }
 
-// ─── Super League — Catalans Dragons home fixtures ───────────────────────────
-
-const ENGLISH_MONTHS: Record<string, number> = {
-  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
-};
-
-/**
- * Parses Super League date strings into an ISO date string.
- * Handles ordinal suffixes ("13th Feb", "18th Apr") and optional day names
- * ("Saturday 18 Apr", "Sat 18th Apr", plain "18 Apr").
- * Infers year: current year, or next year if date is >4 months in the past.
- */
-function parseSuperLeagueDate(rawDate: string, rawTime: string): string {
-  // Strip optional ordinal suffix: "13th" → "13", "18th" → "18"
-  const m = rawDate.toLowerCase().match(/(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3})/);
-  if (!m) return '';
-
-  const day = parseInt(m[1], 10);
-  const month = ENGLISH_MONTHS[m[2]];
-  if (month === undefined) return '';
-
-  const now = new Date();
-  let year = now.getFullYear();
-  const candidate = new Date(year, month, day);
-  if (candidate.getTime() < now.getTime() - 4 * 30 * 24 * 60 * 60 * 1000) year++;
-
-  const timeMatch = rawTime.match(/(\d{1,2}):(\d{2})/);
-  const hours   = timeMatch ? parseInt(timeMatch[1], 10) : 0;
-  const minutes = timeMatch ? parseInt(timeMatch[2], 10) : 0;
-
-  return new Date(year, month, day, hours, minutes).toISOString();
-}
-
-/**
- * Static fallback: known Catalans Dragons home fixtures for the 2026 season.
- * Used when the live scraper fails.
- */
-function superLeagueStaticFallback(): Match[] {
-  const fixtures: Array<{ date: string; time: string; opponent: string }> = [
-    { date: '2026-02-13', time: '',      opponent: 'Huddersfield Giants' },
-    { date: '2026-02-28', time: '',      opponent: 'St Helens' },
-    { date: '2026-03-21', time: '',      opponent: 'Hull KR' },
-    { date: '2026-04-04', time: '',      opponent: 'Toulouse Olympique' },
-    { date: '2026-04-18', time: '19:00', opponent: 'Warrington Wolves' },
-    { date: '2026-05-02', time: '19:00', opponent: 'Leigh Leopards' },
-    { date: '2026-06-06', time: '19:30', opponent: 'Wigan Warriors' },
-    { date: '2026-06-13', time: '19:00', opponent: 'Castleford Tigers' },
-    { date: '2026-06-20', time: '19:00', opponent: 'Bradford Bulls' },
-    { date: '2026-07-11', time: '21:00', opponent: 'Leeds Rhinos' },
-  ];
-  const CATALANS_LOGO = 'https://www.superleague.co.uk/addons/rugbyleague/frontend/_img/49006_full.png';
-  return fixtures
-    .map(({ date, time, opponent }) => {
-      const [year, month, day] = date.split('-').map(Number);
-      const [hours, minutes] = time ? time.split(':').map(Number) : [0, 0];
-      return {
-        competition: 'SUPER_LEAGUE' as const,
-        homeTeam: 'Catalans Dragons',
-        awayTeam: opponent,
-        date: new Date(year, month - 1, day, hours, minutes).toISOString(),
-        time,
-        homeTeamLogo: CATALANS_LOGO,
-      };
-    })
-    .filter(m => isInCurrentWeek(m.date));
-}
-
-/**
- * Scrapes Catalans Dragons home fixtures from superleague.co.uk.
- * The page is partly SSR — fixture cards are embedded as <a> elements linking
- * to /match-centre/preview/[id]. Home matches are identified by venue text
- * containing "Brutus" (Stade Gilbert Brutus) or "Bouin" (Stade Jean Bouin).
- * Falls back to static data if the scrape fails or returns nothing.
- */
-async function scrapeSuperLeagueCatalans(): Promise<Match[]> {
-  const client = createClient();
-
-  try {
-    const resp = await client.get(
-      'https://www.superleague.co.uk/team/4/catalans-dragons?teamView=4',
-      { headers: { Referer: 'https://www.superleague.co.uk/' } }
-    );
-    const $ = cheerio.load(resp.data as string);
-    const matches: Match[] = [];
-
-    const SL_BASE = 'https://www.superleague.co.uk';
-    const toAbsolute = (src?: string) =>
-      src ? (src.startsWith('/') ? `${SL_BASE}${src}` : src) : undefined;
-
-    $('a[href*="/match-centre/preview/"]').each((_, el) => {
-      const aEl = $(el);
-      const raw = aEl.text().replace(/\s+/g, ' ').trim();
-
-      // Home matches only
-      if (!raw.includes('Brutus') && !raw.includes('Bouin')) return;
-
-      // Time: from <p class="ko"> e.g. "20:00", fallback to regex on raw text
-      const koText = aEl.find('.ko').text().trim();
-      const time = koText || (raw.match(/\b(\d{2}):(\d{2})\b/)?.[0] ?? '');
-
-      // Date: "Saturday 18 Apr", "13th Feb", "Sat 18th Apr" — day name optional, ordinal optional
-      const dateRaw = raw.match(
-        /(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\s+)?(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3})/i
-      );
-      if (!dateRaw) return;
-      const date = parseSuperLeagueDate(dateRaw[1], time);
-      if (!date) return;
-
-      // Logos — use dedicated CSS classes confirmed in the actual HTML:
-      //   .home-logo img  → home team badge
-      //   .away-logo img  → away team badge
-      const CATALANS_LOGO = `${SL_BASE}/addons/rugbyleague/frontend/_img/49006_full.png`;
-      const homeTeamLogo =
-        toAbsolute(aEl.find('.home-logo img').attr('src')) ?? CATALANS_LOGO;
-      const awayTeamLogo =
-        toAbsolute(aEl.find('.away-logo img').attr('src'));
-
-      // Away team: remove date, Catalans name, time, venue, broadcaster refs
-      const awayTeam = raw
-        .replace(/(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+\d{1,2}\s+[A-Za-z]+/gi, '')
-        .replace(/Catalans\s+Dragons/gi, '')
-        .replace(/\b\d{2}:\d{2}\b/g, '')
-        .replace(/Stade\s+Gilbert\s+Brutus/gi, '')
-        .replace(/Stade\s+Jean\s+Bouin/gi, '')
-        .replace(/sky\s*hd/gi, '')
-        .replace(/superleague\+?/gi, '')
-        .replace(/betfred/gi, '')
-        .replace(/bbc/gi, '')
-        .replace(/\s{2,}/g, ' ')
-        .trim();
-
-      if (!awayTeam || awayTeam.length < 3) return;
-
-      matches.push({
-        competition: 'SUPER_LEAGUE',
-        homeTeam: 'Catalans Dragons',
-        awayTeam,
-        date,
-        time,
-        homeTeamLogo,
-        awayTeamLogo,
-      });
-    });
-
-    log(`SUPER_LEAGUE: scraped ${matches.length} home fixtures from site`);
-
-    const filtered = matches.filter(m => isInCurrentWeek(m.date));
-    if (filtered.length > 0) {
-      log(`SUPER_LEAGUE: ${filtered.length} matches this week (live)`);
-      return filtered;
-    }
-
-    // Scraper found future matches but none this week, or found nothing —
-    // fall back to static data which covers past matches still in current week.
-    log('SUPER_LEAGUE: no matches this week from scraper, using static fallback');
-    return superLeagueStaticFallback();
-  } catch (err) {
-    logError('SUPER_LEAGUE scraping failed:', err instanceof Error ? err.message : err);
-    return superLeagueStaticFallback();
-  }
-}
-
 // ─── Ligue 1 — AS Monaco home matches (scraper) ──────────────────────────────
 
 /**
@@ -1012,10 +853,6 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     {
       key: 'EPCR_CHALLENGE',
       fetch: () => scrapeEPCRCompetition('https://www.epcrugby.com/fr/challenge-cup/matchs', 'EPCR_CHALLENGE'),
-    },
-    {
-      key: 'SUPER_LEAGUE',
-      fetch: scrapeSuperLeagueCatalans,
     },
     {
       key: 'LIGUE1',
