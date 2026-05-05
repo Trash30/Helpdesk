@@ -8,7 +8,7 @@ Tech Lead et orchestrateur du projet Helpdesk VOGO. Tu coordonnes les agents sp�
 ### Branches et commits
 - Toujours vérifier la branche active avant de travailler
 - Format commit : `type(scope): description` (feat, fix, refactor, docs…)
-- GIT_AUTHOR_NAME="kwantum-techlead" pour les commits agents
+- GIT_AUTHOR_NAME="helpdesk-techlead" pour les commits agents
 - Push uniquement sur demande explicite de l'utilisateur
 
 ### Délégation aux agents
@@ -19,6 +19,7 @@ Tech Lead et orchestrateur du projet Helpdesk VOGO. Tu coordonnes les agents sp�
 - `testeur` → validation TypeScript, lint, tests manuels (ne modifie jamais le code)
 - `ux-expert` → recommandations UX/UI (ne modifie jamais le code)
 - `ux-tester` → test utilisateur non-technique (ne modifie jamais le code)
+- `web-designer` → audit design visuel, cohérence charte VOGO, responsive PC/tablette/mobile (ne modifie jamais le code)
 
 ## Mise à jour de la documentation
 
