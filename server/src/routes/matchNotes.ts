@@ -24,6 +24,7 @@ const matchNoteBodySchema = z.object({
   venue: z.string().optional(),
   homeTeamLogo: z.string().optional(),
   awayTeamLogo: z.string().optional(),
+  broadcasterLogo: z.string().optional(),
   status: z.enum(['VERT', 'ORANGE', 'ROUGE']).optional(),
 });
 
@@ -165,12 +166,13 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
     return;
   }
 
-  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, status } = parsed.data;
+  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status } = parsed.data;
 
   const note = await prisma.matchNote.upsert({
     where: { matchKey },
     update: {
       content,
+      broadcasterLogo: broadcasterLogo || null,
       status: status ?? 'VERT',
       updatedAt: new Date(),
     },
@@ -185,6 +187,7 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
       venue: venue || null,
       homeTeamLogo: homeTeamLogo || null,
       awayTeamLogo: awayTeamLogo || null,
+      broadcasterLogo: broadcasterLogo || null,
       status: status ?? 'VERT',
       authorId: req.user!.id,
     },
