@@ -88,6 +88,10 @@ SMTP_FROM="Helpdesk VOGO <helpdesk@vogo.fr>"
 
 # URL du frontend (pour les liens dans les emails)
 FRONTEND_URL="http://192.168.x.x:5173"
+
+# Origines CORS autorisées en production (séparées par virgule)
+# Obligatoire en NODE_ENV=production — sans cette variable, toutes les requêtes cross-origin sont refusées
+ALLOWED_ORIGINS="http://192.168.x.x:5173"
 ```
 
 **Comment générer un JWT_SECRET sécurisé :**
@@ -262,6 +266,16 @@ sudo chmod -R 755 /opt/helpdesk/client/dist
 ```
 
 > **Important :** utiliser `sudo pm2` pour toutes les opérations PM2 — le process tourne en `root`. Un `pm2` sans sudo crée une double instance et un conflit de port.
+
+**Vérifications post-mise à jour selon le type de changement :**
+
+| Type de modification | Actions supplémentaires |
+|----------------------|------------------------|
+| Nouvelles migrations Prisma | `npx prisma migrate deploy` (inclus dans la commande ci-dessus) |
+| Nouvelle variable d'environnement | Éditer `server/.env` avant le build, puis `sudo pm2 restart` |
+| Correctifs sécurité (CORS, rate-limit…) | Vérifier `ALLOWED_ORIGINS` dans `.env` (voir section 3) |
+| Corrections design/frontend uniquement | `cd client && npm run build` + `sudo chmod -R 755 /opt/helpdesk/client/dist` — pas besoin de rebuild backend |
+| Changements backend uniquement | `cd server && npm ci && npm run build` + `sudo pm2 restart helpdesk-server` — pas besoin de rebuild frontend |
 
 **Méthode alternative (depuis Windows via SCP) :**
 
