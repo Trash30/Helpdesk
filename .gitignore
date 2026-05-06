@@ -41,3 +41,9 @@ server/prisma/migrations/dev.db-journal
 
 # PM2
 .pm2/
+
+# Fichiers locaux — ne pas versionner
+Charte graphique VOGO.pdf
+*.xlsx
+*.zip
+helpdesk-usb/
