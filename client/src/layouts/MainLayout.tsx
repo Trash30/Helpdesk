@@ -10,6 +10,7 @@ import { useBranding } from '@/hooks/useBranding';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthStore } from '@/stores/authStore';
 import { getInitials, timeAgo } from '@/lib/utils';
+import { STATUS_TOKENS, type StatusKey } from '@/lib/colors';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -110,11 +111,10 @@ function GlobalSearch() {
     }
   };
 
-  const statusColors: Record<string, string> = {
-    OPEN: 'bg-blue-100 text-blue-700',
-    IN_PROGRESS: 'bg-orange-100 text-orange-700',
-    PENDING: 'bg-pink-100 text-pink-700',
-    CLOSED: 'bg-gray-100 text-gray-600',
+  const statusStyle = (status: string): React.CSSProperties => {
+    const token = STATUS_TOKENS[status as StatusKey];
+    if (!token) return {};
+    return { backgroundColor: token.bg, color: token.fg };
   };
 
   return (
@@ -156,7 +156,7 @@ function GlobalSearch() {
                   >
                     <span className="font-mono text-xs text-primary mt-0.5 shrink-0">{t.ticketNumber}</span>
                     <span className="flex-1 text-sm line-clamp-1">{t.title}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${statusColors[t.status] ?? ''}`}>{t.status}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded shrink-0" style={statusStyle(t.status)}>{t.status}</span>
                   </button>
                 );
               })}
@@ -353,7 +353,7 @@ export function MainLayout() {
         {/* Topbar */}
         <header className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 h-14 border-b bg-card shrink-0">
           <button
-            className="md:hidden flex items-center justify-center w-11 h-11 rounded-md hover:bg-accent active:bg-accent/80"
+            className="md:hidden flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent active:bg-accent/80"
             onClick={() => setMobileOpen(o => !o)}
             aria-label="Ouvrir le menu de navigation"
           >
@@ -366,7 +366,7 @@ export function MainLayout() {
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={toggle}
-              className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-md border border-input hover:bg-accent active:bg-accent/80 transition-colors"
+              className="flex items-center justify-center h-9 w-9 rounded-md border border-input hover:bg-accent active:bg-accent/80 transition-colors"
               title={dark ? 'Mode clair' : 'Mode sombre'}
             >
               {dark ? <Sun size={16} /> : <Moon size={16} />}
