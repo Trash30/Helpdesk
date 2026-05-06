@@ -45,10 +45,20 @@ app.use(
   })
 );
 
+const PRIVATE_IP_RE = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$/;
+
+const extraOrigins = (process.env.ALLOWED_ORIGINS ?? '').split(',').filter(Boolean);
+
 app.use(
   cors({
     origin: process.env.NODE_ENV === 'production'
-      ? (process.env.ALLOWED_ORIGINS ?? '').split(',').filter(Boolean)
+      ? (origin, callback) => {
+          if (!origin || PRIVATE_IP_RE.test(origin) || extraOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            callback(new Error('Not allowed by CORS'));
+          }
+        }
       : true,
     credentials: true,
   })
