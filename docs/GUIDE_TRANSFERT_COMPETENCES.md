@@ -154,6 +154,7 @@ client/src/
 │   └── usePermissions.ts # Vérification des droits
 └── lib/
     ├── axios.ts           # Client HTTP configuré
+    ├── colors.ts          # Source de vérité des tokens couleur (PRIORITY_TOKENS, STATUS_TOKENS)
     └── utils.ts           # Fonctions utilitaires
 ```
 
@@ -396,6 +397,20 @@ const { can } = usePermissions();
 {can('tickets.create') && <Button>Nouveau ticket</Button>}
 ```
 
+### Couleurs — ne jamais coder de hex en dur
+
+Toutes les couleurs fonctionnelles (statuts, priorités) sont centralisées dans `client/src/lib/colors.ts`. Ne jamais écrire de valeur hex en dur dans les composants — importer depuis ce fichier.
+
+```typescript
+import { PRIORITY_TOKENS, STATUS_TOKENS, type PriorityKey } from '@/lib/colors';
+
+// Utilisation dans un composant
+const token = PRIORITY_TOKENS[priority as PriorityKey];
+// → token.bg (fond), token.fg (texte), token.solid (Recharts charts)
+```
+
+La couleur primaire VOGO (`#185FA5`) est définie via le token CSS `--primary` dans `client/src/index.css`. Utiliser `bg-primary`, `text-primary`, `border-primary` (classes Tailwind) ou `hsl(var(--primary))` en CSS.
+
 ### Commits
 
 ```
@@ -410,6 +425,7 @@ refactor(auth): simplifier middleware validation token
 
 | Ressource | Emplacement |
 |-----------|-------------|
+| Architecture fonctionnelle | `docs/ARCHITECTURE.md` |
 | Documentation API | `docs/API_REFERENCE.md` |
 | Documentation sécurité | `docs/SECURITE.md` |
 | Troubleshooting déploiement | `docs/TROUBLESHOOTING_DEPLOIEMENT.md` |
@@ -429,6 +445,7 @@ refactor(auth): simplifier middleware validation token
 - [ ] `npx prisma migrate dev` exécuté sans erreur
 - [ ] `npx prisma db seed` exécuté — accès admin fonctionnel
 - [ ] `npm run dev` lancé — dashboard visible sur http://localhost:5173
+- [ ] Lu `docs/ARCHITECTURE.md` pour comprendre la structure globale
 - [ ] Lu `docs/API_REFERENCE.md` pour comprendre les endpoints
 - [ ] Lu `docs/SECURITE.md` pour comprendre le modèle d'accès
 - [ ] Créé un ticket de test complet (création → assignation → clôture)
