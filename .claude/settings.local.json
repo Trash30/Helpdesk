@@ -13,15 +13,9 @@
       "NotebookEdit",
       "Skill",
       "Bash(gh issue:*)",
-      "Bash(ls /home/ubuntu/stockflow/ && find /home/ubuntu/stockflow -name \"*.ts\" -o -name \"*.tsx\" -o -name \"*.js\" -o -name \"package.json\" 2>/dev/null | grep -v node_modules | head -20)",
-      "Bash(curl -fsSL https://deb.nodesource.com/setup_20.x | bash - 2>&1 | tail -5 && apt-get install -y nodejs 2>&1 | tail -5)",
-      "Bash(sudo curl:*)",
-      "Bash(sudo apt-get:*)",
-      "Bash(which gh:*)",
-      "Bash(echo \"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\" | gh auth login --with-token 2>&1 && gh auth status 2>&1)",
-      "Bash(unset GITHUB_TOKEN && echo \"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\" | gh auth login --with-token 2>&1 && gh auth status 2>&1)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\NicolasBROUTIN\\\\Documents\\\\HELPDESK PROJECT\" -Recurse -Directory | Select-Object -First 20 | Format-Table Name, @{Label=\"Path\";Expression={$_.FullName.Substring\\(50\\)}} -AutoSize)"
     ]
   }
 }
