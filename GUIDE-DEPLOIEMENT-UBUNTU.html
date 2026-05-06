@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HelpDesk — Deploiement Ubuntu / Linux</title>
+  <style>
+    :root {
+      --blue:       #185FA5;
+      --blue-dark:  #0f3d6e;
+      --blue-mid:   #2d78c8;
+      --blue-light: #e8f1fb;
+      --blue-xlight:#f0f6fd;
+      --green:      #16a34a;
+      --green-bg:   #f0fdf4;
+      --green-dark: #14532d;
+      --red:        #dc2626;
+      --red-bg:     #fef2f2;
+      --yellow:     #d97706;
+      --yellow-bg:  #fffbeb;
+      --purple:     #7c3aed;
+      --purple-bg:  #f5f3ff;
+      --gray-50:    #f9fafb;
+      --gray-100:   #f3f4f6;
+      --gray-200:   #e5e7eb;
+      --gray-300:   #d1d5db;
+      --gray-400:   #9ca3af;
+      --gray-500:   #6b7280;
+      --gray-600:   #4b5563;
+      --gray-700:   #374151;
+      --gray-900:   #111827;
+      --radius:     8px;
+      --radius-lg:  14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.65;
+      color: var(--gray-900);
+      background: #fff;
+    }
+
+    /* ── Screen wrapper ──────────────────────────────── */
+    @media screen {
+      body { background: #e8edf2; }
+      .page {
+        max-width: 860px;
+        margin: 40px auto;
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 8px 40px rgba(0,0,0,0.14);
+        overflow: hidden;
+      }
+      .print-btn {
+        position: fixed;
+        bottom: 24px; right: 24px;
+        background: var(--blue);
+        color: white;
+        border: none;
+        padding: 12px 22px;
+        border-radius: 40px;
+        font-size: 9pt;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(24,95,165,.4);
+        z-index: 99;
+      }
+      .print-btn:hover { background: var(--blue-dark); }
+    }
+
+    /* ── Print ───────────────────────────────────────── */
+    @page { size: A4; margin: 0; }
+    @media print {
+      body { font-size: 9.5pt; }
+      .print-btn { display: none; }
+      .page { box-shadow: none; border-radius: 0; }
+      .cover { min-height: 297mm; }
+      pre, .step-card, .check-item { page-break-inside: avoid; }
+      .pb { page-break-before: always; }
+    }
+
+    /* ── Cover ───────────────────────────────────────── */
+    .cover {
+      background: linear-gradient(150deg, var(--blue-dark) 0%, var(--blue) 60%, var(--blue-mid) 100%);
+      color: white;
+      min-height: 520px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 48px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+    }
+
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.05);
+    }
+
+    .cover-icon {
+      width: 72px; height: 72px;
+      background: rgba(255,255,255,.15);
+      border: 1.5px solid rgba(255,255,255,.3);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 28px;
+      backdrop-filter: blur(4px);
+    }
+
+    .cover-icon svg { width: 40px; height: 40px; fill: white; }
+
+    .cover h1 { font-size: 32pt; font-weight: 800; letter-spacing: -.5px; }
+    .cover h2 { font-size: 13pt; font-weight: 400; opacity: .8; margin-top: 6px; margin-bottom: 36px; }
+
+    .cover-pills {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+      margin-bottom: 40px;
+    }
+
+    .pill {
+      background: rgba(255,255,255,.13);
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 40px;
+      padding: 6px 16px;
+      font-size: 9pt; font-weight: 500;
+    }
+
+    .cover-footer {
+      position: absolute; bottom: 20px;
+      font-size: 8pt; opacity: .45;
+    }
+
+    /* ── Section layout ──────────────────────────────── */
+    .section {
+      padding: 44px 48px 36px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .section-head {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .num {
+      min-width: 42px; height: 42px;
+      background: var(--blue);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14pt;
+      box-shadow: 0 3px 10px rgba(24,95,165,.35);
+    }
+
+    .section-head h2 { font-size: 14pt; font-weight: 700; color: var(--blue-dark); }
+    .section-head .sub { font-size: 9pt; color: var(--gray-500); margin-top: 2px; }
+
+    h3 {
+      font-size: 10.5pt; font-weight: 700;
+      color: var(--gray-700);
+      margin: 22px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    p { color: var(--gray-600); margin-bottom: 10px; line-height: 1.6; }
+
+    /* ── Code blocks ─────────────────────────────────── */
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 8.5pt;
+      line-height: 1.65;
+      margin: 10px 0 14px;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+
+    .c  { color: #475569; }
+    .cmd{ color: #7dd3fc; }
+    .v  { color: #86efac; }
+    .k  { color: #fca5a5; }
+    .p  { color: #64748b; }
+    .w  { color: #fde68a; }
+
+    code {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 8.5pt;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── Callouts ────────────────────────────────────── */
+    .note {
+      display: flex; gap: 12px;
+      padding: 13px 15px;
+      border-radius: var(--radius);
+      margin: 12px 0;
+      font-size: 9.5pt;
+      line-height: 1.55;
+    }
+
+    .note-icon { font-size: 13pt; flex-shrink: 0; margin-top: 1px; }
+    .note strong { display: block; margin-bottom: 3px; font-size: 10pt; }
+
+    .note.info    { background: var(--blue-xlight); border-left: 4px solid var(--blue); }
+    .note.ok      { background: var(--green-bg);    border-left: 4px solid var(--green); }
+    .note.warn    { background: var(--yellow-bg);   border-left: 4px solid var(--yellow); }
+    .note.danger  { background: var(--red-bg);      border-left: 4px solid var(--red); }
+    .note.tip     { background: var(--purple-bg);   border-left: 4px solid var(--purple); }
+
+    /* ── Badges ──────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 40px;
+      font-size: 8.5pt; font-weight: 600;
+    }
+
+    /* ── Divider ─────────────────────────────────────── */
+    hr { border: none; border-top: 1px solid var(--gray-200); margin: 20px 0; }
+
+    /* ── Table ───────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin: 12px 0; }
+    thead tr { background: var(--blue); color: white; }
+    thead th { padding: 9px 13px; text-align: left; font-weight: 600; }
+    thead th:first-child { border-radius: 6px 0 0 0; }
+    thead th:last-child  { border-radius: 0 6px 0 0; }
+    tbody tr:nth-child(even) { background: var(--gray-50); }
+    tbody td { padding: 8px 13px; border-bottom: 1px solid var(--gray-200); color: var(--gray-700); }
+    tbody td strong { color: var(--gray-900); }
+
+    /* ── Footer ──────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 24px 48px;
+      font-size: 8.5pt;
+      color: var(--gray-400);
+      border-top: 1px solid var(--gray-100);
+    }
+  </style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">&#128424; Imprimer / Enregistrer en PDF</button>
+
+<div class="page">
+
+<!-- ═══════════════════════════════════════════
+     COVER
+═══════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-icon">
+    <svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
+  </div>
+
+  <h1>HelpDesk</h1>
+  <h2>Deploiement Ubuntu / Linux</h2>
+
+  <div class="cover-pills">
+    <div class="pill">&#128039; Ubuntu 22.04 LTS</div>
+    <div class="pill">&#9889; Node.js 20 LTS</div>
+    <div class="pill">&#128024; PostgreSQL 16</div>
+    <div class="pill">&#9881;&#65039; PM2 + Nginx</div>
+  </div>
+
+  <div class="cover-footer">Guide de deploiement production &mdash; Avril 2026</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 0 — Introduction
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">0</div>
+    <div>
+      <h2>Introduction</h2>
+      <div class="sub">Objectif et perimetre de ce guide</div>
+    </div>
+  </div>
+
+  <p>Ce guide couvre le deploiement complet de l'application HelpDesk sur un mini PC ou serveur sous <strong>Ubuntu 22.04 LTS</strong>.</p>
+
+  <div class="note info">
+    <span class="note-icon">&#9881;&#65039;</span>
+    <div>
+      <strong>Stack technique</strong>
+      Node.js 20 + PostgreSQL 16 + PM2 (process manager) + Nginx (reverse proxy)
+    </div>
+  </div>
+
+  <div class="note ok">
+    <span class="note-icon">&#9200;</span>
+    <div>
+      <strong>Duree estimee</strong>
+      30 a 45 minutes pour un deploiement complet.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 1 — Prerequis systeme
+═══════════════════════════════════════════ -->
+<div class="section pb">
+  <div class="section-head">
+    <div class="num">1</div>
+    <div>
+      <h2>Prerequis systeme</h2>
+      <div class="sub">Mise a jour du systeme et installation des outils</div>
+    </div>
+  </div>
+
+  <p>Connectez-vous en SSH a votre serveur et executez les commandes suivantes :</p>
+
+<pre><span class="c"># Mise a jour du systeme</span>
+<span class="cmd">sudo apt update && sudo apt upgrade -y</span>
+
+<span class="c"># Node.js 20 via nvm</span>
+<span class="cmd">curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash</span>
+<span class="cmd">source ~/.bashrc</span>
+<span class="cmd">nvm install 20 && nvm use 20 && nvm alias default 20</span>
+
+<span class="c"># PostgreSQL, Nginx, Git</span>
+<span class="cmd">sudo apt install -y postgresql postgresql-contrib nginx git</span>
+
+<span class="c"># PM2 (process manager)</span>
+<span class="cmd">npm install -g pm2</span></pre>
+
+  <div class="note info">
+    <span class="note-icon">&#128712;</span>
+    <div>
+      <strong>Verification</strong>
+      Apres l'installation, verifiez avec : <code>node -v</code>, <code>npm -v</code>, <code>psql --version</code>, <code>nginx -v</code>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 2 — Base de donnees PostgreSQL
+═══════════════════════════════════════════ -->
+<div class="section pb">
+  <div class="section-head">
+    <div class="num">2</div>
+    <div>
+      <h2>Base de donnees PostgreSQL</h2>
+      <div class="sub">Creation de l'utilisateur et de la base</div>
+    </div>
+  </div>
+
+<pre><span class="cmd">sudo -u postgres psql</span> <span class="c">&lt;&lt;EOF</span>
+<span class="k">CREATE USER</span> <span class="v">helpdesk_user</span> <span class="k">WITH PASSWORD</span> <span class="v">'ChangeMe123!'</span>;
+<span class="k">CREATE DATABASE</span> <span class="v">helpdesk_db</span> <span class="k">OWNER</span> <span class="v">helpdesk_user</span>;
+<span class="k">GRANT ALL PRIVILEGES ON DATABASE</span> <span class="v">helpdesk_db</span> <span class="k">TO</span> <span class="v">helpdesk_user</span>;
+<span class="c">EOF</span></pre>
+
+  <div class="note warn">
+    <span class="note-icon">&#9888;&#65039;</span>
+    <div>
+      <strong>Securite</strong>
+      Remplacez <code>ChangeMe123!</code> par un mot de passe fort et unique. Ne reutilisez jamais ce mot de passe ailleurs.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 3 — Cloner le projet
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">3</div>
+    <div>
+      <h2>Cloner le projet</h2>
+      <div class="sub">Recuperation du code source</div>
+    </div>
+  </div>
+
+<pre><span class="cmd">cd /opt</span>
+<span class="cmd">sudo git clone https://github.com/Trash30/Helpdesk.git helpdesk</span>
+<span class="cmd">sudo chown -R $USER:$USER /opt/helpdesk</span>
+<span class="cmd">cd /opt/helpdesk</span></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 4 — Configuration .env
+═══════════════════════════════════════════ -->
+<div class="section pb">
+  <div class="section-head">
+    <div class="num">4</div>
+    <div>
+      <h2>Configuration &mdash; fichier .env</h2>
+      <div class="sub">Variables d'environnement du serveur</div>
+    </div>
+  </div>
+
+  <p>Creez le fichier <code>/opt/helpdesk/server/.env</code> avec le contenu suivant :</p>
+
+<pre><span class="k">DATABASE_URL</span>=<span class="v">postgresql://helpdesk_user:ChangeMe123!@localhost:5432/helpdesk_db</span>
+<span class="k">JWT_SECRET</span>=<span class="v">SECRET-ALEATOIRE-32-CARACTERES-MINIMUM</span>
+<span class="k">PORT</span>=<span class="v">3001</span>
+<span class="k">NODE_ENV</span>=<span class="v">production</span>
+<span class="k">UPLOADS_PATH</span>=<span class="v">/opt/helpdesk/uploads</span>
+<span class="k">APP_URL</span>=<span class="v">http://VOTRE-IP-OU-DOMAINE</span>
+
+<span class="c"># Email (optionnel)</span>
+<span class="k">SMTP_HOST</span>=<span class="v">smtp.example.com</span>
+<span class="k">SMTP_PORT</span>=<span class="v">587</span>
+<span class="k">SMTP_USER</span>=
+<span class="k">SMTP_PASS</span>=
+<span class="k">SMTP_FROM</span>=<span class="v">"Helpdesk &lt;noreply@example.com&gt;"</span></pre>
+
+  <div class="note warn">
+    <span class="note-icon">&#9888;&#65039;</span>
+    <div>
+      <strong>JWT_SECRET</strong>
+      Generez un secret aleatoire avec : <code>openssl rand -hex 32</code>
+    </div>
+  </div>
+
+  <div class="note tip">
+    <span class="note-icon">&#128161;</span>
+    <div>
+      <strong>APP_URL</strong>
+      Remplacez par votre IP publique ou votre nom de domaine (ex: <code>https://helpdesk.mondomaine.com</code>).
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 5 — Installation et build
+═══════════════════════════════════════════ -->
+<div class="section pb">
+  <div class="section-head">
+    <div class="num">5</div>
+    <div>
+      <h2>Installation des dependances et build</h2>
+      <div class="sub">npm install, migration, seed, build</div>
+    </div>
+  </div>
+
+<pre><span class="cmd">cd /opt/helpdesk</span>
+
+<span class="c"># Installation des dependances</span>
+<span class="cmd">npm install --prefix server</span>
+<span class="cmd">npm install --prefix client</span>
+
+<span class="c"># Migration base de donnees + seed</span>
+<span class="cmd">cd server && npx prisma migrate deploy && npx prisma db seed && cd ..</span>
+
+<span class="c"># Build frontend + backend</span>
+<span class="cmd">npm run build --prefix client</span>
+<span class="cmd">npm run build --prefix server</span></pre>
+
+  <div class="note ok">
+    <span class="note-icon">&#9989;</span>
+    <div>
+      <strong>Verification</strong>
+      Le build est reussi si aucun message d'erreur n'apparait. Les fichiers compiles du frontend se trouvent dans <code>client/dist/</code>.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 6 — Demarrage avec PM2
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">6</div>
+    <div>
+      <h2>Demarrage avec PM2</h2>
+      <div class="sub">Lancement et persistance du serveur</div>
+    </div>
+  </div>
+
+<pre><span class="cmd">cd /opt/helpdesk</span>
+<span class="cmd">pm2 start ecosystem.config.js</span>
+<span class="cmd">pm2 save</span>
+<span class="cmd">pm2 startup</span>   <span class="c"># copier-coller la commande affichee</span></pre>
+
+  <div class="note info">
+    <span class="note-icon">&#128712;</span>
+    <div>
+      <strong>Verification</strong>
+      Executez <code>pm2 status</code> pour voir l'etat du processus, et <code>pm2 logs helpdesk-server</code> pour consulter les logs en temps reel.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 7 — Configuration Nginx
+═══════════════════════════════════════════ -->
+<div class="section pb">
+  <div class="section-head">
+    <div class="num">7</div>
+    <div>
+      <h2>Configuration Nginx</h2>
+      <div class="sub">Reverse proxy et serveur de fichiers statiques</div>
+    </div>
+  </div>
+
+<pre><span class="c"># Copier la config Nginx fournie</span>
+<span class="cmd">sudo cp /opt/helpdesk/nginx.conf /etc/nginx/sites-available/helpdesk</span>
+
+<span class="c"># Editer server_name si vous avez un domaine</span>
+<span class="cmd">sudo nano /etc/nginx/sites-available/helpdesk</span>
+
+<span class="c"># Activer le site</span>
+<span class="cmd">sudo ln -s /etc/nginx/sites-available/helpdesk /etc/nginx/sites-enabled/</span>
+<span class="cmd">sudo rm -f /etc/nginx/sites-enabled/default</span>
+
+<span class="c"># Tester et recharger</span>
+<span class="cmd">sudo nginx -t && sudo systemctl reload nginx</span>
+<span class="cmd">sudo systemctl enable nginx</span></pre>
+
+  <div class="note ok">
+    <span class="note-icon">&#9989;</span>
+    <div>
+      <strong>Test</strong>
+      Ouvrez <code>http://IP-DU-SERVEUR</code> dans un navigateur. Vous devez voir la page de login HelpDesk.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 8 — Exposition sur internet
+═══════════════════════════════════════════ -->
+<div class="section pb">
+  <div class="section-head">
+    <div class="num">8</div>
+    <div>
+      <h2>Exposition sur internet</h2>
+      <div class="sub">Rendre l'application accessible depuis l'exterieur</div>
+    </div>
+  </div>
+
+  <h3>Option A &mdash; Redirection de port (box internet)</h3>
+
+  <p>Accedez a l'interface d'administration de votre box (ex: 192.168.1.1) et configurez une regle NAT/PAT :</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Parametre</th>
+        <th>Valeur</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Protocole</strong></td>
+        <td>TCP</td>
+      </tr>
+      <tr>
+        <td><strong>Port externe</strong></td>
+        <td>80</td>
+      </tr>
+      <tr>
+        <td><strong>IP locale</strong></td>
+        <td>IP du mini PC (ex: 192.168.1.50)</td>
+      </tr>
+      <tr>
+        <td><strong>Port interne</strong></td>
+        <td>80</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Acces : <code>http://VOTRE-IP-PUBLIQUE</code></p>
+
+  <hr />
+
+  <h3>Option B &mdash; Cloudflare Tunnel (recommande)</h3>
+
+  <div class="note tip">
+    <span class="note-icon">&#128161;</span>
+    <div>
+      <strong>Avantages</strong>
+      SSL gratuit, aucun port a ouvrir, protection DDoS incluse.
+    </div>
+  </div>
+
+<pre><span class="c"># Installation de cloudflared</span>
+<span class="cmd">wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb</span>
+<span class="cmd">sudo dpkg -i cloudflared-linux-amd64.deb</span>
+
+<span class="c"># Configuration</span>
+<span class="cmd">cloudflared tunnel login</span>
+<span class="cmd">cloudflared tunnel create helpdesk</span>
+<span class="cmd">cloudflared tunnel route dns helpdesk votre-sous-domaine.votre-domaine.com</span>
+
+<span class="c"># Installation en service</span>
+<span class="cmd">sudo cloudflared service install</span></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 9 — SSL Let's Encrypt
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">9</div>
+    <div>
+      <h2>SSL avec Let's Encrypt</h2>
+      <div class="sub">Certificat HTTPS gratuit (si vous avez un domaine)</div>
+    </div>
+  </div>
+
+<pre><span class="cmd">sudo apt install -y certbot python3-certbot-nginx</span>
+<span class="cmd">sudo certbot --nginx -d votre-domaine.com</span>
+<span class="cmd">sudo systemctl enable certbot.timer</span></pre>
+
+  <div class="note info">
+    <span class="note-icon">&#128274;</span>
+    <div>
+      <strong>Renouvellement automatique</strong>
+      Le timer <code>certbot.timer</code> renouvelle automatiquement le certificat avant expiration.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 10 — Mises a jour
+═══════════════════════════════════════════ -->
+<div class="section pb">
+  <div class="section-head">
+    <div class="num">10</div>
+    <div>
+      <h2>Mises a jour</h2>
+      <div class="sub">Procedure de mise a jour de l'application</div>
+    </div>
+  </div>
+
+  <p>Un script de deploiement est fourni a la racine du projet :</p>
+
+<pre><span class="cmd">cd /opt/helpdesk && bash deploy.sh</span></pre>
+
+  <div class="note info">
+    <span class="note-icon">&#128712;</span>
+    <div>
+      <strong>Contenu du script</strong>
+      Le script <code>deploy.sh</code> effectue automatiquement : <code>git pull</code>, installation des dependances, migration de la base, rebuild et redemarrage PM2.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 11 — Compte administrateur
+═══════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <div class="num">11</div>
+    <div>
+      <h2>Compte administrateur par defaut</h2>
+      <div class="sub">Premiere connexion</div>
+    </div>
+  </div>
+
+  <p>Apres le seed initial, les identifiants par defaut sont definis dans le fichier <code>server/prisma/seed.ts</code>.</p>
+
+  <div class="note danger">
+    <span class="note-icon">&#9888;&#65039;</span>
+    <div>
+      <strong>Action obligatoire</strong>
+      Changez le mot de passe administrateur <strong>immediatement</strong> apres la premiere connexion via la page Profil.
+    </div>
+  </div>
+
+  <hr />
+
+  <div class="note ok">
+    <span class="note-icon">&#127881;</span>
+    <div>
+      <strong>Deploiement termine !</strong>
+      Si toutes les etapes sont completes, votre instance HelpDesk est en production et accessible. Bonne utilisation !
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  HelpDesk v1.0 &nbsp;&middot;&nbsp; Guide deploiement Ubuntu / Linux &nbsp;&middot;&nbsp; Avril 2026 &nbsp;&middot;&nbsp; Usage interne
+</div>
+
+</div><!-- /page -->
+</body>
+</html>
