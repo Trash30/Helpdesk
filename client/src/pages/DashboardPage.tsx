@@ -18,16 +18,17 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { PriorityBadge } from '@/components/common/PriorityBadge';
 import { getInitials, timeAgo, fullDate } from '@/lib/utils';
+import { PRIORITY_TOKENS, STATUS_TOKENS } from '@/lib/colors';
 import api from '@/lib/axios';
 import { SportsMatchesWidget } from '@/components/sports/SportsMatchesWidget';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PRIORITY_COLORS: Record<string, string> = {
-  CRITICAL: '#E24B4A',
-  HIGH: '#EF9F27',
-  MEDIUM: '#378ADD',
-  LOW: '#639922',
+  CRITICAL: PRIORITY_TOKENS.CRITICAL.solid,
+  HIGH:     PRIORITY_TOKENS.HIGH.solid,
+  MEDIUM:   PRIORITY_TOKENS.MEDIUM.solid,
+  LOW:      PRIORITY_TOKENS.LOW.solid,
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -373,10 +374,10 @@ export function DashboardPage() {
                   <Line
                     type="monotone"
                     dataKey="count"
-                    stroke="#0070C1"
+                    stroke="#185FA5"
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 4, fill: '#0070C1' }}
+                    activeDot={{ r: 4, fill: '#185FA5' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -470,7 +471,7 @@ export function DashboardPage() {
                     contentStyle={{ fontSize: 12, borderRadius: 6 }}
                     formatter={(v: number) => [v, 'Tickets']}
                   />
-                  <Bar dataKey="count" fill="#0070C1" radius={[0, 4, 4, 0]} maxBarSize={18} />
+                  <Bar dataKey="count" fill="#185FA5" radius={[0, 4, 4, 0]} maxBarSize={18} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -512,9 +513,9 @@ export function DashboardPage() {
                       >
                         <td className="px-4 py-3 font-medium">{org.organisationName}</td>
                         <td className="px-4 py-3 text-right font-semibold">{org.total}</td>
-                        <td className="px-4 py-3 text-right text-blue-600">{org.open}</td>
-                        <td className="px-4 py-3 text-right text-orange-600">{org.inProgress}</td>
-                        <td className="px-4 py-3 text-right text-pink-600 hidden lg:table-cell">{org.pending}</td>
+                        <td className="px-4 py-3 text-right font-medium" style={{ color: STATUS_TOKENS.OPEN.fg }}>{org.open}</td>
+                        <td className="px-4 py-3 text-right font-medium" style={{ color: STATUS_TOKENS.IN_PROGRESS.fg }}>{org.inProgress}</td>
+                        <td className="px-4 py-3 text-right font-medium hidden lg:table-cell" style={{ color: STATUS_TOKENS.PENDING.fg }}>{org.pending}</td>
                         <td className="px-4 py-3 text-right text-muted-foreground">{org.closed}</td>
                       </tr>
                     ))}
@@ -555,9 +556,9 @@ export function DashboardPage() {
                       >
                         <td className="px-4 py-3 font-medium">{club.clubName}</td>
                         <td className="px-4 py-3 text-right font-semibold">{club.total}</td>
-                        <td className="px-4 py-3 text-right text-blue-600">{club.open}</td>
-                        <td className="px-4 py-3 text-right text-orange-600">{club.inProgress}</td>
-                        <td className="px-4 py-3 text-right text-pink-600">{club.pending}</td>
+                        <td className="px-4 py-3 text-right font-medium" style={{ color: STATUS_TOKENS.OPEN.fg }}>{club.open}</td>
+                        <td className="px-4 py-3 text-right font-medium" style={{ color: STATUS_TOKENS.IN_PROGRESS.fg }}>{club.inProgress}</td>
+                        <td className="px-4 py-3 text-right font-medium" style={{ color: STATUS_TOKENS.PENDING.fg }}>{club.pending}</td>
                         <td className="px-4 py-3 text-right text-muted-foreground">{club.closed}</td>
                       </tr>
                     ))}

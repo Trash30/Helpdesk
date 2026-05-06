@@ -16,9 +16,19 @@ import { Pagination } from '@/components/common/Pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
 import toast from 'react-hot-toast';
+
+// Sentinel value used in shadcn Select to represent "all" (Radix Select does not allow empty string values)
+const ALL_VALUE = '__all__';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -458,7 +468,7 @@ export function TicketListPage() {
               <ExportDropdown onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
             </div>
             {can('tickets.create') && (
-              <Button onClick={() => navigate('/tickets/new')} size="sm" className="sm:size-default h-9 sm:h-10">
+              <Button onClick={() => navigate('/tickets/new')}>
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Nouveau ticket</span>
               </Button>
@@ -520,16 +530,20 @@ export function TicketListPage() {
                 onChange={setPriorities}
                 placeholder="Priorité"
               />
-              <select
-                value={categoryId}
-                onChange={e => setCategoryId(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+              <Select
+                value={categoryId || ALL_VALUE}
+                onValueChange={(val) => setCategoryId(val === ALL_VALUE ? '' : val)}
               >
-                <option value="">Toutes les catégories</option>
-                {categories?.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Toutes les catégories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_VALUE}>Toutes les catégories</SelectItem>
+                  {categories?.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <button
                 type="button"
                 onClick={toggleMyTickets}
@@ -542,37 +556,49 @@ export function TicketListPage() {
                 Mes tickets
               </button>
               {can('tickets.assign') && (
-                <select
-                  value={assignedToId}
-                  onChange={e => setAssignedToId(e.target.value)}
-                  className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                <Select
+                  value={assignedToId || ALL_VALUE}
+                  onValueChange={(val) => setAssignedToId(val === ALL_VALUE ? '' : val)}
                 >
-                  <option value="">Tous les agents</option>
-                  {agents?.map(a => (
-                    <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Tous les agents" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_VALUE}>Tous les agents</SelectItem>
+                    {agents?.map(a => (
+                      <SelectItem key={a.id} value={a.id}>{a.firstName} {a.lastName}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
-              <select
-                value={organisationId}
-                onChange={e => setOrganisationId(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+              <Select
+                value={organisationId || ALL_VALUE}
+                onValueChange={(val) => setOrganisationId(val === ALL_VALUE ? '' : val)}
               >
-                <option value="">Organisation</option>
-                {organisations?.map(o => (
-                  <option key={o.id} value={o.id}>{o.name}</option>
-                ))}
-              </select>
-              <select
-                value={clubId}
-                onChange={e => setClubId(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue placeholder="Organisation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_VALUE}>Organisation</SelectItem>
+                  {organisations?.map(o => (
+                    <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={clubId || ALL_VALUE}
+                onValueChange={(val) => setClubId(val === ALL_VALUE ? '' : val)}
               >
-                <option value="">Club / Ville</option>
-                {clubs?.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                <SelectTrigger className="h-9 w-full">
+                  <SelectValue placeholder="Club / Ville" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_VALUE}>Club / Ville</SelectItem>
+                  {clubs?.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <input
                 type="date"
                 value={dateFrom}
@@ -613,16 +639,20 @@ export function TicketListPage() {
             />
 
             {/* Category select */}
-            <select
-              value={categoryId}
-              onChange={e => setCategoryId(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+            <Select
+              value={categoryId || ALL_VALUE}
+              onValueChange={(val) => setCategoryId(val === ALL_VALUE ? '' : val)}
             >
-              <option value="">Toutes les catégories</option>
-              {categories?.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-9 w-[180px]">
+                <SelectValue placeholder="Toutes les catégories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>Toutes les catégories</SelectItem>
+                {categories?.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Mes tickets toggle */}
             <button
@@ -639,41 +669,53 @@ export function TicketListPage() {
 
             {/* Agent select */}
             {can('tickets.assign') && (
-              <select
-                value={assignedToId}
-                onChange={e => setAssignedToId(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+              <Select
+                value={assignedToId || ALL_VALUE}
+                onValueChange={(val) => setAssignedToId(val === ALL_VALUE ? '' : val)}
               >
-                <option value="">Tous les agents</option>
-                {agents?.map(a => (
-                  <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
-                ))}
-              </select>
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue placeholder="Tous les agents" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_VALUE}>Tous les agents</SelectItem>
+                  {agents?.map(a => (
+                    <SelectItem key={a.id} value={a.id}>{a.firstName} {a.lastName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
 
             {/* Organisation select */}
-            <select
-              value={organisationId}
-              onChange={e => setOrganisationId(e.target.value)}
-              className="h-9 max-w-[160px] rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+            <Select
+              value={organisationId || ALL_VALUE}
+              onValueChange={(val) => setOrganisationId(val === ALL_VALUE ? '' : val)}
             >
-              <option value="">Organisation</option>
-              {organisations?.map(o => (
-                <option key={o.id} value={o.id}>{o.name}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-9 w-[160px]">
+                <SelectValue placeholder="Organisation" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>Organisation</SelectItem>
+                {organisations?.map(o => (
+                  <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Club select */}
-            <select
-              value={clubId}
-              onChange={e => setClubId(e.target.value)}
-              className="h-9 max-w-[160px] rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+            <Select
+              value={clubId || ALL_VALUE}
+              onValueChange={(val) => setClubId(val === ALL_VALUE ? '' : val)}
             >
-              <option value="">Club / Ville</option>
-              {clubs?.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              <SelectTrigger className="h-9 w-[160px]">
+                <SelectValue placeholder="Club / Ville" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>Club / Ville</SelectItem>
+                {clubs?.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Date range */}
             <input

@@ -33,21 +33,23 @@ function NumericButtons({
   const numbers = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   return (
     <div className="flex flex-wrap gap-2">
-      {numbers.map(n => (
-        <button
-          key={n}
-          type="button"
-          onClick={() => onChange(n)}
-          className="w-11 h-11 rounded border text-sm font-medium transition-colors"
-          style={{
-            backgroundColor: value === n ? '#185FA5' : '#ffffff',
-            color: value === n ? '#ffffff' : '#374151',
-            borderColor: value === n ? '#185FA5' : '#d1d5db',
-          }}
-        >
-          {n}
-        </button>
-      ))}
+      {numbers.map(n => {
+        const selected = value === n;
+        return (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            className={`w-11 h-11 rounded border text-sm font-medium transition-colors ${
+              selected
+                ? 'bg-primary border-primary text-primary-foreground'
+                : 'bg-white border-gray-300 text-gray-700'
+            }`}
+          >
+            {n}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -111,7 +113,7 @@ function QuestionField({
         onChange={e => onChange(e.target.value || null)}
         placeholder="Votre réponse..."
         rows={4}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#185FA5] resize-none"
+        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
       />
     );
   }
@@ -123,7 +125,7 @@ function QuestionField({
         value={value ?? ''}
         onChange={e => onChange(e.target.value || null)}
         placeholder="Votre réponse..."
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#185FA5]"
+        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       />
     );
   }
@@ -133,7 +135,7 @@ function QuestionField({
       <select
         value={value ?? ''}
         onChange={e => onChange(e.target.value || null)}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#185FA5] bg-white"
+        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
       >
         <option value="">Sélectionner...</option>
         {(question.options ?? []).map(opt => (
@@ -156,7 +158,7 @@ function QuestionField({
                 if (e.target.checked) onChange([...selected, opt]);
                 else onChange(selected.filter(s => s !== opt));
               }}
-              className="h-4 w-4 rounded border-gray-300 accent-[#185FA5]"
+              className="h-4 w-4 rounded border-gray-300 accent-primary"
             />
             <span className="text-sm">{opt}</span>
           </label>
@@ -296,7 +298,7 @@ export function SurveyPage() {
           <h1 className="text-xl font-bold text-gray-800">{companyName}</h1>
           <div className="bg-white border rounded-lg px-4 py-2 inline-block">
             <p className="text-sm text-gray-600">
-              Enquête de satisfaction — Ticket <span className="font-mono font-semibold text-[#185FA5]">
+              Enquête de satisfaction — Ticket <span className="font-mono font-semibold text-primary">
                 {ticket.ticketNumber}
               </span>
             </p>
@@ -313,7 +315,7 @@ export function SurveyPage() {
             </div>
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#185FA5] rounded-full transition-all duration-300"
+                className="h-full bg-primary rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -366,12 +368,11 @@ export function SurveyPage() {
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit || submitting}
-            className="px-8 py-3 rounded-lg text-sm font-semibold transition-colors"
-            style={{
-              backgroundColor: canSubmit ? '#185FA5' : '#d1d5db',
-              color: '#ffffff',
-              cursor: canSubmit ? 'pointer' : 'not-allowed',
-            }}
+            className={`px-8 py-3 rounded-lg text-sm font-semibold text-white transition-colors ${
+              canSubmit
+                ? 'bg-primary hover:opacity-90 cursor-pointer'
+                : 'bg-gray-300 cursor-not-allowed'
+            }`}
           >
             {submitting ? 'Envoi en cours...' : 'Envoyer mes réponses'}
           </button>
