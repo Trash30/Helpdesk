@@ -300,6 +300,81 @@ ssh-add $env:USERPROFILE\.ssh\id_ed25519
 
 ---
 
+### 5.6 Changer l'adresse IP locale du serveur
+
+Lorsque l'IP du serveur change (DHCP, changement de réseau), deux valeurs dans `server/.env` doivent être mises à jour :
+
+```bash
+ssh ubuntu@<nouvelle-ip>
+nano /opt/helpdesk/server/.env
+```
+
+Modifier ces deux lignes :
+
+```env
+FRONTEND_URL=http://<nouvelle-ip>           # liens dans les emails (reset password, enquêtes)
+ALLOWED_ORIGINS=http://<nouvelle-ip>        # CORS — origine autorisée en production
+```
+
+Puis redémarrer le backend pour prendre en compte le changement :
+
+```bash
+sudo pm2 restart helpdesk-server
+```
+
+> **Pourquoi seulement ces deux variables ?** Le frontend (Nginx) utilise `server_name _;` — il accepte n'importe quelle IP/hostname sans modification. Les appels API du frontend sont en URL relative (`/api/...`) — ils suivent automatiquement l'IP de Nginx. Seules les variables `.env` ci-dessus référencent explicitement l'IP.
+
+---
+
+### 5.7 Rendre le serveur accessible par hostname fixe (recommandé)
+
+Pour ne plus jamais avoir à changer l'IP dans la configuration, configurer `avahi-daemon` sur le serveur Ubuntu. Cela publie le nom `helpdesk.local` sur le réseau local via mDNS — les clients Windows 10+, macOS et Linux le résolvent automatiquement sans modifier leurs fichiers `hosts`.
+
+**Installation sur le serveur (une seule fois) :**
+
+```bash
+sudo apt install avahi-daemon -y
+sudo systemctl enable avahi-daemon
+sudo systemctl start avahi-daemon
+
+# Définir le hostname du serveur
+sudo hostnamectl set-hostname helpdesk
+```
+
+Le serveur sera accessible via `http://helpdesk.local` depuis tous les postes du réseau.
+
+**Mettre à jour Nginx pour répondre au hostname :**
+
+```nginx
+# /etc/nginx/sites-available/helpdesk
+server {
+    listen 80;
+    server_name helpdesk.local _;   # ajouter helpdesk.local
+    ...
+}
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+**Mettre à jour `server/.env` avec le hostname fixe :**
+
+```env
+FRONTEND_URL=http://helpdesk.local
+ALLOWED_ORIGINS=http://helpdesk.local
+```
+
+```bash
+sudo pm2 restart helpdesk-server
+```
+
+Désormais l'IP peut changer (DHCP) — le nom `helpdesk.local` continue de fonctionner sans aucune modification de configuration.
+
+> **Compatibilité :** Windows 10+, macOS et Ubuntu supportent mDNS nativement. Sur d'autres Linux, installer `avahi-daemon` + `libnss-mdns` côté client.
+
+---
+
 ## 6. Débogage
 
 ### Voir les logs en production
