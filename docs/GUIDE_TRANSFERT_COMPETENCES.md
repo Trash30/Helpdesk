@@ -302,27 +302,24 @@ ssh-add $env:USERPROFILE\.ssh\id_ed25519
 
 ### 5.6 Changer l'adresse IP locale du serveur
 
-Lorsque l'IP du serveur change (DHCP, changement de réseau), deux valeurs dans `server/.env` doivent être mises à jour :
+Le CORS est configuré pour accepter automatiquement toutes les IP privées (192.168.x.x, 10.x.x.x, 172.16–31.x.x) — **aucune modification de `ALLOWED_ORIGINS` n'est nécessaire** lors d'un changement d'IP.
+
+La seule variable à mettre à jour est `FRONTEND_URL`, utilisée pour les liens dans les emails :
 
 ```bash
 ssh ubuntu@<nouvelle-ip>
 nano /opt/helpdesk/server/.env
 ```
 
-Modifier ces deux lignes :
-
 ```env
-FRONTEND_URL=http://<nouvelle-ip>           # liens dans les emails (reset password, enquêtes)
-ALLOWED_ORIGINS=http://<nouvelle-ip>        # CORS — origine autorisée en production
+FRONTEND_URL=http://<nouvelle-ip>    # liens dans les emails (reset password, enquêtes)
 ```
-
-Puis redémarrer le backend pour prendre en compte le changement :
 
 ```bash
 sudo pm2 restart helpdesk-server
 ```
 
-> **Pourquoi seulement ces deux variables ?** Le frontend (Nginx) utilise `server_name _;` — il accepte n'importe quelle IP/hostname sans modification. Les appels API du frontend sont en URL relative (`/api/...`) — ils suivent automatiquement l'IP de Nginx. Seules les variables `.env` ci-dessus référencent explicitement l'IP.
+> **Nginx** utilise `server_name helpdesk.local _;` — il accepte toute IP ou le hostname `helpdesk.local` sans modification. Les appels API du frontend sont en URL relative (`/api/...`) — ils suivent automatiquement l'adresse de Nginx.
 
 ---
 
