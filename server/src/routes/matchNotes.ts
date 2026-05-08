@@ -5,6 +5,15 @@ import { authMiddleware } from '../middleware/auth';
 import { hasPermission, requirePermission } from '../middleware/permissions';
 import axios from 'axios';
 import { promises as dns } from 'dns';
+import sanitizeHtml from 'sanitize-html';
+
+const ALLOWED_TIPTAP_HTML: sanitizeHtml.IOptions = {
+  allowedTags: ['p', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3', 'img'],
+  allowedAttributes: {
+    img: ['src', 'alt', 'title'],
+  },
+  allowedSchemes: ['http', 'https'],
+};
 
 const router = Router();
 
@@ -27,6 +36,9 @@ const matchNoteBodySchema = z.object({
   awayTeamLogo: z.string().optional(),
   broadcasterLogo: z.string().url().optional(),
   status: z.enum(['VERT', 'ORANGE', 'ROUGE']).optional(),
+  production: z.enum(['BeIN', 'Via Storia', 'AMP Visual', 'IXI Live']).nullable().optional(),
+  chaperonnage: z.boolean().default(false),
+  chaperonneTechnicienId: z.string().uuid().nullable().optional(),
 });
 
 // ─── GET /api/sports/match-notes/proxy-image ────────────────────────────────
@@ -103,12 +115,37 @@ router.get('/proxy-image', async (req: Request, res: Response) => {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HelpDesk/1.0)' },
     });
 
-    const contentType = (response.headers['content-type'] as string) || 'image/png';
-    res.setHeader('Content-Type', contentType);
+    const contentType = (response.headers['content-type'] as string) || '';
+
+    // Whitelist Content-Type pour éviter le relay de contenu non-image
+    const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
+    if (!ALLOWED_IMAGE_TYPES.some((t) => contentType.startsWith(t))) {
+      res.status(415).json({ error: 'Type de contenu non autorisé' }); return;
+    }
+
+    const normalizedType = ALLOWED_IMAGE_TYPES.find((t) => contentType.startsWith(t))!;
+    res.setHeader('Content-Type', normalizedType);
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(Buffer.from(response.data as ArrayBuffer));
   } catch {
     res.status(404).json({ error: 'Image introuvable' });
+  }
+});
+
+// ─── GET /api/sports/match-notes/team-members ───────────────────────────────
+// Liste des membres actifs pour le select chaperon (accessible à tous les opérateurs authentifiés)
+
+router.get('/team-members', async (_req: Request, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    });
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching team members:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -119,6 +156,9 @@ router.get('/', async (_req: Request, res: Response) => {
   const notes = await prisma.matchNote.findMany({
     include: {
       author: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+      chaperonneTechnicien: {
         select: { id: true, firstName: true, lastName: true },
       },
     },
@@ -168,6 +208,9 @@ router.get('/report/week', async (_req: Request, res: Response) => {
       author: {
         select: { id: true, firstName: true, lastName: true },
       },
+      chaperonneTechnicien: {
+        select: { id: true, firstName: true, lastName: true },
+      },
     },
     orderBy: [{ competition: 'asc' }, { matchDate: 'asc' }, { matchTime: 'asc' }],
   });
@@ -195,19 +238,24 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
     return;
   }
 
-  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status } = parsed.data;
+  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status, production, chaperonnage, chaperonneTechnicienId } = parsed.data;
+
+  const sanitizedContent = sanitizeHtml(content, ALLOWED_TIPTAP_HTML);
 
   const note = await prisma.matchNote.upsert({
     where: { matchKey },
     update: {
-      content,
+      content: sanitizedContent,
       broadcasterLogo: broadcasterLogo || null,
       status: status ?? 'VERT',
+      production: production ?? null,
+      chaperonnage: chaperonnage ?? false,
+      chaperonneTechnicienId: chaperonneTechnicienId ?? null,
       updatedAt: new Date(),
     },
     create: {
       matchKey,
-      content,
+      content: sanitizedContent,
       matchDate: new Date(matchDate),
       competition,
       homeTeam,
@@ -218,10 +266,16 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
       awayTeamLogo: awayTeamLogo || null,
       broadcasterLogo: broadcasterLogo || null,
       status: status ?? 'VERT',
+      production: production ?? null,
+      chaperonnage: chaperonnage ?? false,
+      chaperonneTechnicienId: chaperonneTechnicienId ?? null,
       authorId: req.user!.id,
     },
     include: {
       author: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+      chaperonneTechnicien: {
         select: { id: true, firstName: true, lastName: true },
       },
     },

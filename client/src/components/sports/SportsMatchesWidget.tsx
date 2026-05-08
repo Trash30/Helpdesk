@@ -45,6 +45,10 @@ export interface MatchNoteData {
   matchKey: string;
   content: string;
   status?: 'VERT' | 'ORANGE' | 'ROUGE';
+  production?: string | null;
+  chaperonnage?: boolean;
+  chaperonneTechnicienId?: string | null;
+  chaperonneTechnicien?: { id: string; firstName: string; lastName: string } | null;
   competition: string;
   homeTeam: string;
   awayTeam: string;
@@ -54,7 +58,7 @@ export interface MatchNoteData {
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;
-  author: { id: string; name: string };
+  author: { id: string; firstName: string; lastName: string };
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -351,6 +355,9 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
         match={match}
         initialContent={existingNote?.content}
         initialStatus={existingNote?.status}
+        initialProduction={existingNote?.production}
+        initialChaperonnage={existingNote?.chaperonnage}
+        initialChaperonneTechnicienId={existingNote?.chaperonneTechnicienId}
       />
 
       <ConfirmDialog
@@ -572,6 +579,9 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
         match={match}
         initialContent={existingNote?.content}
         initialStatus={existingNote?.status}
+        initialProduction={existingNote?.production}
+        initialChaperonnage={existingNote?.chaperonnage}
+        initialChaperonneTechnicienId={existingNote?.chaperonneTechnicienId}
       />
 
       <ConfirmDialog

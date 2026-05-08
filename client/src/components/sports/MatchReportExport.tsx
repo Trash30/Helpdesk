@@ -13,6 +13,9 @@ interface MatchNoteReport {
   matchKey: string;
   content: string;
   status?: 'VERT' | 'ORANGE' | 'ROUGE';
+  production?: string | null;
+  chaperonnage?: boolean;
+  chaperonneTechnicien?: { id: string; firstName: string; lastName: string } | null;
   matchDate: string;
   competition: string;
   homeTeam: string;
@@ -22,7 +25,7 @@ interface MatchNoteReport {
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;
-  author: { id: string; name: string };
+  author: { id: string; firstName: string; lastName: string };
 }
 
 interface WeekReportResponse {
@@ -174,6 +177,8 @@ function parseInlineRuns(node: Node): TextRun[] {
         runs.push(new TextRun({ text: innerText, bold: true }));
       } else if (tag === 'em' || tag === 'i') {
         runs.push(new TextRun({ text: innerText, italics: true }));
+      } else if (tag === 'u') {
+        runs.push(new TextRun({ text: innerText, underline: {} }));
       } else if (tag === 'br') {
         runs.push(new TextRun({ text: '', break: 1 }));
       } else {
@@ -219,6 +224,14 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
       paragraphs.push(new Paragraph({ children: runs.length > 0 ? runs : [new TextRun('')] }));
     } else if (tag === 'h1' || tag === 'h2' || tag === 'h3') {
       paragraphs.push(new Paragraph({ children: parseInlineRuns(node), heading: tag === 'h1' ? HeadingLevel.HEADING_1 : tag === 'h2' ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3 }));
+    } else if (tag === 'img') {
+      // Images inline dans les notes : skip dans l'export Word (les images
+      // téléchargées seraient trop complexes). Placeholder texte à la place.
+      paragraphs.push(
+        new Paragraph({
+          children: [new TextRun({ text: '[Image]', color: '999999', italics: true, size: 18 })],
+        })
+      );
     } else {
       const runs = parseInlineRuns(node);
       if (runs.length > 0) paragraphs.push(new Paragraph({ children: runs }));
@@ -430,6 +443,33 @@ export function MatchReportExport() {
                 children: [
                   new TextRun({ text: 'Diffuseur : ', bold: true, size: 20, color: '555555' }),
                   makeImageRun(broadcasterImg, 20),
+                ],
+                spacing: { after: 200 },
+              })
+            );
+          }
+
+          // Production (si renseignée)
+          if (note.production) {
+            sections.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Production : ', bold: true, size: 20, color: '555555' }),
+                  new TextRun({ text: note.production, size: 20 }),
+                ],
+                spacing: { after: 120 },
+              })
+            );
+          }
+
+          // Chaperonnage (si coché avec un technicien)
+          if (note.chaperonnage && note.chaperonneTechnicien) {
+            const techName = `${note.chaperonneTechnicien.firstName} ${note.chaperonneTechnicien.lastName}`;
+            sections.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: 'Match chaperonné par : ', bold: true, size: 20, color: '185FA5' }),
+                  new TextRun({ text: techName, size: 20, color: '185FA5' }),
                 ],
                 spacing: { after: 200 },
               })
