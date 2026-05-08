@@ -12,11 +12,7 @@ const ALLOWED_TIPTAP_HTML: sanitizeHtml.IOptions = {
   allowedAttributes: {
     img: ['src', 'alt', 'title'],
   },
-  allowedSchemes: ['http', 'https', 'data'],
-  // Limiter la taille des data URIs base64 à 500 Ko
-  allowedSchemesByTag: {
-    img: ['http', 'https', 'data'],
-  },
+  allowedSchemes: ['http', 'https'],
 };
 
 const router = Router();
@@ -127,7 +123,8 @@ router.get('/proxy-image', async (req: Request, res: Response) => {
       res.status(415).json({ error: 'Type de contenu non autorisé' }); return;
     }
 
-    res.setHeader('Content-Type', contentType);
+    const normalizedType = ALLOWED_IMAGE_TYPES.find((t) => contentType.startsWith(t))!;
+    res.setHeader('Content-Type', normalizedType);
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(Buffer.from(response.data as ArrayBuffer));
   } catch {
