@@ -5,6 +5,19 @@ import { authMiddleware } from '../middleware/auth';
 import { hasPermission, requirePermission } from '../middleware/permissions';
 import axios from 'axios';
 import { promises as dns } from 'dns';
+import sanitizeHtml from 'sanitize-html';
+
+const ALLOWED_TIPTAP_HTML: sanitizeHtml.IOptions = {
+  allowedTags: ['p', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3', 'img'],
+  allowedAttributes: {
+    img: ['src', 'alt', 'title'],
+  },
+  allowedSchemes: ['http', 'https', 'data'],
+  // Limiter la taille des data URIs base64 à 500 Ko
+  allowedSchemesByTag: {
+    img: ['http', 'https', 'data'],
+  },
+};
 
 const router = Router();
 
@@ -106,7 +119,14 @@ router.get('/proxy-image', async (req: Request, res: Response) => {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; HelpDesk/1.0)' },
     });
 
-    const contentType = (response.headers['content-type'] as string) || 'image/png';
+    const contentType = (response.headers['content-type'] as string) || '';
+
+    // Whitelist Content-Type pour éviter le relay de contenu non-image
+    const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
+    if (!ALLOWED_IMAGE_TYPES.some((t) => contentType.startsWith(t))) {
+      res.status(415).json({ error: 'Type de contenu non autorisé' }); return;
+    }
+
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(Buffer.from(response.data as ArrayBuffer));
@@ -223,10 +243,12 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
 
   const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status, production, chaperonnage, chaperonneTechnicienId } = parsed.data;
 
+  const sanitizedContent = sanitizeHtml(content, ALLOWED_TIPTAP_HTML);
+
   const note = await prisma.matchNote.upsert({
     where: { matchKey },
     update: {
-      content,
+      content: sanitizedContent,
       broadcasterLogo: broadcasterLogo || null,
       status: status ?? 'VERT',
       production: production ?? null,
@@ -236,7 +258,7 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
     },
     create: {
       matchKey,
-      content,
+      content: sanitizedContent,
       matchDate: new Date(matchDate),
       competition,
       homeTeam,
