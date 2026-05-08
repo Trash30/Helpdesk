@@ -280,9 +280,9 @@ export function MatchReportExport() {
 
       const validNotes = notes.filter((n) => {
         const status = n.status ?? 'VERT';
-        // Pour VERT : afficher même sans contenu (RAS)
         if (status === 'VERT') return true;
-        // Pour ORANGE/ROUGE : exiger un contenu non vide
+        if (n.production) return true;
+        if (n.chaperonnage && n.chaperonneTechnicien) return true;
         const stripped = n.content?.replace(/<[^>]*>/g, '').trim();
         return stripped && stripped.length > 0;
       });
