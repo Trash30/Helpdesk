@@ -27,6 +27,9 @@ const matchNoteBodySchema = z.object({
   awayTeamLogo: z.string().optional(),
   broadcasterLogo: z.string().url().optional(),
   status: z.enum(['VERT', 'ORANGE', 'ROUGE']).optional(),
+  production: z.enum(['BeIN', 'Via Storia', 'AMP Visual', 'IXI Live']).nullable().optional(),
+  chaperonnage: z.boolean().default(false),
+  chaperonneTechnicienId: z.string().uuid().nullable().optional(),
 });
 
 // ─── GET /api/sports/match-notes/proxy-image ────────────────────────────────
@@ -112,6 +115,23 @@ router.get('/proxy-image', async (req: Request, res: Response) => {
   }
 });
 
+// ─── GET /api/sports/match-notes/team-members ───────────────────────────────
+// Liste des membres actifs pour le select chaperon (accessible à tous les opérateurs authentifiés)
+
+router.get('/team-members', async (_req: Request, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, firstName: true, lastName: true },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    });
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching team members:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // ─── GET /api/sports/match-notes ────────────────────────────────────────────
 // Récupère toutes les notes (pour charger les notes existantes au chargement du widget)
 
@@ -119,6 +139,9 @@ router.get('/', async (_req: Request, res: Response) => {
   const notes = await prisma.matchNote.findMany({
     include: {
       author: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+      chaperonneTechnicien: {
         select: { id: true, firstName: true, lastName: true },
       },
     },
@@ -168,6 +191,9 @@ router.get('/report/week', async (_req: Request, res: Response) => {
       author: {
         select: { id: true, firstName: true, lastName: true },
       },
+      chaperonneTechnicien: {
+        select: { id: true, firstName: true, lastName: true },
+      },
     },
     orderBy: [{ competition: 'asc' }, { matchDate: 'asc' }, { matchTime: 'asc' }],
   });
@@ -195,7 +221,7 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
     return;
   }
 
-  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status } = parsed.data;
+  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status, production, chaperonnage, chaperonneTechnicienId } = parsed.data;
 
   const note = await prisma.matchNote.upsert({
     where: { matchKey },
@@ -203,6 +229,9 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
       content,
       broadcasterLogo: broadcasterLogo || null,
       status: status ?? 'VERT',
+      production: production ?? null,
+      chaperonnage: chaperonnage ?? false,
+      chaperonneTechnicienId: chaperonneTechnicienId ?? null,
       updatedAt: new Date(),
     },
     create: {
@@ -218,10 +247,16 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
       awayTeamLogo: awayTeamLogo || null,
       broadcasterLogo: broadcasterLogo || null,
       status: status ?? 'VERT',
+      production: production ?? null,
+      chaperonnage: chaperonnage ?? false,
+      chaperonneTechnicienId: chaperonneTechnicienId ?? null,
       authorId: req.user!.id,
     },
     include: {
       author: {
+        select: { id: true, firstName: true, lastName: true },
+      },
+      chaperonneTechnicien: {
         select: { id: true, firstName: true, lastName: true },
       },
     },

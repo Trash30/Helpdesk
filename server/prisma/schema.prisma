@@ -90,7 +90,8 @@ model User {
   attachments        Attachment[]
   activityLogs       ActivityLog[]
   matchAttachments   MatchAttachment[]
-  matchNotes         MatchNote[]
+  matchNotes         MatchNote[]       @relation("MatchNoteAuthor")
+  matchNotesChaperon MatchNote[]       @relation("MatchNoteChaperon")
   kbArticles         KbArticle[]       @relation("KbAuthor")
   kbAttachments      KbAttachment[]    @relation("KbAttachmentUploader")
 }
@@ -336,8 +337,12 @@ model MatchNote {
   awayTeamLogo String?
   broadcasterLogo String?
   status       MatchNoteStatus @default(VERT)
+  production              String?   // "BeIN" | "Via Storia" | "AMP Visual" | "IXI Live"
+  chaperonnage            Boolean   @default(false)
+  chaperonneTechnicienId  String?
+  chaperonneTechnicien    User?     @relation("MatchNoteChaperon", fields: [chaperonneTechnicienId], references: [id])
   authorId     String
-  author       User     @relation(fields: [authorId], references: [id])
+  author       User     @relation("MatchNoteAuthor", fields: [authorId], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
