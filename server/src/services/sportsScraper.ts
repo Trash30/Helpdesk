@@ -253,7 +253,9 @@ async function scrapeLNR(
     const filtered = matches.filter((m) => m.date && isInCurrentWeek(m.date));
 
     // If no matches found in current week, the site is still showing the last
-    // completed round. Try to load the next round via /{seasonName}/j{N+1}.
+    // completed round. Try to load the next round via /{seasonName}/j{N+1},
+    // then fall back to the playoff slugs (barrages → finale) where the round
+    // numbering no longer applies.
     if (filtered.length === 0) {
       try {
         const currentWeekRaw = $('filters-fixtures').attr(':current-week');
@@ -261,18 +263,41 @@ async function scrapeLNR(
         if (currentWeekRaw && currentSeasonRaw) {
           const currentWeek = JSON.parse(currentWeekRaw) as { number: number; slug: string };
           const currentSeason = JSON.parse(currentSeasonRaw) as { name: string };
-          const nextSlug = `j${currentWeek.number + 1}`;
-          const nextUrl = `${url}/${currentSeason.name}/${nextSlug}`;
-          log(`${competition}: no matches this week on default page (${currentWeek.slug}), trying ${nextSlug}`);
 
-          const nextResp = await client.get(nextUrl);
-          const $next = cheerio.load(nextResp.data as string);
-          const nextMatches = parseLNRMatches($next, competition);
-          log(`${competition}: scraped ${nextMatches.length} total matches from ${nextUrl}`);
+          // Slugs to try, in order: next regular-season round, then playoffs.
+          const fallbackSlugs = [
+            `j${currentWeek.number + 1}`,
+            'barrages',
+            'quarts-de-finale',
+            'demi-finales',
+            'finale',
+          ];
 
-          const nextFiltered = nextMatches.filter((m) => m.date && isInCurrentWeek(m.date));
-          log(`${competition}: ${nextFiltered.length} matches in current week (${nextSlug})`);
-          return nextFiltered;
+          log(`${competition}: no matches this week on default page (${currentWeek.slug}), trying fallback rounds`);
+
+          for (const slug of fallbackSlugs) {
+            const nextUrl = `${url}/${currentSeason.name}/${slug}`;
+            try {
+              const nextResp = await client.get(nextUrl);
+              const $next = cheerio.load(nextResp.data as string);
+              const nextMatches = parseLNRMatches($next, competition);
+              log(`${competition}: scraped ${nextMatches.length} total matches from ${nextUrl}`);
+
+              const nextFiltered = nextMatches.filter((m) => m.date && isInCurrentWeek(m.date));
+              if (nextFiltered.length > 0) {
+                log(`${competition}: ${nextFiltered.length} matches in current week (${slug})`);
+                return nextFiltered;
+              }
+              log(`${competition}: 0 matches in current week (${slug}), trying next fallback`);
+            } catch (slugErr) {
+              // A 404 (or other error) on a slug just means that round does not
+              // exist for this season — keep trying the remaining slugs.
+              logError(`${competition} fallback round ${slug} failed:`, slugErr instanceof Error ? slugErr.message : slugErr);
+            }
+          }
+
+          log(`${competition}: no matches in current week after all fallback rounds`);
+          return [];
         }
       } catch (err) {
         logError(`${competition} fallback to next round failed:`, err instanceof Error ? err.message : err);
