@@ -111,6 +111,7 @@ async function createTrafficLightPng(status: 'VERT' | 'ORANGE' | 'ROUGE'): Promi
 
 async function fetchImageForDocx(url: string): Promise<FetchedImage | null> {
   if (!url) return null;
+  console.log('[fetchImageForDocx] url:', url, '| startsWith /:', url.startsWith('/'));
   try {
     let response: Response;
     if (url.startsWith('/')) {
@@ -126,6 +127,7 @@ async function fetchImageForDocx(url: string): Promise<FetchedImage | null> {
         { signal: AbortSignal.timeout(5000) }
       );
     }
+    console.log('[fetchImageForDocx] response status:', response.status, 'ok:', response.ok, 'content-type:', response.headers.get('content-type'));
     if (!response.ok) return null;
 
     const contentType = response.headers.get('content-type') || '';
@@ -336,11 +338,14 @@ export function MatchReportExport() {
         if (note.broadcasterLogo) allImageUrls.add(note.broadcasterLogo);
 
         // Images insérées dans le contenu HTML de la note
+        console.log('[export-debug] note.content raw:', JSON.stringify(note.content));
         const imgMatches = note.content?.matchAll(/<img[^>]+src="([^"]+)"/g) ?? [];
         for (const match of imgMatches) {
+          console.log('[export-debug] img url trouvée:', match[1]);
           allImageUrls.add(match[1]);
         }
       }
+      console.log('[export-debug] allImageUrls:', Array.from(allImageUrls));
 
       const imageCache = new Map<string, FetchedImage | null>();
       await Promise.all(
