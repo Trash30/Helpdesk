@@ -1,6 +1,5 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import path from 'path';
-import fs from 'fs';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
@@ -73,24 +72,20 @@ router.post(
 // ─── GET /api/sports/match-notes/images/:filename ───────────────────────────
 // Sert une image de note précédemment uploadée (authentifié)
 
-router.get('/images/:filename', (req: Request, res: Response) => {
+router.get('/images/:filename', (req: Request, res: Response, next: NextFunction) => {
   // path.basename neutralise toute tentative de path traversal (../, /, etc.)
   const filename = path.basename(req.params.filename);
   const imagesRoot = getUploadsPath('match-note-images');
-  const filepath = path.resolve(path.join(imagesRoot, filename));
 
-  // Défense en profondeur : le chemin résolu doit rester dans le dossier images
-  if (!filepath.startsWith(path.resolve(imagesRoot))) {
-    res.status(403).json({ error: 'Accès refusé' });
-    return;
-  }
-
-  if (!fs.existsSync(filepath)) {
-    res.status(404).json({ error: 'Image non trouvée' });
-    return;
-  }
-
-  res.sendFile(filepath);
+  // { root: imagesRoot } garantit que le fichier servi ne peut sortir du dossier images
+  res.sendFile(filename, { root: imagesRoot }, (err) => {
+    if (!err) return;
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      res.status(404).json({ error: 'Image non trouvée' });
+    } else {
+      next(err);
+    }
+  });
 });
 
 // ─── GET /api/sports/match-notes/proxy-image ────────────────────────────────
