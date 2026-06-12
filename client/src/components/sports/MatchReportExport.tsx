@@ -252,6 +252,7 @@ function htmlToDocxParagraphs(html: string, imageCache?: Map<string, FetchedImag
                 type: cached.type,
                 transformation: { width: 400, height: 300 },
               }),
+              new TextRun({ text: '' }),
             ],
             spacing: { before: 100, after: 100 },
           })
