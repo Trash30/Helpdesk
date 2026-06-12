@@ -1,17 +1,28 @@
 import { Router, Request, Response } from 'express';
+import path from 'path';
+import fs from 'fs';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
 import { hasPermission, requirePermission } from '../middleware/permissions';
+import { matchNoteImageUpload, getUploadsPath } from '../utils/upload';
 import axios from 'axios';
 import { promises as dns } from 'dns';
 import sanitizeHtml from 'sanitize-html';
+
+// Préfixe public des images de notes uploadées sur ce serveur
+const MATCH_NOTE_IMAGES_URL_PREFIX = '/api/sports/match-notes/images/';
 
 const ALLOWED_TIPTAP_HTML: sanitizeHtml.IOptions = {
   allowedTags: ['p', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li', 'br', 'h1', 'h2', 'h3', 'img'],
   allowedAttributes: {
     img: ['src', 'alt', 'title'],
   },
+  // Les URLs externes sont filtrées selon les schemes autorisés (http/https) ;
+  // les schemes dangereux (javascript:, data:) sont retirés. Les images
+  // uploadées sur ce serveur sont référencées par un path relatif
+  // (MATCH_NOTE_IMAGES_URL_PREFIX) : sanitize-html conserve par défaut les src
+  // relatifs sans scheme, ce qui les laisse passer en toute sécurité.
   allowedSchemes: ['http', 'https'],
 };
 
@@ -39,6 +50,47 @@ const matchNoteBodySchema = z.object({
   production: z.enum(['BeIN', 'Via Storia', 'AMP Visual', 'IXI Live']).nullable().optional(),
   chaperonnage: z.boolean().default(false),
   chaperonneTechnicienId: z.string().uuid().nullable().optional(),
+});
+
+// ─── POST /api/sports/match-notes/upload-image ──────────────────────────────
+// Upload d'une image collée/insérée dans une note (éditeur TipTap)
+// Nécessite la permission d'écriture des notes (tickets.create)
+
+router.post(
+  '/upload-image',
+  requirePermission('tickets.create'),
+  matchNoteImageUpload.single('image'),
+  (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: 'Aucun fichier image fourni' });
+      return;
+    }
+    const url = `${MATCH_NOTE_IMAGES_URL_PREFIX}${req.file.filename}`;
+    res.json({ url });
+  }
+);
+
+// ─── GET /api/sports/match-notes/images/:filename ───────────────────────────
+// Sert une image de note précédemment uploadée (authentifié)
+
+router.get('/images/:filename', (req: Request, res: Response) => {
+  // path.basename neutralise toute tentative de path traversal (../, /, etc.)
+  const filename = path.basename(req.params.filename);
+  const imagesRoot = getUploadsPath('match-note-images');
+  const filepath = path.resolve(path.join(imagesRoot, filename));
+
+  // Défense en profondeur : le chemin résolu doit rester dans le dossier images
+  if (!filepath.startsWith(path.resolve(imagesRoot))) {
+    res.status(403).json({ error: 'Accès refusé' });
+    return;
+  }
+
+  if (!fs.existsSync(filepath)) {
+    res.status(404).json({ error: 'Image non trouvée' });
+    return;
+  }
+
+  res.sendFile(filepath);
 });
 
 // ─── GET /api/sports/match-notes/proxy-image ────────────────────────────────

@@ -123,6 +123,38 @@ export const kbImageUpload = multer({
   },
 });
 
+// ─── Match note image upload (single file, 10 MB, images only) ───────────────
+
+const ALLOWED_MATCH_NOTE_IMAGE_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]);
+
+export const matchNoteImageUpload = multer({
+  storage: multer.diskStorage({
+    destination(_req, _file, cb) {
+      const dir = path.join(getUploadsRoot(), 'match-note-images');
+      ensureDir(dir);
+      cb(null, dir);
+    },
+    filename(_req, file, cb) {
+      const uuid = crypto.randomUUID();
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${uuid}${ext}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter(_req: Request, file: Express.Multer.File, cb: FileFilterCallback) {
+    if (ALLOWED_MATCH_NOTE_IMAGE_MIMES.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Format non autorisé (JPG, PNG, GIF, WebP uniquement)'));
+    }
+  },
+});
+
 export function getUploadsPath(...segments: string[]): string {
   return path.join(getUploadsRoot(), ...segments);
 }
