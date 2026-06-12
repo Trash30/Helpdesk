@@ -252,83 +252,76 @@ async function scrapeLNR(
 
     const filtered = matches.filter((m) => m.date && isInCurrentWeek(m.date));
 
-    // If no matches found in current week, the site is still showing the last
-    // completed round. We build the list of rounds to try dynamically from the
-    // `:filter-list` attribute of <filters-fixtures>, which carries the full,
-    // authoritative list of rounds (slugs) for the current season — including
-    // playoffs and the TOP14/PRO D2 "match d'accession" (slug `access-top-14`).
-    // This avoids a hardcoded slug list that breaks whenever the LNR renames or
-    // adds a round (e.g. `barrage` vs `barrages`, `demi-finale` vs `demi-finales`).
-    if (filtered.length === 0) {
-      try {
-        const currentWeekRaw = $('filters-fixtures').attr(':current-week');
-        const currentSeasonRaw = $('filters-fixtures').attr(':current-season');
-        const filterListRaw = $('filters-fixtures').attr(':filter-list');
-        if (currentWeekRaw && currentSeasonRaw) {
-          const currentWeek = JSON.parse(currentWeekRaw) as { number: number; slug: string };
-          const currentSeason = JSON.parse(currentSeasonRaw) as { id: number; name: string };
+    // In the playoffs, multiple rounds can fall in the same ISO week on separate
+    // URLs (e.g. "barrage" + "access-top-14" both on the same weekend).
+    // We therefore ALWAYS fetch all rounds from `:filter-list` whose number is
+    // >= currentWeek.number and aggregate their matches, regardless of whether
+    // the default page already returned some results.
+    try {
+      const currentWeekRaw = $('filters-fixtures').attr(':current-week');
+      const currentSeasonRaw = $('filters-fixtures').attr(':current-season');
+      const filterListRaw = $('filters-fixtures').attr(':filter-list');
 
-          // Build fallback slug list dynamically from the season's full round list.
-          let fallbackSlugs: string[] = [];
-          if (filterListRaw) {
-            try {
-              const filterList = JSON.parse(filterListRaw) as {
-                weeks?: Record<string, Array<{ slug: string; number: number }>>;
-              };
-              const seasonWeeks = filterList.weeks?.[String(currentSeason.id)] ?? [];
-              // Keep every round at/after the current one (by `number`), ordered
-              // by their position in the official list so we try them in calendar
-              // order. The current round itself is included because the default
-              // page may still be showing the previous round's results.
-              fallbackSlugs = seasonWeeks
-                .filter((w) => w.number >= currentWeek.number)
-                .map((w) => w.slug);
-            } catch (parseErr) {
-              logError(`${competition} :filter-list parse failed:`, parseErr instanceof Error ? parseErr.message : parseErr);
-            }
-          }
+      if (currentWeekRaw && currentSeasonRaw && filterListRaw) {
+        const currentWeek = JSON.parse(currentWeekRaw) as { number: number; slug: string };
+        const currentSeason = JSON.parse(currentSeasonRaw) as { id: number; name: string };
 
-          // Safety net if the round list could not be read: keep a minimal set of
-          // common end-of-season slugs (next regular round + known playoff slugs).
-          if (fallbackSlugs.length === 0) {
-            fallbackSlugs = [
-              `j${currentWeek.number + 1}`,
-              'barrage',
-              'access-top-14',
-              'demi-finale',
-              'finale',
-            ];
-          }
-
-          log(`${competition}: no matches this week on default page (${currentWeek.slug}), trying ${fallbackSlugs.length} fallback rounds: ${fallbackSlugs.join(', ')}`);
-
-          for (const slug of fallbackSlugs) {
-            const nextUrl = `${url}/${currentSeason.name}/${slug}`;
-            try {
-              const nextResp = await client.get(nextUrl);
-              const $next = cheerio.load(nextResp.data as string);
-              const nextMatches = parseLNRMatches($next, competition);
-              log(`${competition}: scraped ${nextMatches.length} total matches from ${nextUrl}`);
-
-              const nextFiltered = nextMatches.filter((m) => m.date && isInCurrentWeek(m.date));
-              if (nextFiltered.length > 0) {
-                log(`${competition}: ${nextFiltered.length} matches in current week (${slug})`);
-                return nextFiltered;
-              }
-              log(`${competition}: 0 matches in current week (${slug}), trying next fallback`);
-            } catch (slugErr) {
-              // A 404 (or other error) on a slug just means that round does not
-              // exist for this season — keep trying the remaining slugs.
-              logError(`${competition} fallback round ${slug} failed:`, slugErr instanceof Error ? slugErr.message : slugErr);
-            }
-          }
-
-          log(`${competition}: no matches in current week after all fallback rounds`);
-          return [];
+        let extraSlugs: string[] = [];
+        try {
+          const filterList = JSON.parse(filterListRaw) as {
+            weeks?: Record<string, Array<{ slug: string; number: number }>>;
+          };
+          const seasonWeeks = filterList.weeks?.[String(currentSeason.id)] ?? [];
+          // All rounds at/after current, excluding the one already shown on the
+          // default page (currentWeek.slug) to avoid a redundant HTTP request.
+          extraSlugs = seasonWeeks
+            .filter((w) => w.number >= currentWeek.number && w.slug !== currentWeek.slug)
+            .map((w) => w.slug);
+        } catch (parseErr) {
+          logError(`${competition} :filter-list parse failed:`, parseErr instanceof Error ? parseErr.message : parseErr);
         }
-      } catch (err) {
-        logError(`${competition} fallback to next round failed:`, err instanceof Error ? err.message : err);
+
+        // If filter-list was unreadable and the default page returned nothing,
+        // fall back to a minimal hardcoded list of common end-of-season slugs.
+        if (extraSlugs.length === 0 && filtered.length === 0) {
+          extraSlugs = ['barrage', 'access-top-14', 'access-prod-d2', 'demi-finale', 'finale',
+            `j${currentWeek.number + 1}`];
+        }
+
+        if (extraSlugs.length > 0) {
+          log(`${competition}: checking ${extraSlugs.length} additional rounds: ${extraSlugs.join(', ')}`);
+        }
+
+        const aggregated = [...filtered];
+
+        for (const slug of extraSlugs) {
+          const roundUrl = `${url}/${currentSeason.name}/${slug}`;
+          try {
+            const roundResp = await client.get(roundUrl);
+            const $round = cheerio.load(roundResp.data as string);
+            const roundMatches = parseLNRMatches($round, competition);
+            const roundFiltered = roundMatches.filter((m) => m.date && isInCurrentWeek(m.date));
+            log(`${competition}: ${roundFiltered.length} matches in current week (${slug})`);
+            aggregated.push(...roundFiltered);
+          } catch (slugErr) {
+            logError(`${competition} round ${slug} failed:`, slugErr instanceof Error ? slugErr.message : slugErr);
+          }
+        }
+
+        // Deduplicate by (date|homeTeam|awayTeam)
+        const seen = new Set<string>();
+        const deduped = aggregated.filter((m) => {
+          const key = `${m.date}|${m.homeTeam}|${m.awayTeam}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        log(`${competition}: ${deduped.length} total matches in current week (after dedup)`);
+        return deduped;
       }
+    } catch (err) {
+      logError(`${competition} multi-round aggregation failed:`, err instanceof Error ? err.message : err);
     }
 
     log(`${competition}: ${filtered.length} matches in current week`);
