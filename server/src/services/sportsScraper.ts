@@ -253,27 +253,54 @@ async function scrapeLNR(
     const filtered = matches.filter((m) => m.date && isInCurrentWeek(m.date));
 
     // If no matches found in current week, the site is still showing the last
-    // completed round. Try to load the next round via /{seasonName}/j{N+1},
-    // then fall back to the playoff slugs (barrages → finale) where the round
-    // numbering no longer applies.
+    // completed round. We build the list of rounds to try dynamically from the
+    // `:filter-list` attribute of <filters-fixtures>, which carries the full,
+    // authoritative list of rounds (slugs) for the current season — including
+    // playoffs and the TOP14/PRO D2 "match d'accession" (slug `access-top-14`).
+    // This avoids a hardcoded slug list that breaks whenever the LNR renames or
+    // adds a round (e.g. `barrage` vs `barrages`, `demi-finale` vs `demi-finales`).
     if (filtered.length === 0) {
       try {
         const currentWeekRaw = $('filters-fixtures').attr(':current-week');
         const currentSeasonRaw = $('filters-fixtures').attr(':current-season');
+        const filterListRaw = $('filters-fixtures').attr(':filter-list');
         if (currentWeekRaw && currentSeasonRaw) {
           const currentWeek = JSON.parse(currentWeekRaw) as { number: number; slug: string };
-          const currentSeason = JSON.parse(currentSeasonRaw) as { name: string };
+          const currentSeason = JSON.parse(currentSeasonRaw) as { id: number; name: string };
 
-          // Slugs to try, in order: next regular-season round, then playoffs.
-          const fallbackSlugs = [
-            `j${currentWeek.number + 1}`,
-            'barrages',
-            'quarts-de-finale',
-            'demi-finales',
-            'finale',
-          ];
+          // Build fallback slug list dynamically from the season's full round list.
+          let fallbackSlugs: string[] = [];
+          if (filterListRaw) {
+            try {
+              const filterList = JSON.parse(filterListRaw) as {
+                weeks?: Record<string, Array<{ slug: string; number: number }>>;
+              };
+              const seasonWeeks = filterList.weeks?.[String(currentSeason.id)] ?? [];
+              // Keep every round at/after the current one (by `number`), ordered
+              // by their position in the official list so we try them in calendar
+              // order. The current round itself is included because the default
+              // page may still be showing the previous round's results.
+              fallbackSlugs = seasonWeeks
+                .filter((w) => w.number >= currentWeek.number)
+                .map((w) => w.slug);
+            } catch (parseErr) {
+              logError(`${competition} :filter-list parse failed:`, parseErr instanceof Error ? parseErr.message : parseErr);
+            }
+          }
 
-          log(`${competition}: no matches this week on default page (${currentWeek.slug}), trying fallback rounds`);
+          // Safety net if the round list could not be read: keep a minimal set of
+          // common end-of-season slugs (next regular round + known playoff slugs).
+          if (fallbackSlugs.length === 0) {
+            fallbackSlugs = [
+              `j${currentWeek.number + 1}`,
+              'barrage',
+              'access-top-14',
+              'demi-finale',
+              'finale',
+            ];
+          }
+
+          log(`${competition}: no matches this week on default page (${currentWeek.slug}), trying ${fallbackSlugs.length} fallback rounds: ${fallbackSlugs.join(', ')}`);
 
           for (const slug of fallbackSlugs) {
             const nextUrl = `${url}/${currentSeason.name}/${slug}`;
