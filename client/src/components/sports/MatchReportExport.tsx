@@ -411,7 +411,9 @@ export function MatchReportExport() {
           const homeImg = getImg(note.homeTeamLogo);
           const awayImg = getImg(note.awayTeamLogo);
           const noteStatus = note.status ?? 'VERT';
-          const shouldIncludeContent = !!(note.content?.replace(/<[^>]*>/g, '').trim());
+          const hasText = !!(note.content?.replace(/<[^>]*>/g, '').trim());
+          const hasImages = /<img\b/i.test(note.content || '');
+          const shouldIncludeContent = hasText || hasImages;
 
           // Feu tricolore : image canvas + libellé
           const statusTextColor = { VERT: '007700', ORANGE: 'CC6600', ROUGE: 'BB0000' }[noteStatus];
