@@ -355,6 +355,41 @@ Crée ou met à jour la note d'un match (upsert). Permission requise : `tickets.
 
 > `broadcasterLogo` doit être une URL valide (`https://...`). Il est persisté en base à la création et mis à jour à chaque save. Il est ensuite inclus dans le CR exporté.
 
+### POST /api/sports/match-notes/upload-image
+Upload d'une image collée ou insérée dans l'éditeur de notes TipTap. Permission requise : `tickets.create`
+
+**Content-Type :** `multipart/form-data`  
+**Champ :** `image` (fichier unique, max 10 Mo, formats : JPEG, PNG, GIF, WebP)
+
+**Réponse 200**
+```json
+{ "url": "/api/sports/match-notes/images/uuid.png" }
+```
+
+**Erreurs**
+| Code | Message |
+|------|---------|
+| 400 | Aucun fichier image fourni |
+| 415 | Format non autorisé |
+
+> L'URL retournée est relative (`/api/...`) et est stockée directement dans le HTML TipTap (`<img src="/api/...">`). Elle est ensuite résolue côté client lors de l'export CR.
+
+---
+
+### GET /api/sports/match-notes/images/:filename
+Sert une image précédemment uploadée. Route authentifiée — le cookie JWT est requis (envoyé automatiquement par le navigateur).
+
+**Paramètre :** `filename` — UUID + extension (ex : `b724a3bd-85eb-460b-a681-6013e641d67f.png`)  
+**Réponse 200 :** Fichier image avec `Content-Type` correspondant (`image/png`, `image/jpeg`, etc.)
+
+| Code | Message |
+|------|---------|
+| 404 | Image non trouvée |
+
+> Les fichiers sont stockés dans `UPLOADS_PATH/match-note-images/` sur le serveur. La route bloque le path traversal via `path.basename()`.
+
+---
+
 ### GET /api/sports/match-notes/report/week
 Notes de la semaine ISO courante avec bornes lundi/dimanche. Chaque note inclut `broadcasterLogo` si disponible.
 

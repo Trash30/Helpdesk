@@ -453,7 +453,39 @@ Cela résout aussi les faux doublons (ghost + scrapé affichés simultanément) 
 
 ---
 
-## 8. Conventions de code
+## 8. Gestion des images dans les notes de match
+
+### Fonctionnement
+
+Les opérateurs peuvent coller (Ctrl+V), glisser-déposer ou sélectionner une image via le bouton de la toolbar de l'éditeur TipTap. L'image est immédiatement uploadée sur le serveur et insérée dans l'éditeur via son URL relative.
+
+**Flux complet :**
+1. L'utilisateur colle/uploade une image → `POST /api/sports/match-notes/upload-image`
+2. Le serveur stocke le fichier dans `UPLOADS_PATH/match-note-images/` et retourne `{ url: "/api/sports/match-notes/images/uuid.png" }`
+3. TipTap insère `<img src="/api/sports/match-notes/images/uuid.png">` dans le HTML de la note
+4. Lors du `PUT /:matchKey`, sanitize-html conserve la balise `<img>` avec son `src` relatif (whitelist explicite)
+5. Lors de l'export CR Word, le client refetch l'image via `fetch(url, { credentials: 'include' })` et l'embarque dans le DOCX via `ImageRun`
+
+### Stockage serveur
+
+```
+UPLOADS_PATH/
+└── match-note-images/
+    ├── b724a3bd-85eb-460b-b681-6013e641d67f.png
+    └── d37e7a6d-265d-4475-a7cb-c84179a6ee67.png
+```
+
+`UPLOADS_PATH` est défini dans `server/.env` (ex : `/opt/helpdesk/uploads`). Si absent, fallback sur `<cwd>/uploads`.
+
+### Points d'attention maintenance
+
+- **Les images sont permanentes** : il n'y a pas de garbage collection automatique. Si une note est supprimée, ses images restent sur le disque. Un nettoyage manuel peut être nécessaire si l'espace disque devient critique.
+- **Accès direct bloqué** : `/uploads/match-note-images/` est bloqué par Express avant le middleware `static` → retourne 403. Seule la route `/api/sports/match-notes/images/:filename` (authentifiée) permet d'accéder aux fichiers.
+- **Compatibilité OOXML** : dans docx v9, un `<w:p>` contenant uniquement un `<w:drawing>` (ImageRun) sans `<w:r>` (TextRun) est ignoré par Word. La fonction `htmlToDocxParagraphs` ajoute systématiquement un `TextRun('')` à côté de chaque `ImageRun`.
+
+---
+
+## 9. Conventions de code
 
 ### Backend
 
@@ -507,7 +539,7 @@ refactor(auth): simplifier middleware validation token
 
 ---
 
-## 9. Points de contact et ressources
+## 10. Points de contact et ressources
 
 | Ressource | Emplacement |
 |-----------|-------------|
@@ -523,7 +555,7 @@ refactor(auth): simplifier middleware validation token
 
 ---
 
-## 10. Checklist reprise du projet
+## 11. Checklist reprise du projet
 
 - [ ] Node.js 20+ et PostgreSQL 15+ installés
 - [ ] Dépôt cloné, `npm install` exécuté dans `server/` et `client/`
