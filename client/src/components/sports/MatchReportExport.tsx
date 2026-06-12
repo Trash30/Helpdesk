@@ -111,7 +111,6 @@ async function createTrafficLightPng(status: 'VERT' | 'ORANGE' | 'ROUGE'): Promi
 
 async function fetchImageForDocx(url: string): Promise<FetchedImage | null> {
   if (!url) return null;
-  console.log('[fetchImageForDocx] url:', url, '| startsWith /:', url.startsWith('/'));
   try {
     let response: Response;
     if (url.startsWith('/')) {
@@ -127,7 +126,6 @@ async function fetchImageForDocx(url: string): Promise<FetchedImage | null> {
         { signal: AbortSignal.timeout(5000) }
       );
     }
-    console.log('[fetchImageForDocx] response status:', response.status, 'ok:', response.ok, 'content-type:', response.headers.get('content-type'));
     if (!response.ok) return null;
 
     const contentType = response.headers.get('content-type') || '';
@@ -240,10 +238,8 @@ function htmlToDocxParagraphs(html: string, imageCache?: Map<string, FetchedImag
       // Images inline dans les notes : insérées si elles ont pu être téléchargées
       // lors du pré-fetch. Sinon, rien n'est inséré (pas de placeholder).
       const src = node.getAttribute('src') || '';
-      console.log('[htmlToDocx] img tag found, src:', JSON.stringify(src), '| cache has key:', imageCache?.has(src), '| cache value:', imageCache?.get(src) ? 'FetchedImage' : imageCache?.get(src));
       const cached = src ? imageCache?.get(src) : null;
       if (cached) {
-        console.log('[htmlToDocx] inserting ImageRun, type:', cached.type, 'data length:', cached.data.length);
         paragraphs.push(
           new Paragraph({
             children: [
@@ -257,8 +253,6 @@ function htmlToDocxParagraphs(html: string, imageCache?: Map<string, FetchedImag
             spacing: { before: 100, after: 100 },
           })
         );
-      } else {
-        console.log('[htmlToDocx] image SKIPPED — cached is:', cached);
       }
     } else {
       const runs = parseInlineRuns(node);
@@ -266,9 +260,7 @@ function htmlToDocxParagraphs(html: string, imageCache?: Map<string, FetchedImag
     }
   }
 
-  console.log('[htmlToDocx] body.children tags:', Array.from(doc.body.children).map(c => c.tagName.toLowerCase()));
   for (const child of Array.from(doc.body.children)) processNode(child as Element);
-  console.log('[htmlToDocx] paragraphs generated:', paragraphs.length);
 
   if (paragraphs.length === 0 && doc.body.textContent?.trim()) {
     paragraphs.push(new Paragraph({ children: parseInlineRuns(doc.body) }));
@@ -345,14 +337,11 @@ export function MatchReportExport() {
         if (note.broadcasterLogo) allImageUrls.add(note.broadcasterLogo);
 
         // Images insérées dans le contenu HTML de la note
-        console.log('[export-debug] note.content raw:', JSON.stringify(note.content));
         const imgMatches = note.content?.matchAll(/<img[^>]+src="([^"]+)"/g) ?? [];
         for (const match of imgMatches) {
-          console.log('[export-debug] img url trouvée:', match[1]);
           allImageUrls.add(match[1]);
         }
       }
-      console.log('[export-debug] allImageUrls:', Array.from(allImageUrls));
 
       const imageCache = new Map<string, FetchedImage | null>();
       await Promise.all(
