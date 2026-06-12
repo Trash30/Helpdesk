@@ -82,6 +82,10 @@ const uploadsPath = process.env.UPLOADS_PATH
 app.use('/uploads/match-attachments', (_req, res) => {
   res.status(403).json({ error: 'Accès refusé' });
 });
+// Block direct static access to match-note-images (served via authenticated API route)
+app.use('/uploads/match-note-images', (_req, res) => {
+  res.status(403).json({ error: 'Accès refusé' });
+});
 app.use('/uploads', express.static(uploadsPath));
 
 // ─── API routes ──────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -22,6 +22,7 @@ import {
   List,
   ListOrdered,
   Image as ImageIcon,
+  Loader2,
   Trash2,
   Save,
   X,
@@ -86,6 +87,8 @@ export function MatchNoteEditor({
   const [chaperonneTechnicienId, setChaperonneTechnicienId] = useState<string | null>(
     initialChaperonneTechnicienId ?? null
   );
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { can } = usePermissions();
   const queryClient = useQueryClient();
   const hasNote = !!initialContent;
@@ -96,6 +99,32 @@ export function MatchNoteEditor({
     queryFn: async () => (await api.get('/sports/match-notes/team-members')).data,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Upload d'une image vers le backend, retourne l'URL publique (ou null en cas d'echec).
+  // Gere l'etat de chargement local pour desactiver le bouton image.
+  const uploadImage = async (file: File): Promise<string | null> => {
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const res = await fetch('/api/sports/match-notes/upload-image', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        toast.error("Erreur lors de l'envoi de l'image");
+        return null;
+      }
+      const data = (await res.json()) as { url: string };
+      return data.url;
+    } catch {
+      toast.error("Erreur lors de l'envoi de l'image");
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const editor = useEditor({
     extensions: [
@@ -113,8 +142,45 @@ export function MatchNoteEditor({
         class:
           'prose prose-base sm:prose-sm max-w-none min-h-[200px] sm:min-h-[120px] outline-none p-3 sm:p-2 text-base sm:text-sm',
       },
+      // Coller une image depuis le presse-papier (Ctrl+V) -> upload + insertion
+      handlePaste: (_view, event) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+        for (const item of Array.from(items)) {
+          if (item.type.startsWith('image/')) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (!file) return true;
+            void uploadImage(file).then((url) => {
+              if (url) editorRef.current?.chain().focus().setImage({ src: url }).run();
+            });
+            return true;
+          }
+        }
+        return false;
+      },
+      // Glisser-deposer une image -> upload + insertion
+      handleDrop: (_view, event) => {
+        const files = event.dataTransfer?.files;
+        if (!files?.length) return false;
+        for (const file of Array.from(files)) {
+          if (file.type.startsWith('image/')) {
+            event.preventDefault();
+            void uploadImage(file).then((url) => {
+              if (url) editorRef.current?.chain().focus().setImage({ src: url }).run();
+            });
+            return true;
+          }
+        }
+        return false;
+      },
     },
   });
+
+  // Ref vers l'editor pour acceder a l'instance dans les callbacks editorProps
+  // (definis avant que `editor` ne soit assigne).
+  const editorRef = useRef(editor);
+  editorRef.current = editor;
 
   // Sync editor content when the saved note is loaded/updated from the server
   useEffect(() => {
@@ -206,9 +272,18 @@ export function MatchNoteEditor({
     setIsOpen(false);
   };
 
+  // Declenche le selecteur de fichier cache
   const handleInsertImage = () => {
-    if (!editor) return;
-    const url = window.prompt("URL de l'image :");
+    fileInputRef.current?.click();
+  };
+
+  // Quand un fichier est selectionne via le bouton : upload + insertion
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // reset pour permettre de re-selectionner le meme fichier
+    e.target.value = '';
+    if (!file || !editor) return;
+    const url = await uploadImage(file);
     if (url) editor.chain().focus().setImage({ src: url }).run();
   };
 
@@ -405,10 +480,24 @@ export function MatchNoteEditor({
               variant="ghost"
               className="h-10 w-10 sm:h-7 sm:w-7 p-0"
               onClick={handleInsertImage}
+              disabled={isUploading}
               aria-label="Insérer une image"
+              title="Insérer une image (ou collez/glissez directement)"
             >
-              <ImageIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              {isUploading ? (
+                <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin" />
+              ) : (
+                <ImageIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              )}
             </Button>
+            {/* Input fichier cache, declenche par le bouton image ci-dessus */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileSelected}
+            />
           </div>
 
           {/* Editor */}

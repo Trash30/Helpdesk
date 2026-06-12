@@ -112,10 +112,20 @@ async function createTrafficLightPng(status: 'VERT' | 'ORANGE' | 'ROUGE'): Promi
 async function fetchImageForDocx(url: string): Promise<FetchedImage | null> {
   if (!url) return null;
   try {
-    const response = await fetch(
-      `/api/sports/match-notes/proxy-image?url=${encodeURIComponent(url)}`,
-      { signal: AbortSignal.timeout(5000) }
-    );
+    let response: Response;
+    if (url.startsWith('/')) {
+      // URL locale serveur (image uploadée dans une note) → fetch direct avec cookie JWT
+      response = await fetch(url, {
+        credentials: 'include',
+        signal: AbortSignal.timeout(5000),
+      });
+    } else {
+      // URL externe (logos, favicons) → via proxy CORS
+      response = await fetch(
+        `/api/sports/match-notes/proxy-image?url=${encodeURIComponent(url)}`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+    }
     if (!response.ok) return null;
 
     const contentType = response.headers.get('content-type') || '';
@@ -190,7 +200,7 @@ function parseInlineRuns(node: Node): TextRun[] {
   return runs;
 }
 
-function htmlToDocxParagraphs(html: string): Paragraph[] {
+function htmlToDocxParagraphs(html: string, imageCache?: Map<string, FetchedImage | null>): Paragraph[] {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const paragraphs: Paragraph[] = [];
@@ -225,13 +235,24 @@ function htmlToDocxParagraphs(html: string): Paragraph[] {
     } else if (tag === 'h1' || tag === 'h2' || tag === 'h3') {
       paragraphs.push(new Paragraph({ children: parseInlineRuns(node), heading: tag === 'h1' ? HeadingLevel.HEADING_1 : tag === 'h2' ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3 }));
     } else if (tag === 'img') {
-      // Images inline dans les notes : skip dans l'export Word (les images
-      // téléchargées seraient trop complexes). Placeholder texte à la place.
-      paragraphs.push(
-        new Paragraph({
-          children: [new TextRun({ text: '[Image]', color: '999999', italics: true, size: 18 })],
-        })
-      );
+      // Images inline dans les notes : insérées si elles ont pu être téléchargées
+      // lors du pré-fetch. Sinon, rien n'est inséré (pas de placeholder).
+      const src = node.getAttribute('src') || '';
+      const cached = src ? imageCache?.get(src) : null;
+      if (cached) {
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: cached.data,
+                type: cached.type,
+                transformation: { width: 400, height: 300 },
+              }),
+            ],
+            spacing: { before: 100, after: 100 },
+          })
+        );
+      }
     } else {
       const runs = parseInlineRuns(node);
       if (runs.length > 0) paragraphs.push(new Paragraph({ children: runs }));
@@ -313,6 +334,12 @@ export function MatchReportExport() {
         if (note.homeTeamLogo) allImageUrls.add(note.homeTeamLogo);
         if (note.awayTeamLogo) allImageUrls.add(note.awayTeamLogo);
         if (note.broadcasterLogo) allImageUrls.add(note.broadcasterLogo);
+
+        // Images insérées dans le contenu HTML de la note
+        const imgMatches = note.content?.matchAll(/<img[^>]+src="([^"]+)"/g) ?? [];
+        for (const match of imgMatches) {
+          allImageUrls.add(match[1]);
+        }
       }
 
       const imageCache = new Map<string, FetchedImage | null>();
@@ -478,7 +505,7 @@ export function MatchReportExport() {
 
           // Contenu de la note — uniquement si status != VERT
           if (shouldIncludeContent) {
-            sections.push(...htmlToDocxParagraphs(note.content));
+            sections.push(...htmlToDocxParagraphs(note.content, imageCache));
           }
 
           // Separator
