@@ -7,6 +7,7 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   email: string;
+  sportCompetitions: string[];
   role: {
     id: string;
     name: string;
@@ -72,6 +73,7 @@ export async function authMiddleware(
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
+    sportCompetitions: user.sportCompetitions,
     role: {
       id: user.role.id,
       name: user.role.name,
