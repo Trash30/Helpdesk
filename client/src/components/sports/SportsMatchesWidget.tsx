@@ -8,11 +8,12 @@ import { MatchNoteEditor } from './MatchNoteEditor';
 import { MatchReportExport } from './MatchReportExport';
 import api from '@/lib/axios';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useAuthStore } from '@/stores/authStore';
 import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS';
+export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE';
 
 export interface Match {
   competition: Competition;
@@ -71,9 +72,10 @@ export const COMPETITION_META: Record<Competition, { label: string; favicon: str
   EPCR_CHALLENGE: { label: 'Challenge Cup', favicon: 'https://media-cdn.incrowdsports.com/96d27751-bc48-42e6-890e-a389508ab133.svg',                calendarUrl: 'https://www.epcrugby.com/fr/challenge-cup/matchs' },
   LNH:            { label: 'Liqui Moly Starligue', favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg',                                    calendarUrl: 'https://www.lnh.fr/liquimoly-starligue/calendrier' },
   ELMS:           { label: 'ELMS',          favicon: 'https://www.europeanlemansseries.com/favicon.ico',                                            calendarUrl: 'https://www.europeanlemansseries.com/en/season/2026' },
+  ESTONIE:        { label: 'Premium Liiga', favicon: 'https://jalgpall.ee/favicon.ico',                                                            calendarUrl: 'https://jalgpall.ee/voistlused/52/premium-liiga' },
 };
 
-const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS'];
+const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS', 'ESTONIE'];
 
 const DAY_NAMES = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
 
@@ -686,6 +688,8 @@ function getCurrentWeekBounds(): { monday: Date; sunday: Date } {
 }
 
 function MatchesList({ matches }: MatchesListProps) {
+  const { user } = useAuthStore();
+
   // Toujours charger les notes — indépendamment des matchs scrapés,
   // pour pouvoir reconstruire les matchs joués qui ont disparu du scraper.
   const { data: notesData } = useQuery({
@@ -725,7 +729,16 @@ function MatchesList({ matches }: MatchesListProps) {
     }));
 
   const allMatches = [...matches, ...ghostMatches];
-  const allMatchKeys = allMatches.map(getMatchKey);
+
+  // Filtrer par préférences de compétitions de l'utilisateur.
+  // Si sportCompetitions est vide → afficher tout (comportement par défaut).
+  const userCompetitions = user?.sportCompetitions ?? [];
+  const filteredMatches =
+    userCompetitions.length > 0
+      ? allMatches.filter((m) => userCompetitions.includes(m.competition))
+      : allMatches;
+
+  const allMatchKeys = filteredMatches.map(getMatchKey);
 
   const { data: attachmentsData } = useQuery({
     queryKey: ['match-attachments', allMatchKeys],
@@ -761,15 +774,17 @@ function MatchesList({ matches }: MatchesListProps) {
     );
   };
 
-  if (allMatches.length === 0) {
+  const grouped = groupAndSort(filteredMatches);
+
+  if (grouped.size === 0) {
     return (
       <p className="text-sm text-muted-foreground text-center py-4">
-        Aucun match cette semaine
+        {userCompetitions.length > 0
+          ? 'Aucun match cette semaine pour vos compétitions sélectionnées.'
+          : 'Aucun match cette semaine.'}
       </p>
     );
   }
-
-  const grouped = groupAndSort(allMatches);
 
   return (
     <div className="space-y-4">
