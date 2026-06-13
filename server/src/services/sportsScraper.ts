@@ -4,7 +4,7 @@ import * as cheerio from 'cheerio';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
@@ -872,6 +872,82 @@ async function scrapeELMS(): Promise<Match[]> {
   }
 }
 
+// ─── Estonie (Premium Liiga) — iCal jalgpall.ee ──────────────────────────────
+
+/**
+ * Scrapes the Estonian Premium Liiga fixtures from the official iCal feed.
+ * The feed is parsed manually (no external iCal library): each VEVENT block is
+ * extracted, then SUMMARY / DTSTART / LOCATION are read via regex.
+ *
+ * Timezone handling: DTSTART is in Europe/Tallinn local time. Estonia uses
+ * EEST (UTC+3) in summer (months 4–9) and EET (UTC+2) in winter, so we subtract
+ * the offset from the local components to build a correct UTC Date.
+ */
+async function scrapeEstonie(): Promise<Match[]> {
+  const url =
+    'https://jalgpall.ee/voistlused/download.php?type=calendar.download&action=download&league_id=52';
+  try {
+    const client = createClient();
+    const resp = await client.get(url, { responseType: 'arraybuffer' });
+    // Force UTF-8 decoding to preserve Estonian characters (ä, ü, õ, ö)
+    const ical = Buffer.from(resp.data as ArrayBuffer).toString('utf-8');
+
+    const matches: Match[] = [];
+    const eventBlocks = ical.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
+
+    for (const block of eventBlocks) {
+      const summaryMatch = block.match(/SUMMARY:(.+)/);
+      if (!summaryMatch) continue;
+      const summary = summaryMatch[1].trim();
+      const teams = summary.split(' vs ');
+      if (teams.length < 2) continue;
+      const homeTeam = teams[0].trim();
+      const awayTeam = teams[1].trim();
+
+      const dtMatch = block.match(
+        /DTSTART[^:]*:(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/
+      );
+      if (!dtMatch) continue;
+      const year = parseInt(dtMatch[1], 10);
+      const month = parseInt(dtMatch[2], 10); // 1-12
+      const day = parseInt(dtMatch[3], 10);
+      const hour = parseInt(dtMatch[4], 10);
+      const minute = parseInt(dtMatch[5], 10);
+      const second = parseInt(dtMatch[6], 10);
+
+      // Estonia: EEST (UTC+3) months 4–9, EET (UTC+2) otherwise
+      const offset = month >= 4 && month <= 9 ? 3 : 2;
+      const date = new Date(
+        Date.UTC(year, month - 1, day, hour - offset, minute, second)
+      );
+
+      if (!isInCurrentWeek(date.toISOString())) continue;
+
+      const locationMatch = block.match(/LOCATION:([^\r\n,]+)/);
+      const venue = locationMatch ? locationMatch[1].trim() : undefined;
+
+      // Display time in Tallinn local time (as given in the feed)
+      const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+      matches.push({
+        competition: 'ESTONIE',
+        homeTeam,
+        awayTeam,
+        date: date.toISOString(),
+        time,
+        venue,
+        country: 'EE',
+      });
+    }
+
+    log(`ESTONIE: ${eventBlocks.length} events → ${matches.length} in current week`);
+    return matches;
+  } catch (err) {
+    logError('ESTONIE scraping failed:', err instanceof Error ? err.message : err);
+    return [];
+  }
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: string }> {
@@ -906,6 +982,10 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     {
       key: 'ELMS',
       fetch: scrapeELMS,
+    },
+    {
+      key: 'ESTONIE',
+      fetch: scrapeEstonie,
     },
   ];
 
