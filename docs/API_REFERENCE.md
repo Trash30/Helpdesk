@@ -24,6 +24,7 @@ Connexion et obtention du token JWT.
     "firstName": "Nicolas",
     "lastName": "Broutin",
     "email": "agent@vogo.fr",
+    "sportCompetitions": ["TOP14", "ESTONIE"],
     "role": { "name": "Admin", "permissions": ["tickets.view", "admin.access"] }
   }
 }
@@ -58,6 +59,27 @@ Change le mot de passe de l'utilisateur connecté.
 
 ### POST /api/auth/logout
 Supprime le cookie de session.
+
+---
+
+### PATCH /api/auth/sport-competitions
+Met à jour les préférences de compétitions sportives de l'utilisateur connecté. Le widget sports n'affiche que les compétitions sélectionnées. Si la liste est vide, toutes les compétitions sont affichées.
+
+**Body**
+```json
+{ "sportCompetitions": ["TOP14", "ESTONIE"] }
+```
+
+**Valeurs acceptées :** `TOP14`, `PRO_D2`, `LNH`, `EPCR`, `EPCR_CHALLENGE`, `ELMS`, `ESTONIE`
+
+**Réponse 200**
+```json
+{ "data": { "sportCompetitions": ["TOP14", "ESTONIE"] } }
+```
+
+| Code | Message |
+|------|---------|
+| 400 | Valeur de compétition invalide |
 
 ---
 
@@ -312,7 +334,7 @@ Crée un brouillon KB pré-rempli depuis un ticket et ses commentaires.
 ### GET /api/sports/matches
 Retourne tous les matchs de la semaine (cache 1h par compétition).
 
-**Compétitions :** TOP14, PRO_D2, EPCR, EPCR_CHALLENGE, LNH, SUPER_LEAGUE, LIGUE1, ELMS
+**Compétitions :** TOP14, PRO_D2, EPCR, EPCR_CHALLENGE, LNH, LIGUE1, ELMS, ESTONIE
 
 **Réponse 200**
 ```json

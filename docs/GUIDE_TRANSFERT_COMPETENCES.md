@@ -197,41 +197,65 @@ Puis assigner la permission aux rôles via l'interface d'administration.
 
 ### 5.3 Ajouter une compétition sportive
 
-```typescript
-// server/src/services/sportsScraper.ts
+**Fichiers à modifier (4) :** `sportsScraper.ts`, `SportsMatchesWidget.tsx`, `auth.ts` (route), `ProfilePage.tsx`
 
-// 1. Ajouter à l'union de types
+**1. Backend — scraper** (`server/src/services/sportsScraper.ts`) :
+
+```typescript
+// Étendre l'union de types
 type Competition = 'TOP14' | '...' | 'NOUVELLE_COMPETITION';
 
-// 2. Créer la fonction de scraping
-// La structure Match complète :
-interface Match {
-  competition: Competition;
-  homeTeam: string;
-  awayTeam: string;
-  date: string;           // ISO 8601
-  time: string;           // "HH:mm"
-  venue?: string;
-  homeTeamLogo?: string;  // URL logo équipe domicile
-  awayTeamLogo?: string;  // URL logo équipe extérieur
-  broadcasterLogo?: string; // URL logo chaîne TV diffuseur (optionnel)
-}
-
+// Approche A — Scraping HTML (LNR, EPCR) :
 async function scrapeNouvelleCompetition(): Promise<Match[]> {
-  // Utiliser axios + cheerio pour parser le HTML
-  // OU axios pour consommer une API JSON
-  // Extraire broadcasterLogo si disponible (ex: .tv-icon img src)
-  return matchs.filter(m => isInCurrentWeek(m.date));
+  const resp = await createClient().get('https://...');
+  const $ = cheerio.load(resp.data);
+  // parser les matchs depuis le DOM
+  return matches.filter(m => isInCurrentWeek(m.date));
 }
 
-// 3. Enregistrer dans fetchAllMatches()
+// Approche B — Flux iCal (utilisé pour ESTONIE / jalgpall.ee) :
+async function scrapeNouvelleCompetition(): Promise<Match[]> {
+  const resp = await createClient().get('https://.../feed.ics', { responseType: 'arraybuffer' });
+  const ical = Buffer.from(resp.data).toString('utf-8');
+  const eventBlocks = ical.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
+  // parser SUMMARY (homeTeam vs awayTeam), DTSTART, LOCATION par regex
+  // Convertir DTSTART (timezone locale) en UTC avant isInCurrentWeek()
+  return matches.filter(m => isInCurrentWeek(m.date));
+}
+
+// Enregistrer dans fetchAllMatches()
 { key: 'NOUVELLE_COMPETITION', fetch: scrapeNouvelleCompetition }
 ```
 
+**2. Frontend — widget** (`client/src/components/sports/SportsMatchesWidget.tsx`) :
+
 ```typescript
-// client/src/components/sports/SportsMatchesWidget.tsx
-// 4. Ajouter dans COMPETITION_META et COMPETITION_ORDER
+// Ajouter au type Competition
+export type Competition = '...' | 'NOUVELLE_COMPETITION';
+
+// Ajouter dans COMPETITION_META
+NOUVELLE_COMPETITION: { label: 'Nom affiché', favicon: 'https://...', calendarUrl: 'https://...' }
+
+// Ajouter dans COMPETITION_ORDER
+const COMPETITION_ORDER: Competition[] = [..., 'NOUVELLE_COMPETITION'];
 ```
+
+**3. Route API** (`server/src/routes/auth.ts`) — ajouter la valeur à `VALID_COMPETITIONS` :
+
+```typescript
+const VALID_COMPETITIONS = ['TOP14', ..., 'NOUVELLE_COMPETITION'] as const;
+```
+
+**4. Profil utilisateur** (`client/src/pages/ProfilePage.tsx`) — ajouter dans la liste `COMPETITIONS` :
+
+```typescript
+const COMPETITIONS = [
+  ...
+  { key: 'NOUVELLE_COMPETITION', label: 'Nom affiché' },
+] as const;
+```
+
+> **Exemple concret :** la Premium Liiga estonienne (ESTONIE) utilise l'approche iCal B. Son flux est disponible sur `https://jalgpall.ee/voistlused/download.php?type=calendar.download&action=download&league_id=52`. Le `league_id` est à mettre à jour si la fédération change d'identifiant de saison.
 
 > **Note diffuseur :** `broadcasterLogo` est automatiquement affiché dans le widget et persisté en base lors du premier save d'une note. Il apparaît ensuite dans le CR DOCX exporté sous la date du match (ligne `Diffuseur : [logo]`).
 
