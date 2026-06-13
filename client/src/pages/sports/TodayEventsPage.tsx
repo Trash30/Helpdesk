@@ -11,9 +11,11 @@ import {
   MatchRow,
   COMPETITION_META,
 } from '@/components/sports/SportsMatchesWidget';
+import { useAuthStore } from '@/stores/authStore';
 
 export function TodayEventsPage() {
   const today = new Date();
+  const { user } = useAuthStore();
 
   const { data: sportsData, isLoading } = useQuery({
     queryKey: ['sports-matches'],
@@ -21,13 +23,15 @@ export function TodayEventsPage() {
     staleTime: 1000 * 60 * 60,
   });
 
+  const userCompetitions = user?.sportCompetitions ?? [];
   const todayMatches: Match[] = (sportsData?.data ?? []).filter((m: Match) => {
     const d = new Date(m.date);
-    return (
+    const isToday =
       d.getFullYear() === today.getFullYear() &&
       d.getMonth() === today.getMonth() &&
-      d.getDate() === today.getDate()
-    );
+      d.getDate() === today.getDate();
+    const inPrefs = userCompetitions.length === 0 || userCompetitions.includes(m.competition);
+    return isToday && inPrefs;
   });
 
   const sorted = [...todayMatches].sort((a, b) => a.time.localeCompare(b.time));

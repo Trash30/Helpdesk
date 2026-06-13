@@ -226,10 +226,16 @@ export function DashboardPage() {
     queryFn: () => api.get('/sports/matches').then(r => r.data),
     staleTime: 1000 * 60 * 60,
   });
-  const sportsEventCount = sportsData?.data?.length ?? 0;
+  const userCompetitions = user?.sportCompetitions ?? [];
+  const allSportsMatches: any[] = sportsData?.data ?? [];
+  const filteredSportsMatches = userCompetitions.length > 0
+    ? allSportsMatches.filter((m: any) => userCompetitions.includes(m.competition))
+    : allSportsMatches;
+
+  const sportsEventCount = filteredSportsMatches.length;
 
   const today = new Date();
-  const todayEventCount = (sportsData?.data ?? []).filter((m: any) => {
+  const todayEventCount = filteredSportsMatches.filter((m: any) => {
     const d = new Date(m.date);
     return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
   }).length;
