@@ -7,6 +7,7 @@ export interface AuthUser {
   lastName: string;
   email: string;
   mustChangePassword: boolean;
+  sportCompetitions: string[];
   role: {
     id: string;
     name: string;
@@ -22,6 +23,7 @@ interface AuthState {
   login: (user: AuthUser) => void;
   logout: () => void;
   setMustChangePassword: (value: boolean) => void;
+  updateSportCompetitions: (competitions: string[]) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -54,6 +56,12 @@ export const useAuthStore = create<AuthState>()(
         set((state) => ({
           mustChangePassword: value,
           user: state.user ? { ...state.user, mustChangePassword: value } : null,
+        }));
+      },
+
+      updateSportCompetitions: (competitions) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, sportCompetitions: competitions } : null,
         }));
       },
     }),

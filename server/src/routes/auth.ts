@@ -72,6 +72,7 @@ router.post('/login', authRateLimit, async (req: Request, res: Response) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        sportCompetitions: user.sportCompetitions,
         mustChangePassword: user.mustChangePassword,
         role: {
           id: user.role.id,
@@ -225,6 +226,30 @@ router.post('/logout', (_req: Request, res: Response) => {
     sameSite: 'lax',
   });
   res.json({ data: { message: 'Déconnecté' } });
+});
+
+// ─── PATCH /api/auth/sport-competitions ──────────────────────────────────────
+
+const VALID_COMPETITIONS = ['TOP14', 'PRO_D2', 'LNH', 'EPCR', 'EPCR_CHALLENGE', 'ELMS', 'ESTONIE'] as const;
+
+router.patch('/sport-competitions', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  const schema = z.object({
+    sportCompetitions: z.array(z.enum(VALID_COMPETITIONS)).max(7),
+  });
+
+  const parse = schema.safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ error: parse.error.errors[0].message });
+    return;
+  }
+
+  const user = await prisma.user.update({
+    where: { id: req.user!.id },
+    data: { sportCompetitions: parse.data.sportCompetitions },
+    select: { sportCompetitions: true },
+  });
+
+  res.json({ data: { sportCompetitions: user.sportCompetitions } });
 });
 
 export default router;

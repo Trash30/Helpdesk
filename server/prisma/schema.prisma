@@ -83,6 +83,7 @@ model User {
   passwordResetExpiry DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
+  sportCompetitions   String[]  @default([])
 
   assignedTickets    Ticket[]           @relation("AssignedTickets")
   createdTickets     Ticket[]           @relation("CreatedTickets")

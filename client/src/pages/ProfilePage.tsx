@@ -7,12 +7,23 @@ import { getInitials } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import api from '@/lib/axios';
 
+const COMPETITIONS = [
+  { key: 'TOP14',          label: 'TOP 14' },
+  { key: 'PRO_D2',         label: 'PRO D2' },
+  { key: 'LNH',            label: 'Liqui Moly Starligue' },
+  { key: 'EPCR',           label: 'EPCR Champions Cup' },
+  { key: 'EPCR_CHALLENGE', label: 'EPCR Challenge Cup' },
+  { key: 'ELMS',           label: 'ELMS' },
+  { key: 'ESTONIE',        label: 'Premium Liiga (Estonie)' },
+] as const;
+
 export function ProfilePage() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateSportCompetitions } = useAuthStore();
   const { can } = usePermissions();
   const navigate = useNavigate();
   const isAdmin = can('admin.access');
@@ -21,6 +32,22 @@ export function ProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
+
+  const [selectedComps, setSelectedComps] = useState<string[]>(user?.sportCompetitions ?? []);
+  const [compLoading, setCompLoading] = useState(false);
+
+  const handleSaveCompetitions = async () => {
+    setCompLoading(true);
+    try {
+      await api.patch('/auth/sport-competitions', { sportCompetitions: selectedComps });
+      updateSportCompetitions(selectedComps);
+      toast.success('Compétitions suivies mises à jour');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error ?? 'Erreur lors de l\'enregistrement des compétitions');
+    } finally {
+      setCompLoading(false);
+    }
+  };
 
   const handlePasswordChange = async (e: FormEvent) => {
     e.preventDefault();
@@ -60,6 +87,39 @@ export function ProfilePage() {
             {user.role.name}
           </span>
         </div>
+      </div>
+
+      <Separator />
+
+      {/* Sport competitions section */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Compétitions suivies</h2>
+        <p className="text-sm text-muted-foreground">
+          Sélectionnez les championnats pour lesquels vous assurez le support.
+          Seuls ces événements apparaîtront dans votre widget sports.
+          Si aucune compétition n'est sélectionnée, toutes sont affichées.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {COMPETITIONS.map(({ key, label }) => (
+            <div key={key} className="flex items-center gap-2">
+              <Checkbox
+                id={`comp-${key}`}
+                checked={selectedComps.includes(key)}
+                onCheckedChange={(checked) => {
+                  setSelectedComps(prev =>
+                    checked ? [...prev, key] : prev.filter(c => c !== key)
+                  );
+                }}
+              />
+              <Label htmlFor={`comp-${key}`} className="cursor-pointer font-normal">
+                {label}
+              </Label>
+            </div>
+          ))}
+        </div>
+        <Button onClick={handleSaveCompetitions} disabled={compLoading} variant="outline">
+          {compLoading ? 'Enregistrement...' : 'Enregistrer les compétitions'}
+        </Button>
       </div>
 
       <Separator />
