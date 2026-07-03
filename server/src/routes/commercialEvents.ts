@@ -64,6 +64,33 @@ router.get('/commercial-events/today', async (_req: Request, res: Response) => {
   res.json({ data: events });
 });
 
+// GET /api/commercial-events/upcoming — événements J+30 pour le dashboard agents/admins
+// Accessible à tous les utilisateurs authentifiés
+router.get('/commercial-events/upcoming', async (_req: Request, res: Response) => {
+  const now = new Date();
+  const plus30 = new Date(now);
+  plus30.setDate(now.getDate() + 30);
+  plus30.setHours(23, 59, 59, 999);
+  const events = await prisma.commercialEvent.findMany({
+    where: { startDate: { gte: now, lte: plus30 } },
+    select: {
+      id: true,
+      clientName: true,
+      startDate: true,
+      endDate: true,
+      location: true,
+      competition: true,
+      techContactFirstName: true,
+      techContactLastName: true,
+      techContactPhone: true,
+      notes: true,
+      createdBy: { select: { id: true, firstName: true, lastName: true } },
+    },
+    orderBy: { startDate: 'asc' },
+  });
+  res.json({ data: events });
+});
+
 // POST /api/commercial-events — créer un événement
 router.post('/commercial-events', requirePermission('events.create'), async (req: Request, res: Response) => {
   const parsed = commercialEventSchema.safeParse(req.body);
