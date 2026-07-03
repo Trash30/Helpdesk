@@ -344,13 +344,13 @@ export function DashboardPage() {
             {/* Événements commerciaux J+30 */}
             {upcomingEvents.length > 0 && (
               <KpiCard
-                label="Événements clients J+30"
+                label="Missions Support J+30"
                 value={upcomingEvents.length}
                 color="#185FA5"
                 icon={<CalendarPlus size={20} />}
                 onClick={() => { document.getElementById('commercial-events-section')?.scrollIntoView({ behavior: 'smooth' }); }}
               >
-                <p className="text-xs text-muted-foreground mt-1">Événements commerciaux à venir</p>
+                <p className="text-xs text-muted-foreground mt-1">Missions Support à venir</p>
               </KpiCard>
             )}
 
@@ -534,9 +534,9 @@ export function DashboardPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <CalendarPlus size={16} className="text-primary" />
-                  Événements commerciaux — 30 prochains jours
+                  Missions Support — 30 prochains jours
                 </CardTitle>
-                <span className="text-xs text-muted-foreground">{upcomingEvents.length} événement{upcomingEvents.length > 1 ? 's' : ''}</span>
+                <span className="text-xs text-muted-foreground">{upcomingEvents.length} mission{upcomingEvents.length > 1 ? 's' : ''}</span>
               </div>
             </CardHeader>
             <CardContent className="p-0 pb-2">

@@ -298,7 +298,7 @@ export function MainLayout() {
             <NavItem to="/kb" icon={<BookOpen size={18} />} label="Base de connaissance" collapsed={collapsed} onNavigate={closeMobile} />
           )}
           {can('events.create') && (
-            <NavItem to="/evenements/commercial" icon={<CalendarPlus size={18} />} label="Mes événements" collapsed={collapsed} onNavigate={closeMobile} />
+            <NavItem to="/evenements/commercial" icon={<CalendarPlus size={18} />} label="Mission Support" collapsed={collapsed} onNavigate={closeMobile} />
           )}
 
           {can('admin.access') && (

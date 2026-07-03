@@ -144,10 +144,10 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
   },
   {
     key: 'events',
-    label: 'Événements commerciaux',
+    label: 'Missions Support',
     icon: 'CalendarPlus',
     permissions: [
-      { key: 'events.create', label: 'Gérer ses événements', description: 'Créer et consulter ses propres événements commerciaux' },
+      { key: 'events.create', label: 'Gérer ses missions', description: 'Enregistrer et consulter ses propres missions Support' },
     ],
   },
 ];

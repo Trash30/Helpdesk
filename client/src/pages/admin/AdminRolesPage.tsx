@@ -58,9 +58,9 @@ const PERMISSION_GROUPS = [
     ],
   },
   {
-    key: 'events', label: 'Événements commerciaux', Icon: CalendarPlus,
+    key: 'events', label: 'Missions Support', Icon: CalendarPlus,
     permissions: [
-      { key: 'events.create', label: 'Gérer ses événements', description: 'Créer et consulter ses propres événements commerciaux' },
+      { key: 'events.create', label: 'Gérer ses missions', description: 'Enregistrer et consulter ses propres missions Support' },
     ],
   },
   {

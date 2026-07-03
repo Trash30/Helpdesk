@@ -122,7 +122,7 @@ export function CommercialEventsPage() {
       queryClient.invalidateQueries({ queryKey: ['commercial-events'] });
       setForm(EMPTY_FORM);
       setErrors({});
-      toast.success('Événement enregistré !');
+      toast.success('Mission enregistrée !');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Une erreur est survenue');
@@ -142,7 +142,7 @@ export function CommercialEventsPage() {
       queryClient.invalidateQueries({ queryKey: ['commercial-events'] });
       setEditingEvent(null);
       setEditErrors({});
-      toast.success('Événement mis à jour !');
+      toast.success('Mission mise à jour !');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Une erreur est survenue');
@@ -153,7 +153,7 @@ export function CommercialEventsPage() {
     mutationFn: async (id: string) => (await api.delete(`/commercial-events/${id}`)).data,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['commercial-events'] });
-      toast.success('Événement supprimé.');
+      toast.success('Mission supprimée.');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
@@ -245,11 +245,11 @@ export function CommercialEventsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold">Mes événements commerciaux</h1>
+      <h1 className="text-xl sm:text-2xl font-bold">Enregistrer une mission Support</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Nouvel événement</CardTitle>
+          <CardTitle className="text-base">Nouvelle mission</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -382,7 +382,7 @@ export function CommercialEventsPage() {
 
             <div className="flex justify-end">
               <Button type="submit" disabled={createMutation.isPending} className="w-full sm:w-auto">
-                {createMutation.isPending ? 'Enregistrement…' : "Enregistrer l'événement"}
+                {createMutation.isPending ? 'Enregistrement…' : "Enregistrer la mission"}
               </Button>
             </div>
           </form>
@@ -390,7 +390,7 @@ export function CommercialEventsPage() {
       </Card>
 
       <div className="space-y-3">
-        <h2 className="text-base font-semibold text-foreground">Événements J+30</h2>
+        <h2 className="text-base font-semibold text-foreground">Missions à venir — 30 jours</h2>
 
         {isLoading && (
           <div className="space-y-3">
@@ -403,7 +403,7 @@ export function CommercialEventsPage() {
         {!isLoading && events.length === 0 && (
           <Card className="shadow-sm">
             <CardContent className="py-10 text-center text-muted-foreground">
-              Aucun événement dans les 30 prochains jours.
+              Aucune mission dans les 30 prochains jours.
             </CardContent>
           </Card>
         )}
@@ -424,7 +424,7 @@ export function CommercialEventsPage() {
                           size="sm"
                           variant="ghost"
                           className="h-7 w-7 p-0"
-                          aria-label="Éditer l'événement"
+                          aria-label="Modifier la mission"
                           onClick={() => openEdit(ev)}
                         >
                           <Pencil size={13} />
@@ -433,7 +433,7 @@ export function CommercialEventsPage() {
                           size="sm"
                           variant="ghost"
                           className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          aria-label="Supprimer l'événement"
+                          aria-label="Supprimer la mission"
                           onClick={() => setDeletingId(ev.id)}
                         >
                           <Trash2 size={13} />
@@ -460,7 +460,7 @@ export function CommercialEventsPage() {
       <Sheet open={!!editingEvent} onOpenChange={(open) => { if (!open) setEditingEvent(null); }}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Modifier l'événement</SheetTitle>
+            <SheetTitle>Modifier la mission</SheetTitle>
           </SheetHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -603,7 +603,7 @@ export function CommercialEventsPage() {
       <Dialog open={!!deletingId} onOpenChange={(open) => { if (!open) setDeletingId(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Supprimer l'événement ?</DialogTitle>
+            <DialogTitle>Supprimer la mission ?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">Cette action est irréversible.</p>
           <DialogFooter className="gap-2">

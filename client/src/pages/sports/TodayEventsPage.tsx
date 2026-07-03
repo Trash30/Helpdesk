@@ -161,7 +161,7 @@ export function TodayEventsPage() {
 
       {commercialEvents.length > 0 && (
         <div className="mt-6 space-y-3">
-          <h2 className="text-base font-semibold text-foreground">Événements clients du jour</h2>
+          <h2 className="text-base font-semibold text-foreground">Missions Support du jour</h2>
           {commercialEvents.map((ev) => {
             const fmt = (iso: string) =>
               new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
