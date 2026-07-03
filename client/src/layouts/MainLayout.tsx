@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Ticket, Users, Settings, Tag, UserCheck,
   Shield, Users2, BarChart2, Plus, Search, LogOut, User,
   ChevronRight, Moon, Sun, Menu, Building2, MapPin, Landmark, FileType, BookOpen,
+  CalendarPlus,
 } from 'lucide-react';
 import { useBranding } from '@/hooks/useBranding';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -295,6 +296,9 @@ export function MainLayout() {
           )}
           {can('kb.read') && (
             <NavItem to="/kb" icon={<BookOpen size={18} />} label="Base de connaissance" collapsed={collapsed} onNavigate={closeMobile} />
+          )}
+          {can('events.create') && (
+            <NavItem to="/evenements/commercial" icon={<CalendarPlus size={18} />} label="Mes événements" collapsed={collapsed} onNavigate={closeMobile} />
           )}
 
           {can('admin.access') && (
