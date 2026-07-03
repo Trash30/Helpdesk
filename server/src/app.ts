@@ -25,6 +25,7 @@ import sportsRouter from './routes/sports';
 import matchAttachmentsRouter from './routes/matchAttachments';
 import matchNotesRouter from './routes/matchNotes';
 import kbRouter from './routes/kb';
+import commercialEventsRouter from './routes/commercialEvents';
 
 const app = express();
 
@@ -110,6 +111,7 @@ app.use('/api/sports', sportsRouter);
 app.use('/api/sports', matchAttachmentsRouter);
 app.use('/api/sports/match-notes', matchNotesRouter);
 app.use('/api', kbRouter);
+app.use('/api', commercialEventsRouter);
 
 // ─── 404 handler ────────────────────────────────────────────────────────────
 
