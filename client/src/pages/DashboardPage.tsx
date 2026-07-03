@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import {
   Ticket as TicketIcon, Clock, CheckCircle,
-  ExternalLink, AlertTriangle, CalendarDays,
+  ExternalLink, AlertTriangle, CalendarDays, CalendarPlus,
 } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,6 +21,22 @@ import { getInitials, timeAgo, fullDate } from '@/lib/utils';
 import { PRIORITY_TOKENS, STATUS_TOKENS } from '@/lib/colors';
 import api from '@/lib/axios';
 import { SportsMatchesWidget } from '@/components/sports/SportsMatchesWidget';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface CommercialEventUpcoming {
+  id: string;
+  clientName: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  competition: string;
+  techContactFirstName: string;
+  techContactLastName: string;
+  techContactPhone: string;
+  notes: string;
+  createdBy: { id: string; firstName: string; lastName: string };
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -221,6 +237,14 @@ export function DashboardPage() {
     refetchInterval: 60000,
   });
 
+  const { data: commercialUpcoming } = useQuery({
+    queryKey: ['commercial-events-upcoming'],
+    queryFn: async () =>
+      ((await api.get('/commercial-events/upcoming')).data?.data ?? []) as CommercialEventUpcoming[],
+    staleTime: 1000 * 60 * 5,
+  });
+  const upcomingEvents: CommercialEventUpcoming[] = commercialUpcoming ?? [];
+
   const { data: sportsData } = useQuery({
     queryKey: ['sports-matches'],
     queryFn: () => api.get('/sports/matches').then(r => r.data),
@@ -316,6 +340,19 @@ export function DashboardPage() {
             >
               <p className="text-xs text-muted-foreground mt-1">Matchs & sessions</p>
             </KpiCard>
+
+            {/* Événements commerciaux J+30 */}
+            {upcomingEvents.length > 0 && (
+              <KpiCard
+                label="Événements clients J+30"
+                value={upcomingEvents.length}
+                color="#185FA5"
+                icon={<CalendarPlus size={20} />}
+                onClick={() => { document.getElementById('commercial-events-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+              >
+                <p className="text-xs text-muted-foreground mt-1">Événements commerciaux à venir</p>
+              </KpiCard>
+            )}
 
             {/* Stale tickets card */}
             {stats?.staleTickets !== undefined && (
@@ -488,6 +525,58 @@ export function DashboardPage() {
 
       {/* ── ROW 4 — Urgent tickets table ────────────────────────────────── */}
       <UrgentTicketsTable tickets={urgentData ?? []} loading={urgentLoading} />
+
+      {/* ── Événements commerciaux J+30 ─────────────────────────────── */}
+      {upcomingEvents.length > 0 && (
+        <div id="commercial-events-section">
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CalendarPlus size={16} className="text-primary" />
+                  Événements commerciaux — 30 prochains jours
+                </CardTitle>
+                <span className="text-xs text-muted-foreground">{upcomingEvents.length} événement{upcomingEvents.length > 1 ? 's' : ''}</span>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 pb-2">
+              <div className="divide-y">
+                {upcomingEvents.map((ev) => {
+                  const fmtDate = (iso: string) =>
+                    new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+                  const fmtTime = (iso: string) =>
+                    new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                  const isSameDay =
+                    new Date(ev.startDate).toDateString() === new Date(ev.endDate).toDateString();
+                  const dateRange = isSameDay
+                    ? `${fmtDate(ev.startDate)} · ${fmtTime(ev.startDate)} → ${fmtTime(ev.endDate)}`
+                    : `${fmtDate(ev.startDate)} ${fmtTime(ev.startDate)} → ${fmtDate(ev.endDate)} ${fmtTime(ev.endDate)}`;
+                  return (
+                    <div key={ev.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 hover:bg-muted/20 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-sm truncate">{ev.clientName}</span>
+                          {ev.competition && (
+                            <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium shrink-0">{ev.competition}</span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{dateRange} · {ev.location}</div>
+                        {ev.notes && <div className="text-xs text-muted-foreground italic mt-0.5 truncate">{ev.notes}</div>}
+                      </div>
+                      <div className="text-xs text-muted-foreground shrink-0">
+                        {ev.techContactFirstName} {ev.techContactLastName}
+                        {ev.techContactPhone && (
+                          <a href={`tel:${ev.techContactPhone}`} className="ml-2 underline hover:text-foreground">{ev.techContactPhone}</a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* ── ROW 5 — Tickets by Organisation (admin only) ────────────────── */}
       {can('tickets.viewAll') && (stats?.ticketsByOrganisation ?? []).length > 0 && (
