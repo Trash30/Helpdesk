@@ -101,7 +101,11 @@ export function ProfilePage() {
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {COMPETITIONS.map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-2">
+            <label
+              key={key}
+              htmlFor={`comp-${key}`}
+              className="flex items-center gap-2.5 min-h-[44px] px-1 rounded-md hover:bg-muted cursor-pointer"
+            >
               <Checkbox
                 id={`comp-${key}`}
                 checked={selectedComps.includes(key)}
@@ -111,10 +115,8 @@ export function ProfilePage() {
                   );
                 }}
               />
-              <Label htmlFor={`comp-${key}`} className="cursor-pointer font-normal">
-                {label}
-              </Label>
-            </div>
+              <span className="text-sm">{label}</span>
+            </label>
           ))}
         </div>
         <Button onClick={handleSaveCompetitions} disabled={compLoading} variant="outline">

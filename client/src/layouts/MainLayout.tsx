@@ -209,7 +209,7 @@ function NavItem({ to, icon, label, badge, collapsed, onNavigate }: NavItemProps
             to={to}
             onClick={onNavigate}
             className={({ isActive }) =>
-              `flex w-full items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              `flex w-full items-center gap-3 px-3 py-2.5 sm:py-2 rounded-md text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-primary/10 text-primary font-semibold'
                   : 'text-foreground/70 hover:bg-muted hover:text-foreground'
@@ -357,7 +357,7 @@ export function MainLayout() {
         {/* Topbar */}
         <header className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 h-14 border-b bg-card shrink-0">
           <button
-            className="md:hidden flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent active:bg-accent/80"
+            className="md:hidden flex items-center justify-center h-11 w-11 rounded-md hover:bg-accent active:bg-accent/80"
             onClick={() => setMobileOpen(o => !o)}
             aria-label="Ouvrir le menu de navigation"
           >
@@ -370,7 +370,7 @@ export function MainLayout() {
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={toggle}
-              className="flex items-center justify-center h-9 w-9 rounded-md border border-input hover:bg-accent active:bg-accent/80 transition-colors"
+              className="flex items-center justify-center h-10 w-10 sm:h-9 sm:w-9 rounded-md border border-input hover:bg-accent active:bg-accent/80 transition-colors"
               title={dark ? 'Mode clair' : 'Mode sombre'}
             >
               {dark ? <Sun size={16} /> : <Moon size={16} />}
@@ -387,7 +387,7 @@ export function MainLayout() {
             {/* Avatar + user menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">
+                <button className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">
                   {user ? getInitials(user.firstName, user.lastName) : '?'}
                 </button>
               </DropdownMenuTrigger>
