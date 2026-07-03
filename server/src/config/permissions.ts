@@ -36,6 +36,9 @@ export const PERMISSIONS = {
     READ: 'kb.read',
     WRITE: 'kb.write',
   },
+  EVENTS: {
+    CREATE: 'events.create',
+  },
 } as const;
 
 // Flat list for iteration / validation
@@ -46,6 +49,7 @@ export const PERMISSIONS_LIST: string[] = [
   ...Object.values(PERMISSIONS.SURVEYS),
   ...Object.values(PERMISSIONS.ADMIN),
   ...Object.values(PERMISSIONS.KB),
+  ...Object.values(PERMISSIONS.EVENTS),
 ];
 
 // All admin sub-permissions that require admin.access automatically
@@ -136,6 +140,14 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     permissions: [
       { key: 'kb.read', label: 'Consulter la KB', description: 'Accéder aux articles de la base de connaissance' },
       { key: 'kb.write', label: 'Gérer la KB', description: 'Créer, modifier et supprimer des articles de la base de connaissance' },
+    ],
+  },
+  {
+    key: 'events',
+    label: 'Événements commerciaux',
+    icon: 'CalendarPlus',
+    permissions: [
+      { key: 'events.create', label: 'Gérer ses événements', description: 'Créer et consulter ses propres événements commerciaux' },
     ],
   },
 ];

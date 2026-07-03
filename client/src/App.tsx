@@ -7,6 +7,7 @@ import { ClientSlideOver } from '@/components/clients/ClientSlideOver';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { MainLayout } from '@/layouts/MainLayout';
+import { useAuthStore } from '@/stores/authStore';
 
 // Public pages
 import { LoginPage } from '@/pages/LoginPage';
@@ -39,6 +40,7 @@ import { AdminTicketTypesPage } from '@/pages/admin/AdminTicketTypesPage';
 import { TodayEventsPage } from '@/pages/sports/TodayEventsPage';
 import { KbListPage } from '@/pages/kb/KbListPage';
 import { KbArticlePage } from '@/pages/kb/KbArticlePage';
+import { CommercialEventsPage } from '@/pages/commercial/CommercialEventsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +50,15 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function SmartDefaultRedirect() {
+  const { permissions } = useAuthStore();
+  // Utilisateur avec UNIQUEMENT events.create → page commerciale
+  const isCommercialOnly =
+    permissions.length > 0 &&
+    permissions.every((p) => p === 'events.create');
+  return <Navigate to={isCommercialOnly ? '/evenements/commercial' : '/dashboard'} replace />;
+}
 
 export default function App() {
   return (
@@ -82,7 +93,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route index element={<SmartDefaultRedirect />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/profile" element={<ProfilePage />} />
 
@@ -127,6 +138,16 @@ export default function App() {
 
               {/* Evenements sportifs */}
               <Route path="/evenements/aujourd-hui" element={<TodayEventsPage />} />
+
+              {/* Evenements commerciaux */}
+              <Route
+                path="/evenements/commercial"
+                element={
+                  <ProtectedRoute requiredPermission="events.create">
+                    <CommercialEventsPage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Clients */}
               <Route

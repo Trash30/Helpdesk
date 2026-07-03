@@ -13,6 +13,16 @@ import {
 } from '@/components/sports/SportsMatchesWidget';
 import { useAuthStore } from '@/stores/authStore';
 
+interface CommercialEvent {
+  id: string;
+  clientName: string;
+  startDate: string;
+  endDate: string;
+  location: string;
+  competition: string;
+  createdBy: { id: string; firstName: string; lastName: string };
+}
+
 export function TodayEventsPage() {
   const today = new Date();
   const { user } = useAuthStore();
@@ -61,6 +71,13 @@ export function TodayEventsPage() {
 
   const notesByKey = new Map<string, MatchNoteData>();
   (notesData ?? []).forEach((note) => notesByKey.set(note.matchKey, note));
+
+  const { data: commercialEventsData } = useQuery({
+    queryKey: ['commercial-events-today'],
+    queryFn: async () => ((await api.get('/commercial-events/today')).data?.data ?? []) as CommercialEvent[],
+    staleTime: 1000 * 60 * 5,
+  });
+  const commercialEvents: CommercialEvent[] = commercialEventsData ?? [];
 
   const grouped = new Map<string, Match[]>();
   for (const m of sorted) {
@@ -135,6 +152,27 @@ export function TodayEventsPage() {
                       />
                     );
                   })}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {commercialEvents.length > 0 && (
+        <div className="mt-6 space-y-3">
+          <h2 className="text-base font-semibold text-foreground">Événements clients du jour</h2>
+          {commercialEvents.map((ev) => {
+            const fmt = (iso: string) =>
+              new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            return (
+              <Card key={ev.id} className="shadow-sm">
+                <CardContent className="py-3 px-4 flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm">{ev.clientName}</span>
+                    <span className="text-xs text-muted-foreground">{fmt(ev.startDate)} → {fmt(ev.endDate)}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{ev.location} · {ev.competition}</div>
                 </CardContent>
               </Card>
             );
