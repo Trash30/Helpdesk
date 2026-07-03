@@ -118,15 +118,56 @@ router.post('/commercial-events', requirePermission('events.create'), async (req
   res.status(201).json({ data: event });
 });
 
-// DELETE /api/commercial-events/:id — supprimer (admin uniquement)
-router.delete('/commercial-events/:id', async (req: Request, res: Response) => {
-  if (!hasPermission(req.user!, 'admin.access')) {
-    res.status(403).json({ error: 'Permission refusée' });
-    return;
-  }
+// PUT /api/commercial-events/:id — modifier un événement (créateur OU admin)
+router.put('/commercial-events/:id', async (req: Request, res: Response) => {
   const existing = await prisma.commercialEvent.findUnique({ where: { id: req.params.id } });
   if (!existing) {
     res.status(404).json({ error: 'Événement introuvable' });
+    return;
+  }
+  const isOwner = existing.createdById === req.user!.id && hasPermission(req.user!, 'events.create');
+  const isAdmin = hasPermission(req.user!, 'admin.access');
+  if (!isOwner && !isAdmin) {
+    res.status(403).json({ error: 'Permission refusée' });
+    return;
+  }
+
+  const parsed = commercialEventSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.errors[0].message });
+    return;
+  }
+  const data = parsed.data;
+  const event = await prisma.commercialEvent.update({
+    where: { id: req.params.id },
+    data: {
+      clientName: data.clientName,
+      startDate: new Date(data.startDate),
+      endDate: new Date(data.endDate),
+      location: data.location,
+      techContactFirstName: data.techContactFirstName,
+      techContactLastName: data.techContactLastName,
+      techContactEmail: data.techContactEmail,
+      techContactPhone: data.techContactPhone,
+      competition: data.competition,
+      notes: data.notes,
+    },
+    include: { createdBy: { select: { id: true, firstName: true, lastName: true } } },
+  });
+  res.json({ data: event });
+});
+
+// DELETE /api/commercial-events/:id — supprimer (créateur OU admin)
+router.delete('/commercial-events/:id', async (req: Request, res: Response) => {
+  const existing = await prisma.commercialEvent.findUnique({ where: { id: req.params.id } });
+  if (!existing) {
+    res.status(404).json({ error: 'Événement introuvable' });
+    return;
+  }
+  const isOwner = existing.createdById === req.user!.id;
+  const isAdmin = hasPermission(req.user!, 'admin.access');
+  if (!isOwner && !isAdmin) {
+    res.status(403).json({ error: 'Permission refusée' });
     return;
   }
   await prisma.commercialEvent.delete({ where: { id: req.params.id } });
