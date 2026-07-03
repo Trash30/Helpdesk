@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Plus, Copy, Trash2, Pencil, Shield, Ticket, Users, MessageSquare, BarChart2, BookOpen } from 'lucide-react';
+import { Plus, Copy, Trash2, Pencil, Shield, Ticket, Users, MessageSquare, BarChart2, BookOpen, CalendarPlus } from 'lucide-react';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +55,12 @@ const PERMISSION_GROUPS = [
     permissions: [
       { key: 'kb.read', label: 'Lire les articles', description: 'Accéder à la base de connaissance et lire les articles' },
       { key: 'kb.write', label: 'Créer / modifier / supprimer des articles', description: 'Créer, modifier et supprimer des articles de la base de connaissance' },
+    ],
+  },
+  {
+    key: 'events', label: 'Événements commerciaux', Icon: CalendarPlus,
+    permissions: [
+      { key: 'events.create', label: 'Gérer ses événements', description: 'Créer et consulter ses propres événements commerciaux' },
     ],
   },
   {
