@@ -19,12 +19,7 @@ interface CommercialEvent {
   startDate: string;
   endDate: string;
   location: string;
-  techContactFirstName: string;
-  techContactLastName: string;
-  techContactEmail: string;
-  techContactPhone: string;
   competition: string;
-  notes: string;
   createdBy: { id: string; firstName: string; lastName: string };
 }
 
@@ -178,10 +173,6 @@ export function TodayEventsPage() {
                     <span className="text-xs text-muted-foreground">{fmt(ev.startDate)} → {fmt(ev.endDate)}</span>
                   </div>
                   <div className="text-xs text-muted-foreground">{ev.location} · {ev.competition}</div>
-                  <div className="text-xs text-muted-foreground">
-                    Contact : {ev.techContactFirstName} {ev.techContactLastName} — {ev.techContactEmail} — {ev.techContactPhone}
-                  </div>
-                  {ev.notes && <div className="text-xs text-muted-foreground italic">{ev.notes}</div>}
                 </CardContent>
               </Card>
             );

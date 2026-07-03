@@ -24,13 +24,13 @@ const commercialEventSchema = z.object({
 // Accessible à tout utilisateur avec events.create
 router.get('/commercial-events', requirePermission('events.create'), async (req: Request, res: Response) => {
   const horizon = req.query.horizon as string;
-  let where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { createdById: req.user!.id };
   if (horizon === '30') {
     const now = new Date();
     const plus30 = new Date(now);
     plus30.setDate(now.getDate() + 30);
     plus30.setHours(23, 59, 59, 999);
-    where = { startDate: { gte: now, lte: plus30 } };
+    where['startDate'] = { gte: now, lte: plus30 };
   }
   const events = await prisma.commercialEvent.findMany({
     where,
@@ -50,7 +50,15 @@ router.get('/commercial-events/today', async (_req: Request, res: Response) => {
   endOfDay.setHours(23, 59, 59, 999);
   const events = await prisma.commercialEvent.findMany({
     where: { startDate: { gte: startOfDay, lte: endOfDay } },
-    include: { createdBy: { select: { id: true, firstName: true, lastName: true } } },
+    select: {
+      id: true,
+      clientName: true,
+      startDate: true,
+      endDate: true,
+      location: true,
+      competition: true,
+      createdBy: { select: { id: true, firstName: true, lastName: true } },
+    },
     orderBy: { startDate: 'asc' },
   });
   res.json({ data: events });
