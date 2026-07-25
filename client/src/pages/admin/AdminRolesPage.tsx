@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Plus, Copy, Trash2, Pencil, Shield, Ticket, Users, MessageSquare, BarChart2, BookOpen, CalendarPlus } from 'lucide-react';
 import api from '@/lib/axios';
@@ -111,6 +112,7 @@ function countPerGroup(perms: string[]) {
 }
 
 export function AdminRolesPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Role | null>(null);
@@ -151,7 +153,7 @@ export function AdminRolesPage() {
         const names = added.map(p =>
           PERMISSION_GROUPS.flatMap(g => g.permissions).find(x => x.key === p)?.label ?? p
         );
-        toast.success(`Activé automatiquement : ${names.join(', ')}`, { duration: 3000 });
+        toast.success(t('roles.autoEnabled', { names: names.join(', ') }), { duration: 3000 });
       }
       setFormPerms(newPerms);
     } else {
@@ -170,7 +172,7 @@ export function AdminRolesPage() {
   };
 
   const handleSave = async () => {
-    if (!editTarget && !formName.trim()) { toast.error('Le nom est requis'); return; }
+    if (!editTarget && !formName.trim()) { toast.error(t('roles.nameRequired')); return; }
     setSaving(true);
     try {
       const body = editTarget?.isSystem
@@ -179,25 +181,25 @@ export function AdminRolesPage() {
 
       if (editTarget) {
         await api.put(`/admin/roles/${editTarget.id}`, body);
-        toast.success('Rôle mis à jour');
+        toast.success(t('roles.roleUpdated'));
       } else {
         await api.post('/admin/roles', body);
-        toast.success('Rôle créé');
+        toast.success(t('roles.roleCreated'));
       }
       queryClient.invalidateQueries({ queryKey: ['admin-roles'] });
       setSheetOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err.response?.data?.error ?? t('roles.saveError'));
     } finally { setSaving(false); }
   };
 
   const handleDuplicate = async (role: Role) => {
     try {
       await api.post(`/admin/roles/${role.id}/duplicate`);
-      toast.success(`Copie de "${role.name}" créée`);
+      toast.success(t('roles.roleCopied', { name: role.name }));
       queryClient.invalidateQueries({ queryKey: ['admin-roles'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la duplication');
+      toast.error(err.response?.data?.error ?? t('roles.duplicateError'));
     }
   };
 
@@ -206,10 +208,10 @@ export function AdminRolesPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/roles/${deleteTarget.id}`);
-      toast.success('Rôle supprimé');
+      toast.success(t('roles.roleDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-roles'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
+      toast.error(err.response?.data?.error ?? t('roles.deleteError'));
     } finally { setDeleting(false); setDeleteTarget(null); }
   };
 
@@ -218,9 +220,9 @@ export function AdminRolesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Rôles & permissions</h1>
+        <h1 className="text-2xl font-bold">{t('roles.title')}</h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />Nouveau rôle
+          <Plus className="h-4 w-4 mr-2" />{t('roles.newRole')}
         </Button>
       </div>
 
@@ -233,7 +235,7 @@ export function AdminRolesPage() {
                   <span className="font-semibold text-sm">{role.name}</span>
                   {role.isSystem && (
                     <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                      Système
+                      {t('roles.system')}
                     </span>
                   )}
                 </div>
@@ -246,7 +248,7 @@ export function AdminRolesPage() {
             </div>
 
             <div className="text-xs text-muted-foreground">
-              {role._count?.users ?? 0} agent(s)
+              {t('roles.agentCount', { count: role._count?.users ?? 0 })}
             </div>
 
             {/* Permission pills preview */}
@@ -265,7 +267,7 @@ export function AdminRolesPage() {
 
             <div className="flex gap-1 mt-auto pt-2 border-t">
               <Button variant="ghost" size="sm" className="flex-1" onClick={() => openEdit(role)}>
-                <Pencil className="h-3.5 w-3.5 mr-1" />Modifier
+                <Pencil className="h-3.5 w-3.5 mr-1" />{t('roles.edit')}
               </Button>
               <Button variant="ghost" size="sm" onClick={() => handleDuplicate(role)}>
                 <Copy className="h-3.5 w-3.5" />
@@ -275,8 +277,8 @@ export function AdminRolesPage() {
                 className="text-destructive hover:text-destructive"
                 disabled={role.isSystem || (role._count?.users ?? 0) > 0}
                 title={
-                  role.isSystem ? 'Rôle système non supprimable'
-                  : (role._count?.users ?? 0) > 0 ? 'Des agents utilisent ce rôle'
+                  role.isSystem ? t('roles.systemNotDeletable')
+                  : (role._count?.users ?? 0) > 0 ? t('roles.agentsUseRole')
                   : undefined
                 }
                 onClick={() => setDeleteTarget(role)}
@@ -293,24 +295,24 @@ export function AdminRolesPage() {
         <SheetContent className="w-full sm:max-w-lg flex flex-col overflow-hidden">
           <SheetHeader>
             <SheetTitle>
-              {editTarget ? `Modifier "${editTarget.name}"` : 'Nouveau rôle'}
+              {editTarget ? t('roles.editSheetTitle', { name: editTarget.name }) : t('roles.newSheetTitle')}
             </SheetTitle>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto space-y-4 py-4">
             {/* Name & description */}
             <div>
-              <Label>Nom <span className="text-destructive">*</span></Label>
+              <Label>{t('roles.name')} <span className="text-destructive">*</span></Label>
               <Input value={formName}
                 onChange={e => setFormName(e.target.value)}
                 disabled={editTarget?.isSystem ?? false}
-                placeholder="Nom du rôle" className="mt-1" />
+                placeholder={t('roles.roleNamePlaceholder')} className="mt-1" />
             </div>
             <div>
-              <Label>Description</Label>
+              <Label>{t('roles.description')}</Label>
               <Input value={formDesc}
                 onChange={e => setFormDesc(e.target.value)}
-                placeholder="Description optionnelle" className="mt-1" />
+                placeholder={t('roles.descriptionPlaceholder')} className="mt-1" />
             </div>
 
             <Separator />
@@ -331,7 +333,7 @@ export function AdminRolesPage() {
                     <button
                       onClick={() => toggleGroup(groupKeys, allChecked)}
                       className="text-xs text-primary hover:underline">
-                      {allChecked ? 'Tout décocher' : 'Tout cocher'}
+                      {allChecked ? t('roles.uncheckAll') : t('roles.checkAll')}
                     </button>
                   </div>
                   {group.permissions.map(perm => (
@@ -355,7 +357,7 @@ export function AdminRolesPage() {
           {/* Sticky footer */}
           <div className="border-t pt-4 space-y-3">
             <div className="text-xs text-muted-foreground">
-              Ce rôle dispose de <strong>{formPerms.length}</strong> droit(s) sur {ALL_PERMISSIONS.length}
+              {t('roles.permissionSummaryPrefix')}<strong>{formPerms.length}</strong> {t('roles.permissionSummarySuffix', { total: ALL_PERMISSIONS.length })}
             </div>
             <div className="flex flex-wrap gap-1">
               {groupCounts.map(g => (
@@ -369,10 +371,10 @@ export function AdminRolesPage() {
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1"
                 onClick={() => setSheetOpen(false)} disabled={saving}>
-                Annuler
+                {t('roles.cancel')}
               </Button>
               <Button className="flex-1" onClick={handleSave} disabled={saving}>
-                {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
+                {saving ? t('roles.saving') : (editTarget ? t('roles.save') : t('roles.create'))}
               </Button>
             </div>
           </div>
@@ -382,9 +384,9 @@ export function AdminRolesPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={open => !open && setDeleteTarget(null)}
-        title="Supprimer le rôle"
-        description={`Supprimer le rôle "${deleteTarget?.name}" ? Cette action est irréversible.`}
-        confirmLabel="Supprimer"
+        title={t('roles.deleteTitle')}
+        description={t('roles.deleteConfirm', { name: deleteTarget?.name })}
+        confirmLabel={t('roles.delete')}
         variant="destructive"
         loading={deleting}
         onConfirm={handleDelete}

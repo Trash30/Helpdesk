@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Search, Plus, BookOpen, FileText } from 'lucide-react';
 import api from '@/lib/axios';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -44,22 +46,17 @@ interface Category {
 
 // -- Helpers -----------------------------------------------------------------
 
-const STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Brouillon',
-  PUBLISHED: 'Publié',
-};
-
-function relativeTime(dateStr: string): string {
+function relativeTime(dateStr: string, t: TFunction): string {
   const date = new Date(dateStr);
   const diff = Date.now() - date.getTime();
   const min = Math.floor(diff / 60000);
   const hour = Math.floor(min / 60);
   const day = Math.floor(hour / 24);
-  if (min < 1) return "\u00e0 l'instant";
-  if (min < 60) return `il y a ${min}min`;
-  if (hour < 24) return `il y a ${hour}h`;
-  if (day === 1) return 'hier';
-  if (day < 30) return `il y a ${day}j`;
+  if (min < 1) return t('list.time.now');
+  if (min < 60) return t('list.time.minutes', { count: min });
+  if (hour < 24) return t('list.time.hours', { count: hour });
+  if (day === 1) return t('list.time.yesterday');
+  if (day < 30) return t('list.time.days', { count: day });
   return date.toLocaleDateString('fr-FR');
 }
 
@@ -99,6 +96,7 @@ function TableSkeleton() {
 const LIMIT = 20;
 
 export function KbListPage() {
+  const { t } = useTranslation('kb');
   const navigate = useNavigate();
   const { can } = usePermissions();
 
@@ -158,13 +156,13 @@ export function KbListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <BookOpen className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Base de connaissances</h1>
+          <h1 className="text-2xl font-bold">{t('list.title')}</h1>
         </div>
 
         {can('kb.write') && (
           <Button onClick={() => navigate('/kb/new')}>
             <Plus className="h-4 w-4 mr-2" />
-            Nouvel article
+            {t('list.newArticle')}
           </Button>
         )}
       </div>
@@ -176,7 +174,7 @@ export function KbListPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Rechercher un article..."
+            placeholder={t('list.searchPlaceholder')}
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full h-10 pl-10 pr-4 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -186,22 +184,22 @@ export function KbListPage() {
         {/* Status filter */}
         <Select value={statusFilter} onValueChange={handleStatusChange}>
           <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Statut" />
+            <SelectValue placeholder={t('list.statusPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Tous les statuts</SelectItem>
-            <SelectItem value="DRAFT">Brouillon</SelectItem>
-            <SelectItem value="PUBLISHED">Publi&eacute;</SelectItem>
+            <SelectItem value="ALL">{t('list.allStatuses')}</SelectItem>
+            <SelectItem value="DRAFT">{t('list.draft')}</SelectItem>
+            <SelectItem value="PUBLISHED">{t('list.published')}</SelectItem>
           </SelectContent>
         </Select>
 
         {/* Category filter */}
         <Select value={categoryId} onValueChange={handleCategoryChange}>
           <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Cat&eacute;gorie" />
+            <SelectValue placeholder={t('list.categoryPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Toutes les cat&eacute;gories</SelectItem>
+            <SelectItem value="ALL">{t('list.allCategories')}</SelectItem>
             {categories.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
                 {cat.name}
@@ -217,11 +215,11 @@ export function KbListPage() {
       ) : articles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <FileText className="h-12 w-12 mb-4 opacity-40" />
-          <p className="text-lg font-medium">Aucun article trouv&eacute;</p>
+          <p className="text-lg font-medium">{t('list.noArticlesFound')}</p>
           <p className="text-sm mt-1">
             {debouncedSearch
-              ? 'Essayez de modifier vos crit\u00e8res de recherche.'
-              : 'Commencez par cr\u00e9er un premier article.'}
+              ? t('list.refineSearch')
+              : t('list.createFirst')}
           </p>
         </div>
       ) : (
@@ -229,11 +227,11 @@ export function KbListPage() {
           <table className="w-full min-w-[600px]">
             <thead>
               <tr className="bg-muted/50 text-left text-sm font-medium text-muted-foreground">
-                <th className="px-4 py-3">Titre</th>
-                <th className="px-4 py-3">Cat&eacute;gorie</th>
-                <th className="px-4 py-3">Statut</th>
-                <th className="px-4 py-3 hidden md:table-cell">Auteur</th>
-                <th className="px-4 py-3 hidden lg:table-cell">Mis &agrave; jour</th>
+                <th className="px-4 py-3">{t('list.colTitle')}</th>
+                <th className="px-4 py-3">{t('list.colCategory')}</th>
+                <th className="px-4 py-3">{t('list.colStatus')}</th>
+                <th className="px-4 py-3 hidden md:table-cell">{t('list.colAuthor')}</th>
+                <th className="px-4 py-3 hidden lg:table-cell">{t('list.colUpdated')}</th>
               </tr>
             </thead>
             <tbody>
@@ -284,7 +282,7 @@ export function KbListPage() {
                           : 'bg-yellow-50 text-yellow-800 border-yellow-200'
                       }
                     >
-                      {STATUS_LABELS[article.status]}
+                      {article.status === 'PUBLISHED' ? t('list.published') : t('list.draft')}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell text-sm text-muted-foreground">
@@ -294,7 +292,7 @@ export function KbListPage() {
                     className="px-4 py-3 hidden lg:table-cell text-sm text-muted-foreground"
                     title={new Date(article.updatedAt).toLocaleDateString('fr-FR')}
                   >
-                    {relativeTime(article.updatedAt)}
+                    {relativeTime(article.updatedAt, t)}
                   </td>
                 </tr>
               ))}
@@ -307,7 +305,7 @@ export function KbListPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Page {page} sur {totalPages}
+            {t('list.pageOf', { page, totalPages })}
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -316,7 +314,7 @@ export function KbListPage() {
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
             >
-              Pr&eacute;c&eacute;dent
+              {t('list.previous')}
             </Button>
             <Button
               variant="outline"
@@ -324,7 +322,7 @@ export function KbListPage() {
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
-              Suivant
+              {t('list.next')}
             </Button>
           </div>
         </div>

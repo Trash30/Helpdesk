@@ -1,0 +1,52 @@
+{
+  "pageTitle": "Register a Support mission",
+  "newMission": "New mission",
+  "optional": "(optional)",
+  "fields": {
+    "clientName": "Client name",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "location": "Location",
+    "competition": "Competition",
+    "techFirstName": "Technical contact — First name",
+    "techLastName": "Technical contact — Last name",
+    "techEmail": "Technical contact — Email",
+    "techPhone": "Technical contact — Phone",
+    "notes": "Notes"
+  },
+  "requiredFields": {
+    "clientName": "Client name",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "location": "Location",
+    "techContactFirstName": "Contact first name",
+    "techContactLastName": "Contact last name",
+    "techContactEmail": "Contact email",
+    "techContactPhone": "Contact phone"
+  },
+  "validation": {
+    "required": "{{label}} is required",
+    "invalidEmail": "Invalid email",
+    "endBeforeStart": "The end date must be after the start date"
+  },
+  "submit": "Register the mission",
+  "submitting": "Saving…",
+  "upcomingTitle": "Upcoming missions — 30 days",
+  "empty": "No missions in the next 30 days.",
+  "editAriaLabel": "Edit mission",
+  "deleteAriaLabel": "Delete mission",
+  "editTitle": "Edit mission",
+  "cancel": "Cancel",
+  "update": "Update",
+  "updating": "Updating…",
+  "deleteTitle": "Delete mission?",
+  "deleteDesc": "This action is irreversible.",
+  "delete": "Delete",
+  "toast": {
+    "createSuccess": "Mission registered!",
+    "updateSuccess": "Mission updated!",
+    "deleteSuccess": "Mission deleted.",
+    "genericError": "An error occurred",
+    "deleteError": "Error while deleting"
+  }
+}

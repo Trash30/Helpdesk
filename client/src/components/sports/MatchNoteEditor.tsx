@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -79,6 +80,7 @@ export function MatchNoteEditor({
   initialChaperonnage,
   initialChaperonneTechnicienId,
 }: MatchNoteEditorProps) {
+  const { t } = useTranslation('sports');
   const [isOpen, setIsOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [status, setStatus] = useState<NoteStatus>(initialStatus ?? 'VERT');
@@ -113,7 +115,7 @@ export function MatchNoteEditor({
         credentials: 'include',
       });
       if (!res.ok) {
-        toast.error("Erreur lors de l'envoi de l'image");
+        toast.error(t('noteEditor.imageUploadError'));
         return null;
       }
       const data = (await res.json()) as { url: string };
@@ -132,7 +134,7 @@ export function MatchNoteEditor({
       Underline,
       Image.configure({ inline: false, allowBase64: true }),
       Placeholder.configure({
-        placeholder: 'Ajouter vos notes de support pour ce match...',
+        placeholder: t('noteEditor.placeholder'),
       }),
     ],
     content: initialContent || '',
@@ -233,10 +235,10 @@ export function MatchNoteEditor({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['match-notes'] });
-      toast.success('Note sauvegardee');
+      toast.success(t('noteEditor.noteSaved'));
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err?.response?.data?.error ?? t('noteEditor.saveError'));
     },
   });
 
@@ -249,10 +251,10 @@ export function MatchNoteEditor({
       queryClient.invalidateQueries({ queryKey: ['match-notes'] });
       editor?.commands.clearContent();
       setIsOpen(false);
-      toast.success('Note supprimee');
+      toast.success(t('noteEditor.noteDeleted'));
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.error ?? 'Erreur lors de la suppression');
+      toast.error(err?.response?.data?.error ?? t('noteEditor.deleteError'));
     },
   });
 
@@ -303,11 +305,11 @@ export function MatchNoteEditor({
               }`}
             >
               <StickyNote className="h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0" />
-              <span>{hasNote ? 'Note' : 'Ajouter des notes'}</span>
+              <span>{hasNote ? t('noteEditor.note') : t('noteEditor.addNotes')}</span>
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            {hasNote ? 'Voir/modifier la note' : 'Ajouter une note de support'}
+            {hasNote ? t('noteEditor.viewEditTooltip') : t('noteEditor.addTooltip')}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -327,7 +329,7 @@ export function MatchNoteEditor({
               }`}
               aria-pressed={status === 'VERT'}
             >
-              Vert
+              {t('noteEditor.green')}
             </button>
             <button
               type="button"
@@ -339,7 +341,7 @@ export function MatchNoteEditor({
               }`}
               aria-pressed={status === 'ORANGE'}
             >
-              Orange
+              {t('noteEditor.orange')}
             </button>
             <button
               type="button"
@@ -351,7 +353,7 @@ export function MatchNoteEditor({
               }`}
               aria-pressed={status === 'ROUGE'}
             >
-              Rouge
+              {t('noteEditor.red')}
             </button>
           </div>
 
@@ -359,7 +361,7 @@ export function MatchNoteEditor({
           <div className="flex flex-wrap items-center gap-3">
             {/* PRODUCTION select */}
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Production :</span>
+              <span className="text-xs font-medium text-muted-foreground">{t('noteEditor.productionLabel')}</span>
               <Select
                 value={production ?? PRODUCTION_NONE}
                 onValueChange={(v) =>
@@ -367,10 +369,10 @@ export function MatchNoteEditor({
                 }
               >
                 <SelectTrigger className="h-7 text-xs w-36 bg-white">
-                  <SelectValue placeholder="Aucune" />
+                  <SelectValue placeholder={t('noteEditor.productionNone')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={PRODUCTION_NONE}>Aucune</SelectItem>
+                  <SelectItem value={PRODUCTION_NONE}>{t('noteEditor.productionNone')}</SelectItem>
                   <SelectItem value="BeIN">BeIN</SelectItem>
                   <SelectItem value="Via Storia">Via Storia</SelectItem>
                   <SelectItem value="AMP Visual">AMP Visual</SelectItem>
@@ -395,20 +397,20 @@ export function MatchNoteEditor({
                 htmlFor={`chaperon-${matchKey}`}
                 className="text-xs font-medium text-muted-foreground cursor-pointer"
               >
-                Chaperonnage
+                {t('noteEditor.chaperonnage')}
               </label>
             </div>
 
             {/* Technicien select — affiché seulement si chaperonnage est coché */}
             {chaperonnage && (
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Technicien :</span>
+                <span className="text-xs font-medium text-muted-foreground">{t('noteEditor.technicianLabel')}</span>
                 <Select
                   value={chaperonneTechnicienId ?? ''}
                   onValueChange={(v) => setChaperonneTechnicienId(v === '' ? null : v)}
                 >
                   <SelectTrigger className="h-7 text-xs w-40 bg-white">
-                    <SelectValue placeholder="Sélectionner..." />
+                    <SelectValue placeholder={t('noteEditor.technicianPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {teamMembers.map((m) => (
@@ -430,7 +432,7 @@ export function MatchNoteEditor({
               variant="ghost"
               className={`h-10 w-10 sm:h-7 sm:w-7 p-0 ${editor.isActive('bold') ? 'bg-amber-200/60' : ''}`}
               onClick={() => editor.chain().focus().toggleBold().run()}
-              aria-label="Gras"
+              aria-label={t('noteEditor.bold')}
             >
               <Bold className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             </Button>
@@ -440,7 +442,7 @@ export function MatchNoteEditor({
               variant="ghost"
               className={`h-10 w-10 sm:h-7 sm:w-7 p-0 ${editor.isActive('italic') ? 'bg-amber-200/60' : ''}`}
               onClick={() => editor.chain().focus().toggleItalic().run()}
-              aria-label="Italique"
+              aria-label={t('noteEditor.italic')}
             >
               <Italic className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             </Button>
@@ -450,7 +452,7 @@ export function MatchNoteEditor({
               variant="ghost"
               className={`h-10 w-10 sm:h-7 sm:w-7 p-0 ${editor.isActive('underline') ? 'bg-amber-200/60' : ''}`}
               onClick={() => editor.chain().focus().toggleUnderline().run()}
-              aria-label="Souligné"
+              aria-label={t('noteEditor.underline')}
             >
               <UnderlineIcon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             </Button>
@@ -460,7 +462,7 @@ export function MatchNoteEditor({
               variant="ghost"
               className={`h-10 w-10 sm:h-7 sm:w-7 p-0 ${editor.isActive('bulletList') ? 'bg-amber-200/60' : ''}`}
               onClick={() => editor.chain().focus().toggleBulletList().run()}
-              aria-label="Liste à puces"
+              aria-label={t('noteEditor.bulletList')}
             >
               <List className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             </Button>
@@ -470,7 +472,7 @@ export function MatchNoteEditor({
               variant="ghost"
               className={`h-10 w-10 sm:h-7 sm:w-7 p-0 ${editor.isActive('orderedList') ? 'bg-amber-200/60' : ''}`}
               onClick={() => editor.chain().focus().toggleOrderedList().run()}
-              aria-label="Liste numérotée"
+              aria-label={t('noteEditor.numberedList')}
             >
               <ListOrdered className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
             </Button>
@@ -481,8 +483,8 @@ export function MatchNoteEditor({
               className="h-10 w-10 sm:h-7 sm:w-7 p-0"
               onClick={handleInsertImage}
               disabled={isUploading}
-              aria-label="Insérer une image"
-              title="Insérer une image (ou collez/glissez directement)"
+              aria-label={t('noteEditor.insertImage')}
+              title={t('noteEditor.insertImageTitle')}
             >
               {isUploading ? (
                 <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin" />
@@ -515,7 +517,7 @@ export function MatchNoteEditor({
               className="h-10 sm:h-7 text-sm sm:text-xs gap-1.5 sm:gap-1 flex-1 sm:flex-none justify-center"
             >
               <Save className="h-4 w-4 sm:h-3 sm:w-3" />
-              {saveMutation.isPending ? 'Sauvegarde...' : 'Enregistrer'}
+              {saveMutation.isPending ? t('noteEditor.saving') : t('noteEditor.save')}
             </Button>
             <Button
               type="button"
@@ -525,7 +527,7 @@ export function MatchNoteEditor({
               className="h-10 sm:h-7 text-sm sm:text-xs gap-1.5 sm:gap-1 justify-center"
             >
               <X className="h-4 w-4 sm:h-3 sm:w-3" />
-              Fermer
+              {t('noteEditor.close')}
             </Button>
             {can('admin.access') && hasNote && (
               <Button
@@ -537,7 +539,7 @@ export function MatchNoteEditor({
                 className="h-10 sm:h-7 text-sm sm:text-xs gap-1.5 sm:gap-1 justify-center text-red-600 hover:text-red-700 hover:bg-red-50 sm:ml-auto"
               >
                 <Trash2 className="h-4 w-4 sm:h-3 sm:w-3" />
-                Supprimer
+                {t('noteEditor.delete')}
               </Button>
             )}
           </div>
@@ -545,9 +547,9 @@ export function MatchNoteEditor({
           <ConfirmDialog
             open={showDeleteConfirm}
             onOpenChange={(open) => { if (!open) setShowDeleteConfirm(false); }}
-            title="Supprimer la note"
-            description="Cette action est irreversible. La note sera definitivement supprimee."
-            confirmLabel="Supprimer"
+            title={t('noteEditor.deleteNoteTitle')}
+            description={t('noteEditor.deleteNoteDescription')}
+            confirmLabel={t('noteEditor.confirmDelete')}
             variant="destructive"
             loading={deleteMutation.isPending}
             onConfirm={() => {

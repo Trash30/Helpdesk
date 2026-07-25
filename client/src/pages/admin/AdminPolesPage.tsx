@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -32,6 +33,7 @@ interface Pole {
 function SortableRow({
   item, onEdit, onDelete,
 }: { item: Pole; onEdit: (p: Pole) => void; onDelete: (p: Pole) => void }) {
+  const { t } = useTranslation('admin');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
   const style = {
@@ -52,7 +54,7 @@ function SortableRow({
       <span className={`text-xs px-1.5 py-0.5 rounded ${
         item.isActive ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'
       }`}>
-        {item.isActive ? 'Actif' : 'Inactif'}
+        {item.isActive ? t('poles.active') : t('poles.inactive')}
       </span>
       <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item)}>
@@ -70,6 +72,7 @@ function SortableRow({
 const defaultForm = { name: '', isActive: true };
 
 export function AdminPolesPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const [items, setItems] = useState<Pole[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -105,7 +108,7 @@ export function AdminPolesPage() {
         newItems.map((item, idx) => ({ id: item.id, position: idx + 1 }))
       );
     } catch {
-      toast.error('Erreur lors du reordonnancement');
+      toast.error(t('poles.reorderError'));
       queryClient.invalidateQueries({ queryKey: ['admin-poles'] });
     }
   };
@@ -123,20 +126,20 @@ export function AdminPolesPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('Le nom est requis'); return; }
+    if (!form.name.trim()) { toast.error(t('poles.nameRequired')); return; }
     setSaving(true);
     try {
       if (editTarget) {
         await api.put(`/admin/poles/${editTarget.id}`, form);
-        toast.success('Pôle mis à jour');
+        toast.success(t('poles.poleUpdated'));
       } else {
         await api.post('/admin/poles', form);
-        toast.success('Pôle créé');
+        toast.success(t('poles.poleCreated'));
       }
       queryClient.invalidateQueries({ queryKey: ['admin-poles'] });
       setModalOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err.response?.data?.error ?? t('poles.saveError'));
     } finally { setSaving(false); }
   };
 
@@ -145,19 +148,19 @@ export function AdminPolesPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/poles/${deleteTarget.id}`);
-      toast.success('Pôle supprimé');
+      toast.success(t('poles.poleDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-poles'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
+      toast.error(err.response?.data?.error ?? t('poles.deleteError'));
     } finally { setDeleting(false); setDeleteTarget(null); }
   };
 
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Pôles</h1>
+        <h1 className="text-2xl font-bold">{t('poles.title')}</h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />Nouveau pôle
+          <Plus className="h-4 w-4 mr-2" />{t('poles.newPole')}
         </Button>
       </div>
 
@@ -172,7 +175,7 @@ export function AdminPolesPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucun pôle. Créez-en un pour commencer.
+                {t('poles.empty')}
               </p>
             )}
           </div>
@@ -182,27 +185,27 @@ export function AdminPolesPage() {
       <Dialog open={modalOpen} onOpenChange={open => { if (!saving) setModalOpen(open); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editTarget ? 'Modifier le pôle' : 'Nouveau pôle'}</DialogTitle>
+            <DialogTitle>{editTarget ? t('poles.editTitle') : t('poles.createTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label>Nom <span className="text-destructive">*</span></Label>
+              <Label>{t('poles.name')} <span className="text-destructive">*</span></Label>
               <Input value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Nom du pôle" className="mt-1" />
+                placeholder={t('poles.namePlaceholder')} className="mt-1" />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="pole-active" checked={form.isActive}
                 onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} />
-              <Label htmlFor="pole-active">Actif</Label>
+              <Label htmlFor="pole-active">{t('poles.activeLabel')}</Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>
-              Annuler
+              {t('poles.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
+              {saving ? t('poles.saving') : (editTarget ? t('poles.save') : t('poles.create'))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -211,13 +214,13 @@ export function AdminPolesPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={open => !open && setDeleteTarget(null)}
-        title="Supprimer le pôle"
+        title={t('poles.deleteTitle')}
         description={
           deleteTarget?._count?.clients
-            ? `Ce pôle est utilisé par ${deleteTarget._count.clients} client(s) et ne peut pas être supprimé.`
-            : `Supprimer le pôle "${deleteTarget?.name}" ? Cette action est irréversible.`
+            ? t('poles.deleteInUse', { count: deleteTarget._count.clients })
+            : t('poles.deleteConfirm', { name: deleteTarget?.name })
         }
-        confirmLabel={deleteTarget?._count?.clients ? 'Fermer' : 'Supprimer'}
+        confirmLabel={deleteTarget?._count?.clients ? t('poles.close') : t('poles.delete')}
         variant={deleteTarget?._count?.clients ? 'default' : 'destructive'}
         loading={deleting}
         onConfirm={deleteTarget?._count?.clients ? () => setDeleteTarget(null) : handleDelete}

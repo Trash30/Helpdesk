@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,6 +25,7 @@ interface CommercialEvent {
 }
 
 export function TodayEventsPage() {
+  const { t } = useTranslation('sports');
   const today = new Date();
   const { user } = useAuthStore();
 
@@ -95,7 +97,7 @@ export function TodayEventsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <h1 className="text-xl sm:text-2xl font-bold capitalize">
-        Evenements du {dateLabel}
+        {t('todayEvents.title', { date: dateLabel })}
       </h1>
 
       {isLoading && (
@@ -109,7 +111,7 @@ export function TodayEventsPage() {
       {!isLoading && sorted.length === 0 && (
         <Card className="shadow-sm">
           <CardContent className="py-12 text-center text-muted-foreground">
-            Aucun evenement sportif aujourd&apos;hui.
+            {t('todayEvents.empty')}
           </CardContent>
         </Card>
       )}
@@ -161,7 +163,7 @@ export function TodayEventsPage() {
 
       {commercialEvents.length > 0 && (
         <div className="mt-6 space-y-3">
-          <h2 className="text-base font-semibold text-foreground">Missions Support du jour</h2>
+          <h2 className="text-base font-semibold text-foreground">{t('todayEvents.missionsTitle')}</h2>
           {commercialEvents.map((ev) => {
             const fmt = (iso: string) =>
               new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });

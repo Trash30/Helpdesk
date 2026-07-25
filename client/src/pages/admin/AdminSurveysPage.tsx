@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -140,6 +141,7 @@ function formatDate(iso: string) {
 // ── CsatCard ─────────────────────────────────────────────────────────────────
 
 function CsatCard({ data, title }: { data: CsatData; title: string }) {
+  const { t } = useTranslation('admin');
   const color = csatColor(data.score);
   const satisfied = data.total > 0 ? (data.satisfied / data.total) * 100 : 0;
   const neutral = data.total > 0 ? (data.neutral / data.total) * 100 : 0;
@@ -157,30 +159,30 @@ function CsatCard({ data, title }: { data: CsatData; title: string }) {
           </span>
           {data.vsLastMonth !== undefined && (
             <span className={`text-sm mb-1 ${data.vsLastMonth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-              {data.vsLastMonth >= 0 ? '+' : ''}{data.vsLastMonth}% vs mois dernier
+              {data.vsLastMonth >= 0 ? '+' : ''}{data.vsLastMonth}{t('surveys.vsLastMonth')}
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">{data.total} réponse(s)</p>
+        <p className="text-xs text-muted-foreground">{t('surveys.responseCount', { count: data.total })}</p>
         <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
           {satisfied > 0 && (
             <div className="bg-green-500 transition-all" style={{ width: `${satisfied}%` }}
-              title={`Satisfaits : ${data.satisfied}`} />
+              title={t('surveys.satisfiedTitle', { count: data.satisfied })} />
           )}
           {neutral > 0 && (
             <div className="bg-orange-400 transition-all" style={{ width: `${neutral}%` }}
-              title={`Neutres : ${data.neutral}`} />
+              title={t('surveys.neutralTitle', { count: data.neutral })} />
           )}
           {unsatisfied > 0 && (
             <div className="bg-red-500 transition-all" style={{ width: `${unsatisfied}%` }}
-              title={`Non satisfaits : ${data.unsatisfied}`} />
+              title={t('surveys.unsatisfiedTitle', { count: data.unsatisfied })} />
           )}
           {data.total === 0 && <div className="bg-muted w-full" />}
         </div>
         <div className="flex gap-3 text-xs">
-          <span className="text-green-600">■ Satisfaits {data.satisfied}</span>
-          <span className="text-orange-500">■ Neutres {data.neutral}</span>
-          <span className="text-red-500">■ Non satisfaits {data.unsatisfied}</span>
+          <span className="text-green-600">■ {t('surveys.legendSatisfied', { count: data.satisfied })}</span>
+          <span className="text-orange-500">■ {t('surveys.legendNeutral', { count: data.neutral })}</span>
+          <span className="text-red-500">■ {t('surveys.legendUnsatisfied', { count: data.unsatisfied })}</span>
         </div>
       </CardContent>
     </Card>
@@ -190,6 +192,7 @@ function CsatCard({ data, title }: { data: CsatData; title: string }) {
 // ── Results tab ───────────────────────────────────────────────────────────────
 
 function ResultsTab() {
+  const { t } = useTranslation('admin');
   const [datePreset, setDatePreset] = useState('30');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -236,7 +239,7 @@ function ResultsTab() {
       {/* CSAT live (global, no date filter) */}
       {liveData && (
         <CsatCard data={{ ...liveData, vsLastMonth: liveData.vsLastMonth }}
-          title="CSAT global (toutes périodes)" />
+          title={t('surveys.csatGlobalAllPeriods')} />
       )}
 
       {/* Date filter */}
@@ -248,7 +251,7 @@ function ResultsTab() {
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'hover:bg-muted border-input'
             }`}>
-            {p === '7' ? '7 jours' : p === '30' ? '30 jours' : p === '90' ? '90 jours' : 'Personnalisé'}
+            {p === '7' ? t('surveys.days7') : p === '30' ? t('surveys.days30') : p === '90' ? t('surveys.days90') : t('surveys.custom')}
           </button>
         ))}
         {datePreset === 'custom' && (
@@ -265,12 +268,12 @@ function ResultsTab() {
       {r && (
         <>
           {/* CSAT filtered */}
-          <CsatCard data={r.csatFiltered} title={`CSAT (période sélectionnée)`} />
+          <CsatCard data={r.csatFiltered} title={t('surveys.csatFiltered')} />
 
           {/* NPS */}
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Score NPS</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{t('surveys.npsScore')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {r.npsScore !== null ? (
@@ -280,9 +283,9 @@ function ResultsTab() {
                       {r.npsScore}
                     </span>
                     <div className="flex gap-3 text-xs mb-1">
-                      <span className="text-green-600">Promoteurs {r.npsBreakdown.promoters}</span>
-                      <span className="text-orange-500">Passifs {r.npsBreakdown.passives}</span>
-                      <span className="text-red-500">Détracteurs {r.npsBreakdown.detractors}</span>
+                      <span className="text-green-600">{t('surveys.promoters', { count: r.npsBreakdown.promoters })}</span>
+                      <span className="text-orange-500">{t('surveys.passives', { count: r.npsBreakdown.passives })}</span>
+                      <span className="text-red-500">{t('surveys.detractors', { count: r.npsBreakdown.detractors })}</span>
                     </div>
                   </div>
                   {r.npsPerWeek.length > 0 && (
@@ -301,23 +304,23 @@ function ResultsTab() {
                   )}
                 </>
               ) : (
-                <p className="text-muted-foreground text-sm">Pas encore de données NPS.</p>
+                <p className="text-muted-foreground text-sm">{t('surveys.noNpsData')}</p>
               )}
             </CardContent>
           </Card>
 
           {/* Responses table */}
           <div>
-            <h3 className="text-sm font-medium mb-3">Réponses ({r.total})</h3>
+            <h3 className="text-sm font-medium mb-3">{t('surveys.responses', { count: r.total })}</h3>
             <div className="border rounded-lg overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 border-b">
                   <tr>
-                    <th className="text-left p-3 font-medium">Date</th>
-                    <th className="text-left p-3 font-medium">Ticket</th>
-                    <th className="text-left p-3 font-medium">Email</th>
-                    <th className="text-left p-3 font-medium">NPS</th>
-                    <th className="text-left p-3 font-medium">CSAT</th>
+                    <th className="text-left p-3 font-medium">{t('surveys.colDate')}</th>
+                    <th className="text-left p-3 font-medium">{t('surveys.colTicket')}</th>
+                    <th className="text-left p-3 font-medium">{t('surveys.colEmail')}</th>
+                    <th className="text-left p-3 font-medium">{t('surveys.colNps')}</th>
+                    <th className="text-left p-3 font-medium">{t('surveys.colCsat')}</th>
                     <th className="w-10 p-3" />
                   </tr>
                 </thead>
@@ -354,7 +357,7 @@ function ResultsTab() {
                       </td>
                       <td className="p-3">
                         <Button variant="ghost" size="sm" onClick={() => setSelectedResponse(resp)}>
-                          Voir
+                          {t('surveys.view')}
                         </Button>
                       </td>
                     </tr>
@@ -362,7 +365,7 @@ function ResultsTab() {
                   {r.responses.length === 0 && (
                     <tr>
                       <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                        Aucune réponse sur cette période.
+                        {t('surveys.noResponsesPeriod')}
                       </td>
                     </tr>
                   )}
@@ -378,7 +381,7 @@ function ResultsTab() {
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle>
-              Détail — {selectedResponse?.surveySend.ticket.ticketNumber}
+              {t('surveys.detailTitle', { ticket: selectedResponse?.surveySend.ticket.ticketNumber })}
             </SheetTitle>
           </SheetHeader>
           {selectedResponse && (
@@ -389,7 +392,7 @@ function ResultsTab() {
               {(selectedResponse.answers as any[]).map((a, i) => (
                 <div key={i} className="border-b pb-3">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    Question {i + 1}
+                    {t('surveys.question', { number: i + 1 })}
                   </p>
                   <p className="text-sm mt-0.5">
                     {typeof a.value === 'object' ? JSON.stringify(a.value) : String(a.value ?? '—')}
@@ -407,6 +410,7 @@ function ResultsTab() {
 // ── Sends tab ─────────────────────────────────────────────────────────────────
 
 function SendsTab() {
+  const { t } = useTranslation('admin');
   const [page, setPage] = useState(1);
 
   const { data } = useQuery<{
@@ -422,9 +426,9 @@ function SendsTab() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; cls: string }> = {
-      PENDING: { label: 'En attente', cls: 'bg-yellow-100 text-yellow-700' },
-      SENT: { label: 'Envoyé', cls: 'bg-green-100 text-green-700' },
-      FAILED: { label: 'Échec', cls: 'bg-red-100 text-red-700' },
+      PENDING: { label: t('surveys.statusPending'), cls: 'bg-yellow-100 text-yellow-700' },
+      SENT: { label: t('surveys.statusSent'), cls: 'bg-green-100 text-green-700' },
+      FAILED: { label: t('surveys.statusFailed'), cls: 'bg-red-100 text-red-700' },
     };
     const s = map[status] ?? { label: status, cls: 'bg-muted text-muted-foreground' };
     return <span className={`text-xs px-1.5 py-0.5 rounded ${s.cls}`}>{s.label}</span>;
@@ -436,11 +440,11 @@ function SendsTab() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 border-b">
             <tr>
-              <th className="text-left p-3 font-medium">Date</th>
-              <th className="text-left p-3 font-medium">Ticket</th>
-              <th className="text-left p-3 font-medium">Email</th>
-              <th className="text-left p-3 font-medium">Statut</th>
-              <th className="text-left p-3 font-medium">Répondu</th>
+              <th className="text-left p-3 font-medium">{t('surveys.colDate')}</th>
+              <th className="text-left p-3 font-medium">{t('surveys.colTicket')}</th>
+              <th className="text-left p-3 font-medium">{t('surveys.colEmail')}</th>
+              <th className="text-left p-3 font-medium">{t('surveys.colStatus')}</th>
+              <th className="text-left p-3 font-medium">{t('surveys.colResponded')}</th>
             </tr>
           </thead>
           <tbody>
@@ -458,9 +462,9 @@ function SendsTab() {
                 <td className="p-3">{statusBadge(send.status)}</td>
                 <td className="p-3">
                   {send.response ? (
-                    <span className="text-xs text-green-600">✓ Oui</span>
+                    <span className="text-xs text-green-600">{t('surveys.yes')}</span>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Non</span>
+                    <span className="text-xs text-muted-foreground">{t('surveys.no')}</span>
                   )}
                 </td>
               </tr>
@@ -468,7 +472,7 @@ function SendsTab() {
             {sends.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                  Aucun envoi.
+                  {t('surveys.noSends')}
                 </td>
               </tr>
             )}
@@ -480,14 +484,14 @@ function SendsTab() {
         <div className="flex items-center justify-between">
           <Button variant="outline" size="sm" disabled={page <= 1}
             onClick={() => setPage(p => p - 1)}>
-            Précédent
+            {t('surveys.previous')}
           </Button>
           <span className="text-sm text-muted-foreground">
-            Page {page} / {data.totalPages}
+            {t('surveys.pageOf', { page, total: data.totalPages })}
           </span>
           <Button variant="outline" size="sm" disabled={page >= data.totalPages}
             onClick={() => setPage(p => p + 1)}>
-            Suivant
+            {t('surveys.next')}
           </Button>
         </div>
       )}
@@ -505,6 +509,7 @@ function SortableQuestion({
   onDelete: (id: string) => void;
   canConfigure: boolean;
 }) {
+  const { t } = useTranslation('admin');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: q.id });
   const style = {
@@ -513,8 +518,8 @@ function SortableQuestion({
     opacity: isDragging ? 0.5 : 1,
   };
   const typeLabel: Record<string, string> = {
-    csat: 'CSAT', nps: 'NPS', rating: 'Note', text: 'Texte',
-    textarea: 'Commentaire', select: 'Choix', multiselect: 'Multi-choix',
+    csat: t('surveys.typeCsat'), nps: t('surveys.typeNps'), rating: t('surveys.typeRating'), text: t('surveys.typeText'),
+    textarea: t('surveys.typeTextarea'), select: t('surveys.typeSelect'), multiselect: t('surveys.typeMultiselect'),
   };
   return (
     <div ref={setNodeRef} style={style}
@@ -531,10 +536,10 @@ function SortableQuestion({
             {typeLabel[q.type] ?? q.type}
           </span>
           {q.required && (
-            <span className="text-xs text-destructive">Requis</span>
+            <span className="text-xs text-destructive">{t('surveys.required')}</span>
           )}
           {q.showIf && (
-            <span className="text-xs text-muted-foreground italic">Conditionnel</span>
+            <span className="text-xs text-muted-foreground italic">{t('surveys.conditional')}</span>
           )}
         </div>
         <p className="text-sm line-clamp-2">{q.label}</p>
@@ -559,6 +564,7 @@ const newQuestionDefault: Omit<Question, 'id' | 'order'> = {
 };
 
 function TemplateTab() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const { can } = usePermissions();
   const canConfigure = can('surveys.configure');
@@ -600,10 +606,10 @@ function TemplateTab() {
     setSaving(true);
     try {
       await api.put('/admin/surveys/template', { questions });
-      toast.success('Modèle sauvegardé');
+      toast.success(t('surveys.templateSaved'));
       queryClient.invalidateQueries({ queryKey: ['surveys-template'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err.response?.data?.error ?? t('surveys.saveError'));
     } finally { setSaving(false); }
   };
 
@@ -612,10 +618,10 @@ function TemplateTab() {
     try {
       await api.put('/admin/surveys/template', { questions: DEFAULT_QUESTIONS });
       setQuestions(DEFAULT_QUESTIONS);
-      toast.success('Modèle restauré par défaut');
+      toast.success(t('surveys.templateRestored'));
       queryClient.invalidateQueries({ queryKey: ['surveys-template'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la restauration');
+      toast.error(err.response?.data?.error ?? t('surveys.restoreError'));
     } finally { setSaving(false); setConfirmRestore(false); }
   };
 
@@ -624,7 +630,7 @@ function TemplateTab() {
   };
 
   const handleAddQ = () => {
-    if (!newQ.label.trim()) { toast.error('Le libellé est requis'); return; }
+    if (!newQ.label.trim()) { toast.error(t('surveys.labelRequired')); return; }
     const id = `q_${Date.now()}`;
     setQuestions(prev => [...prev, { ...newQ, id, order: prev.length + 1 }]);
     setNewQ({ ...newQuestionDefault });
@@ -641,14 +647,14 @@ function TemplateTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{questions.length} question(s)</p>
+        <p className="text-sm text-muted-foreground">{t('surveys.questionCount', { count: questions.length })}</p>
         {canConfigure && (
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setConfirmRestore(true)}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1" />Restaurer
+              <RefreshCw className="h-3.5 w-3.5 mr-1" />{t('surveys.restore')}
             </Button>
             <Button size="sm" onClick={() => setAddOpen(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1" />Ajouter
+              <Plus className="h-3.5 w-3.5 mr-1" />{t('surveys.add')}
             </Button>
           </div>
         )}
@@ -671,7 +677,7 @@ function TemplateTab() {
       {canConfigure && questions.length > 0 && (
         <div className="flex justify-end">
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Sauvegarde...' : 'Sauvegarder le modèle'}
+            {saving ? t('surveys.savingTemplate') : t('surveys.saveTemplate')}
           </Button>
         </div>
       )}
@@ -679,10 +685,10 @@ function TemplateTab() {
       {/* Add question dialog */}
       <Dialog open={addOpen} onOpenChange={open => { if (!saving) setAddOpen(open); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Ajouter une question</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t('surveys.addQuestion')}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <div>
-              <Label>Type</Label>
+              <Label>{t('surveys.type')}</Label>
               <select value={newQ.type}
                 onChange={e => setNewQ(q => ({ ...q, type: e.target.value }))}
                 className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none">
@@ -692,13 +698,13 @@ function TemplateTab() {
               </select>
             </div>
             <div>
-              <Label>Libellé <span className="text-destructive">*</span></Label>
+              <Label>{t('surveys.label')} <span className="text-destructive">*</span></Label>
               <Input value={newQ.label}
                 onChange={e => setNewQ(q => ({ ...q, label: e.target.value }))}
-                placeholder="Intitulé de la question" className="mt-1" />
+                placeholder={t('surveys.labelPlaceholder')} className="mt-1" />
             </div>
             <div>
-              <Label>Texte d'aide</Label>
+              <Label>{t('surveys.helpText')}</Label>
               <Input value={newQ.helpText ?? ''}
                 onChange={e => setNewQ(q => ({ ...q, helpText: e.target.value }))}
                 className="mt-1" />
@@ -706,11 +712,11 @@ function TemplateTab() {
             <div className="flex items-center gap-2">
               <Switch id="q-required" checked={newQ.required}
                 onCheckedChange={v => setNewQ(q => ({ ...q, required: v }))} />
-              <Label htmlFor="q-required">Requis</Label>
+              <Label htmlFor="q-required">{t('surveys.required')}</Label>
             </div>
             {(newQ.type === 'select' || newQ.type === 'multiselect') && (
               <div>
-                <Label>Options (une par ligne)</Label>
+                <Label>{t('surveys.options')}</Label>
                 <textarea
                   value={(newQ.options ?? []).join('\n')}
                   onChange={e => setNewQ(q => ({
@@ -722,8 +728,8 @@ function TemplateTab() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Annuler</Button>
-            <Button onClick={handleAddQ}>Ajouter</Button>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>{t('surveys.cancel')}</Button>
+            <Button onClick={handleAddQ}>{t('surveys.add')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -732,16 +738,16 @@ function TemplateTab() {
       {editQ && (
         <Dialog open={!!editQ} onOpenChange={open => !open && setEditQ(null)}>
           <DialogContent className="max-w-md">
-            <DialogHeader><DialogTitle>Modifier la question</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t('surveys.editQuestion')}</DialogTitle></DialogHeader>
             <div className="space-y-3 py-2">
               <div>
-                <Label>Libellé <span className="text-destructive">*</span></Label>
+                <Label>{t('surveys.label')} <span className="text-destructive">*</span></Label>
                 <Input value={editQ.label}
                   onChange={e => setEditQ(q => q ? { ...q, label: e.target.value } : q)}
                   className="mt-1" />
               </div>
               <div>
-                <Label>Texte d'aide</Label>
+                <Label>{t('surveys.helpText')}</Label>
                 <Input value={editQ.helpText ?? ''}
                   onChange={e => setEditQ(q => q ? { ...q, helpText: e.target.value } : q)}
                   className="mt-1" />
@@ -749,11 +755,11 @@ function TemplateTab() {
               <div className="flex items-center gap-2">
                 <Switch id="eq-required" checked={editQ.required}
                   onCheckedChange={v => setEditQ(q => q ? { ...q, required: v } : q)} />
-                <Label htmlFor="eq-required">Requis</Label>
+                <Label htmlFor="eq-required">{t('surveys.required')}</Label>
               </div>
               {(editQ.type === 'select' || editQ.type === 'multiselect') && (
                 <div>
-                  <Label>Options (une par ligne)</Label>
+                  <Label>{t('surveys.options')}</Label>
                   <textarea
                     value={(editQ.options ?? []).join('\n')}
                     onChange={e => setEditQ(q => q ? {
@@ -765,8 +771,8 @@ function TemplateTab() {
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditQ(null)}>Annuler</Button>
-              <Button onClick={handleEditSave}>Enregistrer</Button>
+              <Button variant="outline" onClick={() => setEditQ(null)}>{t('surveys.cancel')}</Button>
+              <Button onClick={handleEditSave}>{t('surveys.saveBtn')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -775,9 +781,9 @@ function TemplateTab() {
       <ConfirmDialog
         open={confirmRestore}
         onOpenChange={open => !open && setConfirmRestore(false)}
-        title="Restaurer le modèle par défaut"
-        description="Le modèle actuel sera remplacé par les 7 questions par défaut. Cette action ne peut pas être annulée."
-        confirmLabel="Restaurer"
+        title={t('surveys.restoreTitle')}
+        description={t('surveys.restoreDesc')}
+        confirmLabel={t('surveys.restore')}
         variant="destructive"
         loading={saving}
         onConfirm={handleRestore}
@@ -789,6 +795,7 @@ function TemplateTab() {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function AdminSurveysPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
 
   const { data: settings } = useQuery({
@@ -802,13 +809,13 @@ export function AdminSurveysPage() {
     mutationFn: (enabled: boolean) =>
       api.put('/admin/settings', { survey_enabled: enabled ? 'true' : 'false' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-settings'] }),
-    onError: () => toast.error('Erreur lors de la mise à jour'),
+    onError: () => toast.error(t('surveys.updateError')),
   });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Enquêtes de satisfaction</h1>
+        <h1 className="text-2xl font-bold">{t('surveys.title')}</h1>
         <div className="flex items-center gap-3 px-4 py-2 rounded-lg border bg-card">
           <Switch
             id="survey-global-toggle"
@@ -817,15 +824,15 @@ export function AdminSurveysPage() {
             onCheckedChange={v => toggleMutation.mutate(v)}
           />
           <Label htmlFor="survey-global-toggle" className="cursor-pointer">
-            {surveyEnabled ? 'Envois activés' : 'Envois désactivés'}
+            {surveyEnabled ? t('surveys.sendsEnabled') : t('surveys.sendsDisabled')}
           </Label>
         </div>
       </div>
       <Tabs defaultValue="results">
         <TabsList>
-          <TabsTrigger value="results">Résultats</TabsTrigger>
-          <TabsTrigger value="sends">Envois</TabsTrigger>
-          <TabsTrigger value="template">Modèle</TabsTrigger>
+          <TabsTrigger value="results">{t('surveys.tabResults')}</TabsTrigger>
+          <TabsTrigger value="sends">{t('surveys.tabSends')}</TabsTrigger>
+          <TabsTrigger value="template">{t('surveys.tabTemplate')}</TabsTrigger>
         </TabsList>
         <TabsContent value="results" className="mt-4"><ResultsTab /></TabsContent>
         <TabsContent value="sends" className="mt-4"><SendsTab /></TabsContent>

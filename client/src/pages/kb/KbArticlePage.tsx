@@ -7,6 +7,7 @@ import StarterKit from '@tiptap/starter-kit';
 import ImageExt from '@tiptap/extension-image';
 import LinkExt from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Edit2, Trash2, Save, X,
   Bold, Italic, Heading2, Heading3, List, ListOrdered,
@@ -85,11 +86,12 @@ interface EditorToolbarProps {
 }
 
 function EditorToolbar({ editor, onImageUpload }: EditorToolbarProps) {
+  const { t } = useTranslation('kb');
   if (!editor) return null;
 
   const addLink = () => {
     const previousUrl = editor.getAttributes('link').href;
-    const url = window.prompt('URL du lien', previousUrl || 'https://');
+    const url = window.prompt(t('article.linkPrompt'), previousUrl || 'https://');
     if (url === null) return;
     if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
@@ -103,14 +105,14 @@ function EditorToolbar({ editor, onImageUpload }: EditorToolbarProps) {
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleBold().run()}
         active={editor.isActive('bold')}
-        title="Gras"
+        title={t('article.toolbar.bold')}
       >
         <Bold className="h-4 w-4" />
       </ToolbarBtn>
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleItalic().run()}
         active={editor.isActive('italic')}
-        title="Italique"
+        title={t('article.toolbar.italic')}
       >
         <Italic className="h-4 w-4" />
       </ToolbarBtn>
@@ -120,14 +122,14 @@ function EditorToolbar({ editor, onImageUpload }: EditorToolbarProps) {
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
         active={editor.isActive('heading', { level: 2 })}
-        title="Titre H2"
+        title={t('article.toolbar.heading2')}
       >
         <Heading2 className="h-4 w-4" />
       </ToolbarBtn>
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         active={editor.isActive('heading', { level: 3 })}
-        title="Titre H3"
+        title={t('article.toolbar.heading3')}
       >
         <Heading3 className="h-4 w-4" />
       </ToolbarBtn>
@@ -137,24 +139,24 @@ function EditorToolbar({ editor, onImageUpload }: EditorToolbarProps) {
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleBulletList().run()}
         active={editor.isActive('bulletList')}
-        title="Liste a puces"
+        title={t('article.toolbar.bulletList')}
       >
         <List className="h-4 w-4" />
       </ToolbarBtn>
       <ToolbarBtn
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
         active={editor.isActive('orderedList')}
-        title="Liste numerotee"
+        title={t('article.toolbar.numberedList')}
       >
         <ListOrdered className="h-4 w-4" />
       </ToolbarBtn>
 
       <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
 
-      <ToolbarBtn onClick={addLink} active={editor.isActive('link')} title="Lien">
+      <ToolbarBtn onClick={addLink} active={editor.isActive('link')} title={t('article.toolbar.link')}>
         <LinkIcon className="h-4 w-4" />
       </ToolbarBtn>
-      <ToolbarBtn onClick={onImageUpload} title="Image">
+      <ToolbarBtn onClick={onImageUpload} title={t('article.toolbar.image')}>
         <ImageIcon className="h-4 w-4" />
       </ToolbarBtn>
     </div>
@@ -169,6 +171,7 @@ interface TagInputProps {
 }
 
 function TagInput({ tags, onChange }: TagInputProps) {
+  const { t } = useTranslation('kb');
   const [value, setValue] = useState('');
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -206,7 +209,7 @@ function TagInput({ tags, onChange }: TagInputProps) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Ajouter un tag puis Entree..."
+        placeholder={t('article.tagPlaceholder')}
         className="text-sm"
       />
     </div>
@@ -216,6 +219,7 @@ function TagInput({ tags, onChange }: TagInputProps) {
 // -- Main page component -------------------------------------------------
 
 export function KbArticlePage() {
+  const { t } = useTranslation('kb');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -255,7 +259,7 @@ export function KbArticlePage() {
       StarterKit,
       ImageExt.configure({ inline: false, allowBase64: false }),
       LinkExt.configure({ openOnClick: false }),
-      Placeholder.configure({ placeholder: 'Commencez a rediger votre article...' }),
+      Placeholder.configure({ placeholder: t('article.editorPlaceholder') }),
     ],
     content: '',
     editable: editing,
@@ -302,11 +306,11 @@ export function KbArticlePage() {
     }) => api.post('/kb', data).then((r) => r.data?.data),
     onSuccess: (data: KbArticle) => {
       queryClient.invalidateQueries({ queryKey: ['kb-articles'] });
-      toast.success('Article cree !');
+      toast.success(t('article.createSuccess'));
       navigate(`/kb/${data.id}`, { replace: true });
     },
     onError: (error: { response?: { data?: { error?: string } } }) => {
-      toast.error(error.response?.data?.error || 'Erreur lors de la creation');
+      toast.error(error.response?.data?.error || t('article.createError'));
     },
   });
 
@@ -321,11 +325,11 @@ export function KbArticlePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kb-article', id] });
       queryClient.invalidateQueries({ queryKey: ['kb-articles'] });
-      toast.success('Article mis a jour !');
+      toast.success(t('article.updateSuccess'));
       setEditing(false);
     },
     onError: (error: { response?: { data?: { error?: string } } }) => {
-      toast.error(error.response?.data?.error || 'Erreur lors de la mise a jour');
+      toast.error(error.response?.data?.error || t('article.updateError'));
     },
   });
 
@@ -333,11 +337,11 @@ export function KbArticlePage() {
     mutationFn: () => api.delete(`/kb/${id}`).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['kb-articles'] });
-      toast.success('Article supprime');
+      toast.success(t('article.deleteSuccess'));
       navigate('/kb', { replace: true });
     },
     onError: (error: { response?: { data?: { error?: string } } }) => {
-      toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
+      toast.error(error.response?.data?.error || t('article.deleteError'));
     },
   });
 
@@ -374,7 +378,7 @@ export function KbArticlePage() {
     },
     onError: (error: { response?: { data?: { error?: string } } }) => {
       toast.error(
-        error.response?.data?.error || "Erreur lors de l'upload de l'image"
+        error.response?.data?.error || t('article.imageUploadError')
       );
     },
   });
@@ -383,7 +387,7 @@ export function KbArticlePage() {
 
   const handleSave = () => {
     if (!title.trim()) {
-      toast.error('Le titre est obligatoire');
+      toast.error(t('article.titleRequired'));
       return;
     }
     const content = editor?.getHTML() || '';
@@ -396,11 +400,11 @@ export function KbArticlePage() {
         .put(`/kb/${draftArticleId}`, payload)
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ['kb-articles'] });
-          toast.success('Article cree !');
+          toast.success(t('article.createSuccess'));
           navigate(`/kb/${draftArticleId}`, { replace: true });
         })
         .catch(() => {
-          toast.error('Erreur lors de la creation');
+          toast.error(t('article.createError'));
         });
     } else {
       updateMutation.mutate(payload);
@@ -414,7 +418,7 @@ export function KbArticlePage() {
         const draft = await createDraftMutation.mutateAsync();
         targetId = draft.id;
       } catch {
-        toast.error("Impossible de creer le brouillon pour l'upload");
+        toast.error(t('article.draftCreateError'));
         return;
       }
     }
@@ -470,10 +474,10 @@ export function KbArticlePage() {
   if (!isNew && !isLoading && !article) {
     return (
       <div className="p-6 text-center">
-        <p className="text-muted-foreground mb-4">Article introuvable</p>
+        <p className="text-muted-foreground mb-4">{t('article.notFound')}</p>
         <Button variant="outline" onClick={() => navigate('/kb')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour a la base de connaissances
+          {t('article.backToKb')}
         </Button>
       </div>
     );
@@ -497,7 +501,7 @@ export function KbArticlePage() {
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/kb')}>
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Retour
+          {t('article.back')}
         </Button>
 
         <div className="flex-1" />
@@ -506,7 +510,7 @@ export function KbArticlePage() {
           <>
             <Button variant="outline" size="sm" onClick={startEditing}>
               <Edit2 className="h-4 w-4 mr-1" />
-              Modifier
+              {t('article.edit')}
             </Button>
             <Button
               variant="outline"
@@ -515,7 +519,7 @@ export function KbArticlePage() {
               onClick={() => setShowDeleteDialog(true)}
             >
               <Trash2 className="h-4 w-4 mr-1" />
-              Supprimer
+              {t('article.delete')}
             </Button>
           </>
         )}
@@ -535,9 +539,9 @@ export function KbArticlePage() {
                 }
               >
                 {article.status === 'PUBLISHED' ? (
-                  <><Eye className="h-3 w-3 mr-1" /> Publie</>
+                  <><Eye className="h-3 w-3 mr-1" /> {t('article.published')}</>
                 ) : (
-                  <><FileEdit className="h-3 w-3 mr-1" /> Brouillon</>
+                  <><FileEdit className="h-3 w-3 mr-1" /> {t('article.draft')}</>
                 )}
               </Badge>
               {article.category && (
@@ -571,8 +575,9 @@ export function KbArticlePage() {
               </span>
               {article.publishedAt && (
                 <span className="text-xs">
-                  Publie le{' '}
-                  {new Date(article.publishedAt).toLocaleDateString('fr-FR')}
+                  {t('article.publishedOn', {
+                    date: new Date(article.publishedAt).toLocaleDateString('fr-FR'),
+                  })}
                 </span>
               )}
             </div>
@@ -592,7 +597,7 @@ export function KbArticlePage() {
             <Card className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
               <CardContent className="py-3 px-4">
                 <p className="text-sm text-blue-800 dark:text-blue-300">
-                  Cree a partir du ticket{' '}
+                  {t('article.createdFromTicket')}{' '}
                   <Link
                     to={`/tickets/${article.sourceTicket.id}`}
                     className="font-medium underline hover:no-underline"
@@ -620,22 +625,22 @@ export function KbArticlePage() {
       {editing && (
         <div className="space-y-5">
           <h2 className="text-xl font-semibold">
-            {isNew ? 'Nouvel article' : "Modifier l'article"}
+            {isNew ? t('article.newArticle') : t('article.editArticle')}
           </h2>
 
           <div className="space-y-1.5">
-            <Label htmlFor="kb-title">Titre</Label>
+            <Label htmlFor="kb-title">{t('article.titleLabel')}</Label>
             <Input
               id="kb-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Titre de l'article"
+              placeholder={t('article.titlePlaceholder')}
               className="text-lg font-medium"
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label>Contenu</Label>
+            <Label>{t('article.contentLabel')}</Label>
             <div className="border rounded-md border-gray-200 dark:border-gray-700 overflow-hidden">
               <EditorToolbar editor={editor} onImageUpload={handleImageUpload} />
               <EditorContent editor={editor} />
@@ -644,16 +649,16 @@ export function KbArticlePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Categorie</Label>
+              <Label>{t('article.categoryLabel')}</Label>
               <Select
                 value={categoryId ?? 'none'}
                 onValueChange={(v) => setCategoryId(v === 'none' ? null : v)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Aucune categorie" />
+                  <SelectValue placeholder={t('article.noCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Aucune categorie</SelectItem>
+                  <SelectItem value="none">{t('article.noCategory')}</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       <span className="flex items-center gap-2">
@@ -670,7 +675,7 @@ export function KbArticlePage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Statut</Label>
+              <Label>{t('article.statusLabel')}</Label>
               <div className="flex items-center gap-3 h-10">
                 <Switch
                   checked={status === 'PUBLISHED'}
@@ -679,25 +684,25 @@ export function KbArticlePage() {
                   }
                 />
                 <span className="text-sm font-medium">
-                  {status === 'PUBLISHED' ? 'Publie' : 'Brouillon'}
+                  {status === 'PUBLISHED' ? t('article.published') : t('article.draft')}
                 </span>
               </div>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Tags</Label>
+            <Label>{t('article.tagsLabel')}</Label>
             <TagInput tags={tags} onChange={setTags} />
           </div>
 
           <div className="flex items-center gap-3 pt-2 border-t">
             <Button onClick={handleSave} disabled={isSaving}>
               <Save className="h-4 w-4 mr-1" />
-              {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+              {isSaving ? t('article.saving') : t('article.save')}
             </Button>
             <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
               <X className="h-4 w-4 mr-1" />
-              Annuler
+              {t('article.cancel')}
             </Button>
           </div>
         </div>
@@ -707,10 +712,9 @@ export function KbArticlePage() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer l'article</DialogTitle>
+            <DialogTitle>{t('article.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Cette action est irreversible. L'article sera definitivement
-              supprime.
+              {t('article.deleteDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -719,14 +723,14 @@ export function KbArticlePage() {
               onClick={() => setShowDeleteDialog(false)}
               disabled={deleteMutation.isPending}
             >
-              Annuler
+              {t('article.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deleteMutation.mutate()}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Suppression...' : 'Supprimer'}
+              {deleteMutation.isPending ? t('article.deleting') : t('article.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

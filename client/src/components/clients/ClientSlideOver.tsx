@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -64,6 +65,7 @@ const EMPTY_FORM: ClientFormData = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ClientSlideOver() {
+  const { t } = useTranslation('clients');
   const { isOpen, clientId, closeClientPanel } = useClientPanel();
   const queryClient = useQueryClient();
 
@@ -137,33 +139,33 @@ export function ClientSlideOver() {
   const createMutation = useMutation({
     mutationFn: (data: ClientFormData) => api.post('/clients', data),
     onSuccess: () => {
-      toast.success('Client créé');
+      toast.success(t('slideOver.createSuccess'));
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       closeClientPanel();
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.error ?? 'Erreur lors de la création');
+      toast.error(err?.response?.data?.error ?? t('slideOver.createError'));
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: ClientFormData) => api.put(`/clients/${clientId}`, data),
     onSuccess: () => {
-      toast.success('Client mis à jour');
+      toast.success(t('slideOver.updateSuccess'));
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['client-detail', clientId] });
       queryClient.invalidateQueries({ queryKey: ['client-slide', clientId] });
       closeClientPanel();
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.error ?? 'Erreur lors de la mise à jour');
+      toast.error(err?.response?.data?.error ?? t('slideOver.updateError'));
     },
   });
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (!form.firstName.trim()) e.firstName = 'Prénom requis';
-    if (!form.lastName.trim()) e.lastName = 'Nom requis';
+    if (!form.firstName.trim()) e.firstName = t('slideOver.firstNameRequired');
+    if (!form.lastName.trim()) e.lastName = t('slideOver.lastNameRequired');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -202,12 +204,12 @@ export function ClientSlideOver() {
       <Sheet open={isOpen} onOpenChange={open => !open && handleClose()}>
         <SheetContent className="w-full sm:max-w-[480px] flex flex-col overflow-y-auto">
           <SheetHeader className="mb-6">
-            <SheetTitle>{isEditMode ? 'Modifier le client' : 'Nouveau client'}</SheetTitle>
+            <SheetTitle>{isEditMode ? t('slideOver.editTitle') : t('slideOver.createTitle')}</SheetTitle>
           </SheetHeader>
 
           {loadingClient && isEditMode ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
-              Chargement...
+              {t('slideOver.loading')}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col flex-1 gap-4">
@@ -215,24 +217,24 @@ export function ClientSlideOver() {
               {/* firstName + lastName */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="sf-firstName">Prénom *</Label>
+                  <Label htmlFor="sf-firstName">{t('slideOver.firstName')}</Label>
                   <Input
                     id="sf-firstName"
                     value={form.firstName}
                     onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
-                    placeholder="Prénom"
+                    placeholder={t('slideOver.firstNamePlaceholder')}
                   />
                   {errors.firstName && (
                     <p className="text-xs text-destructive">{errors.firstName}</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="sf-lastName">Nom *</Label>
+                  <Label htmlFor="sf-lastName">{t('slideOver.lastName')}</Label>
                   <Input
                     id="sf-lastName"
                     value={form.lastName}
                     onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
-                    placeholder="Nom"
+                    placeholder={t('slideOver.lastNamePlaceholder')}
                   />
                   {errors.lastName && (
                     <p className="text-xs text-destructive">{errors.lastName}</p>
@@ -242,34 +244,34 @@ export function ClientSlideOver() {
 
               {/* Company */}
               <div className="space-y-1.5">
-                <Label htmlFor="sf-company">Société</Label>
+                <Label htmlFor="sf-company">{t('slideOver.company')}</Label>
                 <Input
                   id="sf-company"
                   value={form.company}
                   onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
-                  placeholder="Société"
+                  placeholder={t('slideOver.companyPlaceholder')}
                 />
               </div>
 
               {/* phone + email */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="sf-phone">Téléphone</Label>
+                  <Label htmlFor="sf-phone">{t('slideOver.phone')}</Label>
                   <Input
                     id="sf-phone"
                     value={form.phone}
                     onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                    placeholder="Téléphone"
+                    placeholder={t('slideOver.phonePlaceholder')}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="sf-email">Email</Label>
+                  <Label htmlFor="sf-email">{t('slideOver.email')}</Label>
                   <Input
                     id="sf-email"
                     type="email"
                     value={form.email}
                     onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                    placeholder="Email"
+                    placeholder={t('slideOver.emailPlaceholder')}
                   />
                 </div>
               </div>
@@ -279,7 +281,7 @@ export function ClientSlideOver() {
 
               {/* Client role */}
               <div className="space-y-1.5">
-                <Label htmlFor="sf-role">Rôle client</Label>
+                <Label htmlFor="sf-role">{t('slideOver.role')}</Label>
                 <div className="flex items-center gap-2">
                   <select
                     id="sf-role"
@@ -287,7 +289,7 @@ export function ClientSlideOver() {
                     onChange={e => setForm(f => ({ ...f, roleId: e.target.value }))}
                     className="flex-1 h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    <option value="">Aucun rôle</option>
+                    <option value="">{t('slideOver.noRole')}</option>
                     {clientRoles?.map(r => (
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
@@ -305,7 +307,7 @@ export function ClientSlideOver() {
 
               {/* Organisation */}
               <div className="space-y-1.5">
-                <Label htmlFor="sf-organisation">Organisation</Label>
+                <Label htmlFor="sf-organisation">{t('slideOver.organisation')}</Label>
                 <select
                   id="sf-organisation"
                   value={form.organisationId}
@@ -319,7 +321,7 @@ export function ClientSlideOver() {
                   }}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option value="">Aucune organisation</option>
+                  <option value="">{t('slideOver.noOrganisation')}</option>
                   {organisations?.map(o => (
                     <option key={o.id} value={o.id}>{o.name}</option>
                   ))}
@@ -328,14 +330,14 @@ export function ClientSlideOver() {
 
               {/* Club / Ville */}
               <div className="space-y-1.5">
-                <Label htmlFor="sf-club">Club / Ville</Label>
+                <Label htmlFor="sf-club">{t('slideOver.club')}</Label>
                 <select
                   id="sf-club"
                   value={form.clubId}
                   onChange={e => setForm(f => ({ ...f, clubId: e.target.value }))}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
-                  <option value="">Aucun club</option>
+                  <option value="">{t('slideOver.noClub')}</option>
                   {clubs?.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -352,7 +354,7 @@ export function ClientSlideOver() {
                 <div className="flex-1 space-y-0.5">
                   <div className="flex items-center gap-1.5">
                     <Label htmlFor="sf-surveyable" className="cursor-pointer font-medium">
-                      Enquêtes de satisfaction
+                      {t('slideOver.surveysLabel')}
                     </Label>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -361,26 +363,26 @@ export function ClientSlideOver() {
                         </span>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-[240px] text-xs">
-                        Si activé, une enquête NPS/CSAT sera automatiquement envoyée après la résolution d'un ticket, selon les délais configurés dans les paramètres.
+                        {t('slideOver.surveysTooltip')}
                       </TooltipContent>
                     </Tooltip>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {form.isSurveyable
-                      ? 'Les enquêtes seront envoyées automatiquement.'
-                      : 'Si désactivé, aucune enquête NPS/CSAT ne sera envoyée.'}
+                      ? t('slideOver.surveysOn')
+                      : t('slideOver.surveysOff')}
                   </p>
                 </div>
               </div>
 
               {/* Notes */}
               <div className="space-y-1.5">
-                <Label htmlFor="sf-notes">Notes</Label>
+                <Label htmlFor="sf-notes">{t('slideOver.notes')}</Label>
                 <textarea
                   id="sf-notes"
                   value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Notes internes..."
+                  placeholder={t('slideOver.notesPlaceholder')}
                   rows={3}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
                 />
@@ -391,10 +393,10 @@ export function ClientSlideOver() {
               {/* Footer */}
               <SheetFooter className="gap-2 pt-4 border-t mt-auto">
                 <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>
-                  Annuler
+                  {t('slideOver.cancel')}
                 </Button>
                 <Button type="submit" disabled={isSaving}>
-                  {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+                  {isSaving ? t('slideOver.saving') : t('slideOver.save')}
                 </Button>
               </SheetFooter>
             </form>
@@ -406,9 +408,9 @@ export function ClientSlideOver() {
       <ConfirmDialog
         open={showUnsaved}
         onOpenChange={open => !open && setShowUnsaved(false)}
-        title="Modifications non enregistrées"
-        description="Vous avez des modifications non enregistrées. Voulez-vous vraiment fermer ?"
-        confirmLabel="Fermer sans enregistrer"
+        title={t('slideOver.unsavedTitle')}
+        description={t('slideOver.unsavedDesc')}
+        confirmLabel={t('slideOver.unsavedConfirm')}
         variant="destructive"
         onConfirm={() => {
           setShowUnsaved(false);

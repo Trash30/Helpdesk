@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 
@@ -65,9 +66,10 @@ function QuestionField({
   value: any;
   onChange: (v: any) => void;
 }) {
+  const { t } = useTranslation('common');
   if (question.type === 'nps') {
-    const legendLeft = question.config?.legendLeft ?? '0 = Pas du tout probable';
-    const legendRight = question.config?.legendRight ?? '10 = Très probable';
+    const legendLeft = question.config?.legendLeft ?? t('survey.npsLegendLeft');
+    const legendRight = question.config?.legendRight ?? t('survey.npsLegendRight');
     return (
       <div className="space-y-2">
         <NumericButtons min={0} max={10} value={value} onChange={onChange} />
@@ -84,8 +86,8 @@ function QuestionField({
       <div className="space-y-2">
         <NumericButtons min={1} max={5} value={value} onChange={onChange} />
         <div className="flex justify-between text-xs text-gray-500">
-          <span>1 = Très insatisfait</span>
-          <span>5 = Très satisfait</span>
+          <span>{t('survey.csatLegendLeft')}</span>
+          <span>{t('survey.csatLegendRight')}</span>
         </div>
       </div>
     );
@@ -93,8 +95,8 @@ function QuestionField({
 
   if (question.type === 'rating') {
     const scale = question.config?.scale ?? 5;
-    const legendLeft = question.config?.legendLeft ?? `1 = Insuffisant`;
-    const legendRight = question.config?.legendRight ?? `${scale} = Excellent`;
+    const legendLeft = question.config?.legendLeft ?? t('survey.ratingLegendLeft');
+    const legendRight = question.config?.legendRight ?? t('survey.ratingLegendRight', { scale });
     return (
       <div className="space-y-2">
         <NumericButtons min={1} max={scale} value={value} onChange={onChange} />
@@ -111,7 +113,7 @@ function QuestionField({
       <textarea
         value={value ?? ''}
         onChange={e => onChange(e.target.value || null)}
-        placeholder="Votre réponse..."
+        placeholder={t('survey.answerPlaceholder')}
         rows={4}
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
       />
@@ -124,7 +126,7 @@ function QuestionField({
         type="text"
         value={value ?? ''}
         onChange={e => onChange(e.target.value || null)}
-        placeholder="Votre réponse..."
+        placeholder={t('survey.answerPlaceholder')}
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
       />
     );
@@ -137,7 +139,7 @@ function QuestionField({
         onChange={e => onChange(e.target.value || null)}
         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
       >
-        <option value="">Sélectionner...</option>
+        <option value="">{t('survey.selectPlaceholder')}</option>
         {(question.options ?? []).map(opt => (
           <option key={opt} value={opt}>{opt}</option>
         ))}
@@ -173,6 +175,7 @@ function QuestionField({
 // ── Main SurveyPage ───────────────────────────────────────────────────────────
 
 export function SurveyPage() {
+  const { t } = useTranslation('common');
   const { token } = useParams<{ token: string }>();
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -192,7 +195,7 @@ export function SurveyPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="text-gray-500 text-sm">Chargement...</p>
+        <p className="text-gray-500 text-sm">{t('survey.loading')}</p>
       </div>
     );
   }
@@ -207,17 +210,17 @@ export function SurveyPage() {
           </div>
           <h1 className="text-xl font-semibold text-gray-800">
             {errCode === 'already_answered'
-              ? 'Enquête déjà complétée'
+              ? t('survey.alreadyAnsweredTitle')
               : errCode === 'expired'
-              ? 'Lien expiré'
-              : 'Lien invalide'}
+              ? t('survey.expiredTitle')
+              : t('survey.invalidTitle')}
           </h1>
           <p className="text-gray-500 text-sm">
             {errCode === 'already_answered'
-              ? 'Vous avez déjà répondu à cette enquête. Merci pour votre participation !'
+              ? t('survey.alreadyAnsweredText')
               : errCode === 'expired'
-              ? 'Ce lien de satisfaction a expiré (valable 30 jours).'
-              : "Ce lien n'est pas valide ou a déjà été utilisé."}
+              ? t('survey.expiredText')
+              : t('survey.invalidText')}
           </p>
         </div>
       </div>
@@ -231,9 +234,9 @@ export function SurveyPage() {
           <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
             <span className="text-2xl">✓</span>
           </div>
-          <h1 className="text-xl font-semibold text-gray-800">Merci pour votre réponse !</h1>
+          <h1 className="text-xl font-semibold text-gray-800">{t('survey.thankYouTitle')}</h1>
           <p className="text-gray-500 text-sm">
-            Votre avis a bien été enregistré. Il nous aide à améliorer notre service.
+            {t('survey.thankYouText')}
           </p>
         </div>
       </div>
@@ -280,7 +283,7 @@ export function SurveyPage() {
       await publicApi.post(`/survey/${token}/respond`, { answers: answersList });
       setSubmitted(true);
     } catch (err: any) {
-      setSubmitError(err.response?.data?.error ?? 'Erreur lors de la soumission. Veuillez réessayer.');
+      setSubmitError(err.response?.data?.error ?? t('survey.submitError'));
     } finally {
       setSubmitting(false);
     }
@@ -298,7 +301,7 @@ export function SurveyPage() {
           <h1 className="text-xl font-bold text-gray-800">{companyName}</h1>
           <div className="bg-white border rounded-lg px-4 py-2 inline-block">
             <p className="text-sm text-gray-600">
-              Enquête de satisfaction — Ticket <span className="font-mono font-semibold text-primary">
+              {t('survey.surveyPrefix')} <span className="font-mono font-semibold text-primary">
                 {ticket.ticketNumber}
               </span>
             </p>
@@ -310,7 +313,7 @@ export function SurveyPage() {
         {requiredVisible.length > 0 && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-gray-500">
-              <span>{requiredAnswered.length} / {requiredVisible.length} question(s) requise(s)</span>
+              <span>{t('survey.requiredProgress', { answered: requiredAnswered.length, total: requiredVisible.length })}</span>
               <span>{progress}%</span>
             </div>
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -374,7 +377,7 @@ export function SurveyPage() {
                 : 'bg-gray-300 cursor-not-allowed'
             }`}
           >
-            {submitting ? 'Envoi en cours...' : 'Envoyer mes réponses'}
+            {submitting ? t('survey.submitting') : t('survey.submit')}
           </button>
         </div>
       </div>

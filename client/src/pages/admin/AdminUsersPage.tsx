@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
 import api from '@/lib/axios';
@@ -85,6 +86,7 @@ const defaultForm = {
 };
 
 export function AdminUsersPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const currentUser = useAuthStore(s => s.user);
   const [filterRole, setFilterRole] = useState('');
@@ -134,11 +136,11 @@ export function AdminUsersPage() {
 
   const handleSave = async () => {
     if (!form.firstName.trim() || !form.lastName.trim()) {
-      toast.error('Prénom et nom requis'); return;
+      toast.error(t('users.firstLastRequired')); return;
     }
-    if (!form.email.trim()) { toast.error('Email requis'); return; }
-    if (!form.roleId) { toast.error('Rôle requis'); return; }
-    if (!editTarget && !form.password) { toast.error('Mot de passe requis'); return; }
+    if (!form.email.trim()) { toast.error(t('users.emailRequired')); return; }
+    if (!form.roleId) { toast.error(t('users.roleRequired')); return; }
+    if (!editTarget && !form.password) { toast.error(t('users.passwordRequired')); return; }
 
     setSaving(true);
     try {
@@ -151,7 +153,7 @@ export function AdminUsersPage() {
           isActive: form.isActive,
         };
         await api.put(`/admin/users/${editTarget.id}`, body);
-        toast.success('Agent mis à jour');
+        toast.success(t('users.agentUpdated'));
       } else {
         await api.post('/admin/users', {
           firstName: form.firstName,
@@ -161,12 +163,12 @@ export function AdminUsersPage() {
           roleId: form.roleId,
           isActive: form.isActive,
         });
-        toast.success('Agent créé');
+        toast.success(t('users.agentCreated'));
       }
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setSheetOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err.response?.data?.error ?? t('users.saveError'));
     } finally { setSaving(false); }
   };
 
@@ -175,9 +177,9 @@ export function AdminUsersPage() {
     setSendingReset(true);
     try {
       await api.post(`/admin/users/${editTarget.id}/send-reset-email`);
-      toast.success(`Email envoyé à ${editTarget.email}`);
+      toast.success(t('users.emailSent', { email: editTarget.email }));
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de l\'envoi');
+      toast.error(err.response?.data?.error ?? t('users.sendError'));
     } finally { setSendingReset(false); setConfirmReset(false); }
   };
 
@@ -186,27 +188,27 @@ export function AdminUsersPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/users/${deleteTarget.id}`);
-      toast.success('Agent supprimé');
+      toast.success(t('users.agentDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
+      toast.error(err.response?.data?.error ?? t('users.deleteError'));
     } finally { setDeleting(false); setDeleteTarget(null); }
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Équipe</h1>
+        <h1 className="text-2xl font-bold">{t('users.title')}</h1>
         <div className="flex items-center gap-2">
           <select
             value={filterRole}
             onChange={e => setFilterRole(e.target.value)}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none">
-            <option value="">Tous les rôles</option>
+            <option value="">{t('users.allRoles')}</option>
             {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
           <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-2" />Nouvel agent
+            <Plus className="h-4 w-4 mr-2" />{t('users.newAgent')}
           </Button>
         </div>
       </div>
@@ -215,11 +217,11 @@ export function AdminUsersPage() {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 border-b">
             <tr>
-              <th className="text-left p-3 font-medium">Agent</th>
-              <th className="text-left p-3 font-medium">Email</th>
-              <th className="text-left p-3 font-medium">Rôle</th>
-              <th className="text-left p-3 font-medium">Tickets</th>
-              <th className="text-left p-3 font-medium">Statut</th>
+              <th className="text-left p-3 font-medium">{t('users.colAgent')}</th>
+              <th className="text-left p-3 font-medium">{t('users.colEmail')}</th>
+              <th className="text-left p-3 font-medium">{t('users.colRole')}</th>
+              <th className="text-left p-3 font-medium">{t('users.colTickets')}</th>
+              <th className="text-left p-3 font-medium">{t('users.colStatus')}</th>
               <th className="w-10 p-3" />
             </tr>
           </thead>
@@ -247,7 +249,7 @@ export function AdminUsersPage() {
                   <span className={`text-xs px-1.5 py-0.5 rounded ${
                     user.isActive ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'
                   }`}>
-                    {user.isActive ? 'Actif' : 'Inactif'}
+                    {user.isActive ? t('users.active') : t('users.inactive')}
                   </span>
                 </td>
                 <td className="p-3 flex gap-1">
@@ -267,7 +269,7 @@ export function AdminUsersPage() {
             {users.length === 0 && (
               <tr>
                 <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                  Aucun agent trouvé.
+                  {t('users.empty')}
                 </td>
               </tr>
             )}
@@ -282,20 +284,20 @@ export function AdminUsersPage() {
             <SheetTitle>
               {editTarget
                 ? `${editTarget.firstName} ${editTarget.lastName}`
-                : 'Nouvel agent'}
+                : t('users.newAgent')}
             </SheetTitle>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto space-y-4 py-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Prénom <span className="text-destructive">*</span></Label>
+                <Label>{t('users.firstName')} <span className="text-destructive">*</span></Label>
                 <Input value={form.firstName}
                   onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
                   className="mt-1" />
               </div>
               <div>
-                <Label>Nom <span className="text-destructive">*</span></Label>
+                <Label>{t('users.lastName')} <span className="text-destructive">*</span></Label>
                 <Input value={form.lastName}
                   onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
                   className="mt-1" />
@@ -303,7 +305,7 @@ export function AdminUsersPage() {
             </div>
 
             <div>
-              <Label>Email <span className="text-destructive">*</span></Label>
+              <Label>{t('users.email')} <span className="text-destructive">*</span></Label>
               <Input type="email" value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 className="mt-1" />
@@ -311,12 +313,12 @@ export function AdminUsersPage() {
 
             {!editTarget && (
               <div>
-                <Label>Mot de passe <span className="text-destructive">*</span></Label>
+                <Label>{t('users.password')} <span className="text-destructive">*</span></Label>
                 <div className="relative mt-1">
                   <Input type={showPassword ? 'text' : 'password'}
                     value={form.password}
                     onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                    placeholder="Min. 8 car., 1 majuscule, 1 chiffre"
+                    placeholder={t('users.passwordPlaceholder')}
                     className="pr-10" />
                   <button type="button"
                     onClick={() => setShowPassword(v => !v)}
@@ -329,11 +331,11 @@ export function AdminUsersPage() {
             )}
 
             <div>
-              <Label>Rôle <span className="text-destructive">*</span></Label>
+              <Label>{t('users.role')} <span className="text-destructive">*</span></Label>
               <select value={form.roleId}
                 onChange={e => setForm(f => ({ ...f, roleId: e.target.value }))}
                 className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none">
-                <option value="">Sélectionner un rôle</option>
+                <option value="">{t('users.selectRole')}</option>
                 {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
@@ -341,7 +343,7 @@ export function AdminUsersPage() {
             <div className="flex items-center gap-2">
               <Switch id="user-active" checked={form.isActive}
                 onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} />
-              <Label htmlFor="user-active">Compte actif</Label>
+              <Label htmlFor="user-active">{t('users.accountActive')}</Label>
             </div>
 
             {/* Permissions preview (read-only) */}
@@ -350,7 +352,7 @@ export function AdminUsersPage() {
                 <Separator />
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Permissions du rôle (lecture seule)
+                    {t('users.rolePermissionsReadonly')}
                   </p>
                   {PERMISSION_GROUPS.map(group => (
                     <div key={group.key} className="space-y-1">
@@ -381,7 +383,7 @@ export function AdminUsersPage() {
                     variant="outline" className="w-full"
                     onClick={() => setConfirmReset(true)}
                     disabled={sendingReset}>
-                    Envoyer un email de réinitialisation
+                    {t('users.sendResetEmail')}
                   </Button>
                 </div>
               </>
@@ -391,10 +393,10 @@ export function AdminUsersPage() {
           <div className="border-t pt-4 flex gap-2">
             <Button variant="outline" className="flex-1"
               onClick={() => setSheetOpen(false)} disabled={saving}>
-              Annuler
+              {t('users.cancel')}
             </Button>
             <Button className="flex-1" onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
+              {saving ? t('users.saving') : (editTarget ? t('users.save') : t('users.create'))}
             </Button>
           </div>
         </SheetContent>
@@ -403,9 +405,9 @@ export function AdminUsersPage() {
       <ConfirmDialog
         open={confirmReset}
         onOpenChange={open => !open && setConfirmReset(false)}
-        title="Envoyer un email de réinitialisation"
-        description={`Envoyer un email à ${editTarget?.email} ?`}
-        confirmLabel="Envoyer"
+        title={t('users.confirmResetTitle')}
+        description={t('users.confirmResetDesc', { email: editTarget?.email })}
+        confirmLabel={t('users.send')}
         loading={sendingReset}
         onConfirm={handleSendReset}
       />
@@ -413,9 +415,9 @@ export function AdminUsersPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={open => { if (!open) setDeleteTarget(null); }}
-        title="Supprimer un agent"
-        description={deleteTarget ? `Supprimer ${deleteTarget.firstName} ${deleteTarget.lastName} ? Cette action est irréversible.` : ''}
-        confirmLabel="Supprimer"
+        title={t('users.deleteTitle')}
+        description={deleteTarget ? t('users.deleteConfirm', { name: `${deleteTarget.firstName} ${deleteTarget.lastName}` }) : ''}
+        confirmLabel={t('users.delete')}
         variant="destructive"
         loading={deleting}
         onConfirm={handleDelete}

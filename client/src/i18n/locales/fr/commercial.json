@@ -1,0 +1,52 @@
+{
+  "pageTitle": "Enregistrer une mission Support",
+  "newMission": "Nouvelle mission",
+  "optional": "(facultatif)",
+  "fields": {
+    "clientName": "Nom du client",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "location": "Lieu",
+    "competition": "Compétition",
+    "techFirstName": "Contact technique — Prénom",
+    "techLastName": "Contact technique — Nom",
+    "techEmail": "Contact technique — Email",
+    "techPhone": "Contact technique — Téléphone",
+    "notes": "Notes"
+  },
+  "requiredFields": {
+    "clientName": "Nom du client",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "location": "Lieu",
+    "techContactFirstName": "Prénom du contact",
+    "techContactLastName": "Nom du contact",
+    "techContactEmail": "Email du contact",
+    "techContactPhone": "Téléphone du contact"
+  },
+  "validation": {
+    "required": "{{label}} est obligatoire",
+    "invalidEmail": "Email invalide",
+    "endBeforeStart": "La date de fin doit être postérieure à la date de début"
+  },
+  "submit": "Enregistrer la mission",
+  "submitting": "Enregistrement…",
+  "upcomingTitle": "Missions à venir — 30 jours",
+  "empty": "Aucune mission dans les 30 prochains jours.",
+  "editAriaLabel": "Modifier la mission",
+  "deleteAriaLabel": "Supprimer la mission",
+  "editTitle": "Modifier la mission",
+  "cancel": "Annuler",
+  "update": "Mettre à jour",
+  "updating": "Mise à jour…",
+  "deleteTitle": "Supprimer la mission ?",
+  "deleteDesc": "Cette action est irréversible.",
+  "delete": "Supprimer",
+  "toast": {
+    "createSuccess": "Mission enregistrée !",
+    "updateSuccess": "Mission mise à jour !",
+    "deleteSuccess": "Mission supprimée.",
+    "genericError": "Une erreur est survenue",
+    "deleteError": "Erreur lors de la suppression"
+  }
+}

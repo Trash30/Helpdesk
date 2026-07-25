@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -59,6 +60,7 @@ function CategoryIcon({ name, className }: { name: string; className?: string })
 function SortableRow({
   cat, onEdit, onDelete,
 }: { cat: Category; onEdit: (c: Category) => void; onDelete: (c: Category) => void }) {
+  const { t } = useTranslation('admin');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: cat.id });
   const style = {
@@ -84,7 +86,7 @@ function SortableRow({
       <span className={`text-xs px-1.5 py-0.5 rounded ${
         cat.isActive ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'
       }`}>
-        {cat.isActive ? 'Actif' : 'Inactif'}
+        {cat.isActive ? t('categories.active') : t('categories.inactive')}
       </span>
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(cat)}>
@@ -102,6 +104,7 @@ function SortableRow({
 const defaultForm = { name: '', description: '', color: '#185FA5', icon: 'Monitor', isActive: true };
 
 export function AdminCategoriesPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const [items, setItems] = useState<Category[]>([]);
   const [iconSearch, setIconSearch] = useState('');
@@ -139,7 +142,7 @@ export function AdminCategoriesPage() {
         newItems.map((item, idx) => ({ id: item.id, position: idx + 1 }))
       );
     } catch {
-      toast.error('Erreur lors du réordonnancement');
+      toast.error(t('categories.reorderError'));
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
     }
   };
@@ -167,20 +170,20 @@ export function AdminCategoriesPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('Le nom est requis'); return; }
+    if (!form.name.trim()) { toast.error(t('categories.nameRequired')); return; }
     setSaving(true);
     try {
       if (editTarget) {
         await api.put(`/admin/categories/${editTarget.id}`, form);
-        toast.success('Catégorie mise à jour');
+        toast.success(t('categories.categoryUpdated'));
       } else {
         await api.post('/admin/categories', form);
-        toast.success('Catégorie créée');
+        toast.success(t('categories.categoryCreated'));
       }
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       setModalOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err.response?.data?.error ?? t('categories.saveError'));
     } finally { setSaving(false); }
   };
 
@@ -189,10 +192,10 @@ export function AdminCategoriesPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/categories/${deleteTarget.id}`);
-      toast.success('Catégorie supprimée');
+      toast.success(t('categories.categoryDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
+      toast.error(err.response?.data?.error ?? t('categories.deleteError'));
     } finally { setDeleting(false); setDeleteTarget(null); }
   };
 
@@ -210,9 +213,9 @@ export function AdminCategoriesPage() {
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Catégories</h1>
+        <h1 className="text-2xl font-bold">{t('categories.title')}</h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />Nouvelle catégorie
+          <Plus className="h-4 w-4 mr-2" />{t('categories.newCategory')}
         </Button>
       </div>
 
@@ -227,7 +230,7 @@ export function AdminCategoriesPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucune catégorie. Créez-en une pour commencer.
+                {t('categories.empty')}
               </p>
             )}
           </div>
@@ -239,7 +242,7 @@ export function AdminCategoriesPage() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editTarget ? 'Modifier la catégorie' : 'Nouvelle catégorie'}
+              {editTarget ? t('categories.editTitle') : t('categories.newCategory')}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -250,33 +253,33 @@ export function AdminCategoriesPage() {
               {PreviewIcon && <PreviewIcon className="h-4 w-4 flex-shrink-0"
                 style={{ color: form.color } as React.CSSProperties} />}
               <span className="text-sm font-medium">
-                {form.name || 'Aperçu de la catégorie'}
+                {form.name || t('categories.previewPlaceholder')}
               </span>
             </div>
 
             <div>
-              <Label>Nom <span className="text-destructive">*</span></Label>
+              <Label>{t('categories.name')} <span className="text-destructive">*</span></Label>
               <Input value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Matériel" className="mt-1" />
+                placeholder={t('categories.namePlaceholder')} className="mt-1" />
             </div>
 
             <div>
-              <Label>Description</Label>
+              <Label>{t('categories.description')}</Label>
               <Input value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Description optionnelle" className="mt-1" />
+                placeholder={t('categories.descriptionPlaceholder')} className="mt-1" />
             </div>
 
             <div className="flex items-center gap-2">
               <Switch id="cat-active" checked={form.isActive}
                 onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} />
-              <Label htmlFor="cat-active">Catégorie active</Label>
+              <Label htmlFor="cat-active">{t('categories.categoryActive')}</Label>
             </div>
 
             {/* Color picker */}
             <div>
-              <Label className="mb-2 block">Couleur</Label>
+              <Label className="mb-2 block">{t('categories.color')}</Label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {SWATCHES.map(c => (
                   <button key={c} onClick={() => selectColor(c)}
@@ -302,10 +305,10 @@ export function AdminCategoriesPage() {
 
             {/* Icon picker */}
             <div>
-              <Label className="mb-2 block">Icône</Label>
+              <Label className="mb-2 block">{t('categories.icon')}</Label>
               <Input value={iconSearch}
                 onChange={e => setIconSearch(e.target.value)}
-                placeholder="Rechercher une icône..." className="mb-2" />
+                placeholder={t('categories.searchIcon')} className="mb-2" />
               <div className="grid grid-cols-6 gap-1 max-h-40 overflow-y-auto border rounded p-2">
                 {filteredIcons.map(name => {
                   const Icon = ICON_MAP[name];
@@ -323,20 +326,20 @@ export function AdminCategoriesPage() {
                 })}
                 {filteredIcons.length === 0 && (
                   <p className="col-span-6 text-xs text-center text-muted-foreground py-2">
-                    Aucune icône trouvée
+                    {t('categories.noIconFound')}
                   </p>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Sélectionné : {form.icon}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('categories.selected', { icon: form.icon })}</p>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>
-              Annuler
+              {t('categories.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
+              {saving ? t('categories.saving') : (editTarget ? t('categories.save') : t('categories.create'))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -345,13 +348,13 @@ export function AdminCategoriesPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={open => !open && setDeleteTarget(null)}
-        title="Supprimer la catégorie"
+        title={t('categories.deleteTitle')}
         description={
           deleteTarget?._count?.tickets
-            ? `Cette catégorie est utilisée par ${deleteTarget._count.tickets} ticket(s) et ne peut pas être supprimée.`
-            : `Supprimer la catégorie "${deleteTarget?.name}" ? Cette action est irréversible.`
+            ? t('categories.deleteInUse', { count: deleteTarget._count.tickets })
+            : t('categories.deleteConfirm', { name: deleteTarget?.name })
         }
-        confirmLabel={deleteTarget?._count?.tickets ? 'Fermer' : 'Supprimer'}
+        confirmLabel={deleteTarget?._count?.tickets ? t('categories.close') : t('categories.delete')}
         variant={deleteTarget?._count?.tickets ? 'default' : 'destructive'}
         loading={deleting}
         onConfirm={deleteTarget?._count?.tickets ? () => setDeleteTarget(null) : handleDelete}

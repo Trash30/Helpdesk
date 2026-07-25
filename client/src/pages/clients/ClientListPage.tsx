@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   Search, Plus, UserPlus, BellOff, Eye, Pencil, Ticket,
   RotateCcw,
@@ -19,15 +21,15 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function relativeTime(dateStr: string | null): string {
-  if (!dateStr) return 'Jamais';
+function relativeTime(dateStr: string | null, t: TFunction): string {
+  if (!dateStr) return t('time.never');
   const date = new Date(dateStr);
   const diff = Date.now() - date.getTime();
   const day = Math.floor(diff / 86400000);
-  if (day === 0) return "aujourd'hui";
-  if (day === 1) return 'hier';
-  if (day < 30) return `il y a ${day}j`;
-  if (day < 365) return `il y a ${Math.floor(day / 30)}mois`;
+  if (day === 0) return t('time.today');
+  if (day === 1) return t('time.yesterday');
+  if (day < 30) return t('time.daysAgo', { count: day });
+  if (day < 365) return t('time.monthsAgo', { count: Math.floor(day / 30) });
   return date.toLocaleDateString('fr-FR');
 }
 
@@ -96,6 +98,7 @@ function TableSkeleton() {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function ClientListPage() {
+  const { t } = useTranslation('clients');
   const navigate = useNavigate();
   const { openClientPanel } = useClientPanel();
   const { can } = usePermissions();
@@ -136,11 +139,11 @@ export function ClientListPage() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Clients</h1>
+          <h1 className="text-2xl font-bold">{t('list.title')}</h1>
           {can('clients.create') && (
             <Button onClick={() => openClientPanel()}>
               <Plus className="h-4 w-4 mr-2" />
-              Nouveau client
+              {t('list.newClient')}
             </Button>
           )}
         </div>
@@ -151,7 +154,7 @@ export function ClientListPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Rechercher par nom, email, t\u00e9l\u00e9phone..."
+              placeholder={t('list.searchPlaceholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full h-11 sm:h-10 pl-9 pr-4 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -162,7 +165,7 @@ export function ClientListPage() {
               options={roleOptions}
               value={roleIds}
               onChange={setRoleIds}
-              placeholder="Filtrer par rôle"
+              placeholder={t('list.filterByRole')}
             />
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input
@@ -171,7 +174,7 @@ export function ClientListPage() {
                 onChange={e => setOpenOnly(e.target.checked)}
                 className="h-4 w-4 rounded border-input"
               />
-              Tickets ouverts uniquement
+              {t('list.openTicketsOnly')}
             </label>
           </div>
         </div>
@@ -182,26 +185,26 @@ export function ClientListPage() {
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-24 text-center border rounded-lg">
             <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-1">Impossible de charger les clients</h3>
-            <p className="text-muted-foreground text-sm mb-4">Une erreur est survenue lors du chargement.</p>
+            <h3 className="text-lg font-semibold mb-1">{t('list.loadError')}</h3>
+            <p className="text-muted-foreground text-sm mb-4">{t('list.loadErrorDesc')}</p>
             <Button variant="outline" onClick={() => refetch()}>
               <RotateCcw className="h-4 w-4 mr-2" />
-              Reessayer
+              {t('list.retry')}
             </Button>
           </div>
         ) : !data || data.data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center border rounded-lg">
             <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-1">Aucun client</h3>
+            <h3 className="text-lg font-semibold mb-1">{t('list.empty')}</h3>
             <p className="text-sm text-muted-foreground mb-4">
               {search || roleIds.length > 0 || openOnly
-                ? 'Aucun client ne correspond à vos filtres.'
-                : 'Aucun client pour le moment.'}
+                ? t('list.emptyFiltered')
+                : t('list.emptyNone')}
             </p>
             {can('clients.create') && !search && roleIds.length === 0 && !openOnly && (
               <Button onClick={() => openClientPanel()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Créer le premier client
+                {t('list.createFirst')}
               </Button>
             )}
           </div>
@@ -256,16 +259,16 @@ export function ClientListPage() {
               <table className="w-full min-w-[600px] text-sm">
                 <thead className="bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <tr>
-                    <th className="px-4 py-3 text-left">Nom</th>
-                    <th className="px-4 py-3 text-left hidden xl:table-cell">Soci\u00e9t\u00e9</th>
-                    <th className="px-4 py-3 text-left">T\u00e9l\u00e9phone</th>
-                    <th className="px-4 py-3 text-left hidden xl:table-cell">Email</th>
-                    <th className="px-4 py-3 text-left">R\u00f4le</th>
-                    <th className="px-4 py-3 text-center hidden lg:table-cell">Enqu\u00eates</th>
-                    <th className="px-4 py-3 text-center">Ouverts</th>
-                    <th className="px-4 py-3 text-center hidden lg:table-cell">Total</th>
-                    <th className="px-4 py-3 text-left hidden lg:table-cell">Derni\u00e8re activit\u00e9</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="px-4 py-3 text-left">{t('list.colName')}</th>
+                    <th className="px-4 py-3 text-left hidden xl:table-cell">{t('list.colCompany')}</th>
+                    <th className="px-4 py-3 text-left">{t('list.colPhone')}</th>
+                    <th className="px-4 py-3 text-left hidden xl:table-cell">{t('list.colEmail')}</th>
+                    <th className="px-4 py-3 text-left">{t('list.colRole')}</th>
+                    <th className="px-4 py-3 text-center hidden lg:table-cell">{t('list.colSurveys')}</th>
+                    <th className="px-4 py-3 text-center">{t('list.colOpen')}</th>
+                    <th className="px-4 py-3 text-center hidden lg:table-cell">{t('list.colTotal')}</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">{t('list.colLastActivity')}</th>
+                    <th className="px-4 py-3 text-right">{t('list.colActions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -322,7 +325,7 @@ export function ClientListPage() {
                                 <BellOff className="h-4 w-4 text-muted-foreground" />
                               </span>
                             </TooltipTrigger>
-                            <TooltipContent>Enqu\u00eates d\u00e9sactiv\u00e9es</TooltipContent>
+                            <TooltipContent>{t('list.surveysDisabled')}</TooltipContent>
                           </Tooltip>
                         ) : null}
                       </td>
@@ -340,7 +343,7 @@ export function ClientListPage() {
                         {client._count.tickets}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground text-xs hidden lg:table-cell">
-                        {relativeTime(client.lastActivityAt ?? null)}
+                        {relativeTime(client.lastActivityAt ?? null, t)}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
@@ -355,7 +358,7 @@ export function ClientListPage() {
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Voir</TooltipContent>
+                            <TooltipContent>{t('list.view')}</TooltipContent>
                           </Tooltip>
                           {can('clients.edit') && (
                             <Tooltip>
@@ -369,7 +372,7 @@ export function ClientListPage() {
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Modifier</TooltipContent>
+                              <TooltipContent>{t('list.edit')}</TooltipContent>
                             </Tooltip>
                           )}
                           {can('tickets.create') && (
@@ -384,7 +387,7 @@ export function ClientListPage() {
                                   <Ticket className="h-3.5 w-3.5" />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Nouveau ticket</TooltipContent>
+                              <TooltipContent>{t('list.newTicket')}</TooltipContent>
                             </Tooltip>
                           )}
                         </div>
@@ -398,7 +401,7 @@ export function ClientListPage() {
             {/* Pagination */}
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs sm:text-sm text-muted-foreground shrink-0">
-                {data.total} client{data.total !== 1 ? 's' : ''}
+                {t('list.count', { count: data.total })}
               </p>
               <Pagination page={data.page} totalPages={data.totalPages} onChange={setPage} />
             </div>

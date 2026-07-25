@@ -1,0 +1,115 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "tickets": "Tickets",
+    "clients": "Clients",
+    "kb": "Knowledge base",
+    "missionSupport": "Support Mission",
+    "administration": "Administration",
+    "settings": "Settings",
+    "categories": "Categories",
+    "clientRoles": "Client roles",
+    "roles": "Roles & permissions",
+    "team": "Team",
+    "surveys": "Surveys",
+    "organisations": "Organisations",
+    "clubs": "Clubs / Cities",
+    "poles": "Divisions",
+    "ticketTypes": "Request types"
+  },
+  "header": {
+    "searchPlaceholder": "Search...",
+    "searchAriaLabel": "Search a ticket or a client",
+    "resultsTickets": "Tickets",
+    "resultsClients": "Clients",
+    "openMenu": "Open navigation menu",
+    "newTicket": "New ticket",
+    "myProfile": "My profile",
+    "logout": "Log out",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "switchToEnglish": "Switch to English",
+    "switchToFrench": "Switch to French"
+  },
+  "status": {
+    "OPEN": "Open",
+    "IN_PROGRESS": "In progress",
+    "PENDING": "Pending",
+    "CLOSED": "Closed",
+    "RESOLVED": "Resolved"
+  },
+  "priority": {
+    "CRITICAL": "Critical",
+    "HIGH": "High",
+    "MEDIUM": "Medium",
+    "LOW": "Low"
+  },
+  "profile": {
+    "title": "My profile",
+    "competitionsTitle": "Followed competitions",
+    "competitionsDesc": "Select the leagues you provide support for. Only those events will appear in your sports widget. If no competition is selected, all of them are shown.",
+    "saveCompetitions": "Save competitions",
+    "saving": "Saving...",
+    "securityTitle": "Security",
+    "currentPasswordLabel": "Current password",
+    "newPasswordLabel": "New password",
+    "passwordPlaceholder": "Min. 8 characters, 1 uppercase, 1 digit",
+    "confirmPasswordLabel": "Confirm password",
+    "changePassword": "Change password",
+    "logoutNotice": "After the change, you will be logged out and redirected to the sign-in page.",
+    "competitionsUpdated": "Followed competitions updated",
+    "competitionsError": "Error while saving the competitions",
+    "passwordMismatch": "Passwords do not match",
+    "passwordUpdated": "Password updated. Please sign in again.",
+    "changeError": "Error while changing the password"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist.",
+    "backToDashboard": "Back to dashboard"
+  },
+  "forbidden": {
+    "title": "Access denied",
+    "description": "You do not have the required permissions to access this page.",
+    "backToDashboard": "Back to dashboard"
+  },
+  "survey": {
+    "loading": "Loading...",
+    "alreadyAnsweredTitle": "Survey already completed",
+    "expiredTitle": "Link expired",
+    "invalidTitle": "Invalid link",
+    "alreadyAnsweredText": "You have already answered this survey. Thank you for your participation!",
+    "expiredText": "This satisfaction link has expired (valid for 30 days).",
+    "invalidText": "This link is not valid or has already been used.",
+    "thankYouTitle": "Thank you for your answer!",
+    "thankYouText": "Your feedback has been recorded. It helps us improve our service.",
+    "surveyPrefix": "Satisfaction survey — Ticket",
+    "requiredProgress": "{{answered}} / {{total}} required question(s)",
+    "answerPlaceholder": "Your answer...",
+    "selectPlaceholder": "Select...",
+    "npsLegendLeft": "0 = Not at all likely",
+    "npsLegendRight": "10 = Very likely",
+    "csatLegendLeft": "1 = Very dissatisfied",
+    "csatLegendRight": "5 = Very satisfied",
+    "ratingLegendLeft": "1 = Poor",
+    "ratingLegendRight": "{{scale}} = Excellent",
+    "submitError": "Error while submitting. Please try again.",
+    "submit": "Send my answers",
+    "submitting": "Sending..."
+  },
+  "confirmDialog": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "loading": "Loading..."
+  },
+  "pagination": {
+    "previous": "Previous page",
+    "next": "Next page"
+  },
+  "errorBoundary": {
+    "title": "An unexpected error occurred",
+    "description": "A problem occurred while displaying this page. Please try again.",
+    "retry": "Retry",
+    "backToDashboard": "Back to dashboard"
+  }
+}

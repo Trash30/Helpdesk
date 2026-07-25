@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -32,6 +33,7 @@ interface Organisation {
 function SortableRow({
   item, onEdit, onDelete,
 }: { item: Organisation; onEdit: (o: Organisation) => void; onDelete: (o: Organisation) => void }) {
+  const { t } = useTranslation('admin');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
   const style = {
@@ -52,7 +54,7 @@ function SortableRow({
       <span className={`text-xs px-1.5 py-0.5 rounded ${
         item.isActive ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'
       }`}>
-        {item.isActive ? 'Actif' : 'Inactif'}
+        {item.isActive ? t('organisations.active') : t('organisations.inactive')}
       </span>
       <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item)}>
@@ -70,6 +72,7 @@ function SortableRow({
 const defaultForm = { name: '', isActive: true };
 
 export function AdminOrganisationsPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const [items, setItems] = useState<Organisation[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -105,7 +108,7 @@ export function AdminOrganisationsPage() {
         newItems.map((item, idx) => ({ id: item.id, position: idx + 1 }))
       );
     } catch {
-      toast.error('Erreur lors du reordonnancement');
+      toast.error(t('organisations.reorderError'));
       queryClient.invalidateQueries({ queryKey: ['admin-organisations'] });
     }
   };
@@ -123,20 +126,20 @@ export function AdminOrganisationsPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('Le nom est requis'); return; }
+    if (!form.name.trim()) { toast.error(t('organisations.nameRequired')); return; }
     setSaving(true);
     try {
       if (editTarget) {
         await api.put(`/admin/organisations/${editTarget.id}`, form);
-        toast.success('Organisation mise à jour');
+        toast.success(t('organisations.orgUpdated'));
       } else {
         await api.post('/admin/organisations', form);
-        toast.success('Organisation créée');
+        toast.success(t('organisations.orgCreated'));
       }
       queryClient.invalidateQueries({ queryKey: ['admin-organisations'] });
       setModalOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err.response?.data?.error ?? t('organisations.saveError'));
     } finally { setSaving(false); }
   };
 
@@ -145,19 +148,19 @@ export function AdminOrganisationsPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/organisations/${deleteTarget.id}`);
-      toast.success('Organisation supprimée');
+      toast.success(t('organisations.orgDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-organisations'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
+      toast.error(err.response?.data?.error ?? t('organisations.deleteError'));
     } finally { setDeleting(false); setDeleteTarget(null); }
   };
 
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Organisations</h1>
+        <h1 className="text-2xl font-bold">{t('organisations.title')}</h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />Nouvelle organisation
+          <Plus className="h-4 w-4 mr-2" />{t('organisations.newOrg')}
         </Button>
       </div>
 
@@ -172,7 +175,7 @@ export function AdminOrganisationsPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucune organisation. Créez-en une pour commencer.
+                {t('organisations.empty')}
               </p>
             )}
           </div>
@@ -182,27 +185,27 @@ export function AdminOrganisationsPage() {
       <Dialog open={modalOpen} onOpenChange={open => { if (!saving) setModalOpen(open); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editTarget ? 'Modifier l\'organisation' : 'Nouvelle organisation'}</DialogTitle>
+            <DialogTitle>{editTarget ? t('organisations.editTitle') : t('organisations.createTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label>Nom <span className="text-destructive">*</span></Label>
+              <Label>{t('organisations.name')} <span className="text-destructive">*</span></Label>
               <Input value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Nom de l'organisation" className="mt-1" />
+                placeholder={t('organisations.namePlaceholder')} className="mt-1" />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="org-active" checked={form.isActive}
                 onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} />
-              <Label htmlFor="org-active">Active</Label>
+              <Label htmlFor="org-active">{t('organisations.activeLabel')}</Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>
-              Annuler
+              {t('organisations.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
+              {saving ? t('organisations.saving') : (editTarget ? t('organisations.save') : t('organisations.create'))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -211,13 +214,13 @@ export function AdminOrganisationsPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={open => !open && setDeleteTarget(null)}
-        title="Supprimer l'organisation"
+        title={t('organisations.deleteTitle')}
         description={
           deleteTarget?._count?.clients
-            ? `Cette organisation est utilisée par ${deleteTarget._count.clients} client(s) et ne peut pas être supprimée.`
-            : `Supprimer l'organisation "${deleteTarget?.name}" ? Cette action est irréversible.`
+            ? t('organisations.deleteInUse', { count: deleteTarget._count.clients })
+            : t('organisations.deleteConfirm', { name: deleteTarget?.name })
         }
-        confirmLabel={deleteTarget?._count?.clients ? 'Fermer' : 'Supprimer'}
+        confirmLabel={deleteTarget?._count?.clients ? t('organisations.close') : t('organisations.delete')}
         variant={deleteTarget?._count?.clients ? 'default' : 'destructive'}
         loading={deleting}
         onConfirm={deleteTarget?._count?.clients ? () => setDeleteTarget(null) : handleDelete}

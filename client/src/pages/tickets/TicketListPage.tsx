@@ -26,6 +26,8 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 // Sentinel value used in shadcn Select to represent "all" (Radix Select does not allow empty string values)
 const ALL_VALUE = '__all__';
@@ -40,32 +42,17 @@ function relativeTime(dateStr: string): string {
   const min = Math.floor(diff / 60000);
   const hour = Math.floor(min / 60);
   const day = Math.floor(hour / 24);
-  if (min < 1) return "a l'instant";
-  if (min < 60) return `il y a ${min}min`;
-  if (hour < 24) return `il y a ${hour}h`;
-  if (day === 1) return 'hier';
-  if (day < 30) return `il y a ${day}j`;
-  return date.toLocaleDateString('fr-FR');
+  if (min < 1) return i18n.t('tickets:time.justNow');
+  if (min < 60) return i18n.t('tickets:time.minutesAgo', { min });
+  if (hour < 24) return i18n.t('tickets:time.hoursAgo', { hour });
+  if (day === 1) return i18n.t('tickets:time.yesterday');
+  if (day < 30) return i18n.t('tickets:time.daysAgo', { day });
+  return date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'fr-FR');
 }
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase();
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  OPEN: 'Ouvert',
-  IN_PROGRESS: 'En cours',
-  PENDING: 'En attente',
-  CLOSED: 'Fermé',
-  RESOLVED: 'Résolu',
-};
-
-const PRIORITY_LABELS: Record<string, string> = {
-  CRITICAL: 'Critique',
-  HIGH: 'Haute',
-  MEDIUM: 'Moyenne',
-  LOW: 'Basse',
-};
 
 // ── Skeletons ────────────────────────────────────────────────────────────────
 
@@ -120,6 +107,7 @@ function CategoryBadge({ name, color }: { name: string; color: string }) {
 // ── Export dropdown ──────────────────────────────────────────────────────────
 
 function ExportDropdown({ onExportCSV, onExportPDF }: { onExportCSV: () => void; onExportPDF: () => void }) {
+  const { t } = useTranslation('tickets');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -135,7 +123,7 @@ function ExportDropdown({ onExportCSV, onExportPDF }: { onExportCSV: () => void;
     <div className="relative" ref={ref}>
       <Button variant="outline" onClick={() => setOpen(o => !o)}>
         <Download className="h-4 w-4 mr-2" />
-        Exporter
+        {t('list.export')}
         <ChevronDown className="h-4 w-4 ml-1" />
       </Button>
       {open && (
@@ -145,14 +133,14 @@ function ExportDropdown({ onExportCSV, onExportPDF }: { onExportCSV: () => void;
             onClick={() => { onExportCSV(); setOpen(false); }}
           >
             <FileSpreadsheet className="h-4 w-4" />
-            CSV (.xlsx compatible)
+            {t('list.exportCsv')}
           </button>
           <button
             className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent text-left"
             onClick={() => { onExportPDF(); setOpen(false); }}
           >
             <FileText className="h-4 w-4" />
-            PDF
+            {t('list.exportPdf')}
           </button>
         </div>
       )}
@@ -162,19 +150,8 @@ function ExportDropdown({ onExportCSV, onExportPDF }: { onExportCSV: () => void;
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 
-const STATUS_OPTIONS = [
-  { value: 'OPEN', label: 'Ouvert' },
-  { value: 'IN_PROGRESS', label: 'En cours' },
-  { value: 'PENDING', label: 'En attente' },
-  { value: 'CLOSED', label: 'Fermé' },
-];
-
-const PRIORITY_OPTIONS = [
-  { value: 'CRITICAL', label: 'Critique' },
-  { value: 'HIGH', label: 'Haute' },
-  { value: 'MEDIUM', label: 'Moyenne' },
-  { value: 'LOW', label: 'Basse' },
-];
+const STATUS_OPTION_VALUES = ['OPEN', 'IN_PROGRESS', 'PENDING', 'CLOSED'];
+const PRIORITY_OPTION_VALUES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
 interface Ticket {
   id: string;
@@ -226,9 +203,14 @@ function buildQueryParams(
 
 export function TicketListPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation('tickets');
+  const { t: tc } = useTranslation('common');
   const { can } = usePermissions();
   const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
+
+  const STATUS_OPTIONS = STATUS_OPTION_VALUES.map(value => ({ value, label: tc(`status.${value}`) }));
+  const PRIORITY_OPTIONS = PRIORITY_OPTION_VALUES.map(value => ({ value, label: tc(`priority.${value}`) }));
 
   // Read stale ticket params from URL
   const staleDaysParam = searchParams.get('staleDays');
@@ -364,17 +346,22 @@ export function TicketListPage() {
       const res = await api.get(`/tickets?${params.toString()}`);
       const tickets: Ticket[] = res.data?.data ?? [];
 
-      const header = ['#', 'Client', 'Titre', 'Catégorie', 'Priorité', 'Statut', 'Assigné à', 'Créé le', 'Dernière MAJ'];
-      const rows = tickets.map(t => [
-        t.ticketNumber,
-        t.client ? `${t.client.firstName} ${t.client.lastName}` : '',
-        t.title,
-        t.category?.name ?? '',
-        PRIORITY_LABELS[t.priority] ?? t.priority,
-        STATUS_LABELS[t.status] ?? t.status,
-        t.assignedTo ? `${t.assignedTo.firstName} ${t.assignedTo.lastName}` : '',
-        new Date(t.createdAt).toLocaleDateString('fr-FR'),
-        new Date(t.updatedAt).toLocaleDateString('fr-FR'),
+      const locale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
+      const header = [
+        t('list.columns.number'), t('list.columns.client'), t('list.columns.title'),
+        t('list.columns.category'), t('list.columns.priority'), t('list.columns.status'),
+        t('list.columns.assignedTo'), t('list.columns.createdAt'), t('list.columns.updatedAt'),
+      ];
+      const rows = tickets.map(t2 => [
+        t2.ticketNumber,
+        t2.client ? `${t2.client.firstName} ${t2.client.lastName}` : '',
+        t2.title,
+        t2.category?.name ?? '',
+        tc(`priority.${t2.priority}`),
+        tc(`status.${t2.status}`),
+        t2.assignedTo ? `${t2.assignedTo.firstName} ${t2.assignedTo.lastName}` : '',
+        new Date(t2.createdAt).toLocaleDateString(locale),
+        new Date(t2.updatedAt).toLocaleDateString(locale),
       ]);
 
       const csvContent = [header, ...rows]
@@ -391,9 +378,9 @@ export function TicketListPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('Export CSV terminé');
+      toast.success(t('list.exportCsvSuccess'));
     } catch {
-      toast.error('Erreur lors de l\'export CSV');
+      toast.error(t('list.exportCsvError'));
     }
   };
 
@@ -413,29 +400,34 @@ export function TicketListPage() {
       const { default: jsPDF } = await import('jspdf');
       const { default: autoTable } = await import('jspdf-autotable');
 
+      const locale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
       const doc = new jsPDF({ orientation: 'landscape' });
-      const dateStr = new Date().toLocaleDateString('fr-FR');
+      const dateStr = new Date().toLocaleDateString(locale);
       doc.setFontSize(14);
-      doc.text(`Liste des tickets - ${dateStr}`, 14, 18);
+      doc.text(t('list.pdfTitle', { date: dateStr }), 14, 18);
 
       if (truncated) {
         doc.setFontSize(9);
         doc.setTextColor(200, 0, 0);
-        doc.text('Attention : export limité à 1000 lignes.', 14, 25);
+        doc.text(t('list.pdfTruncated'), 14, 25);
         doc.setTextColor(0, 0, 0);
       }
 
-      const head = [['#', 'Client', 'Titre', 'Catégorie', 'Priorité', 'Statut', 'Assigné à', 'Créé le', 'Dernière MAJ']];
-      const body = tickets.map(t => [
-        t.ticketNumber,
-        t.client ? `${t.client.firstName} ${t.client.lastName}` : '',
-        t.title.length > 50 ? t.title.slice(0, 50) + '...' : t.title,
-        t.category?.name ?? '',
-        PRIORITY_LABELS[t.priority] ?? t.priority,
-        STATUS_LABELS[t.status] ?? t.status,
-        t.assignedTo ? `${t.assignedTo.firstName} ${t.assignedTo.lastName}` : '',
-        new Date(t.createdAt).toLocaleDateString('fr-FR'),
-        new Date(t.updatedAt).toLocaleDateString('fr-FR'),
+      const head = [[
+        t('list.columns.number'), t('list.columns.client'), t('list.columns.title'),
+        t('list.columns.category'), t('list.columns.priority'), t('list.columns.status'),
+        t('list.columns.assignedTo'), t('list.columns.createdAt'), t('list.columns.updatedAt'),
+      ]];
+      const body = tickets.map(t2 => [
+        t2.ticketNumber,
+        t2.client ? `${t2.client.firstName} ${t2.client.lastName}` : '',
+        t2.title.length > 50 ? t2.title.slice(0, 50) + '...' : t2.title,
+        t2.category?.name ?? '',
+        tc(`priority.${t2.priority}`),
+        tc(`status.${t2.status}`),
+        t2.assignedTo ? `${t2.assignedTo.firstName} ${t2.assignedTo.lastName}` : '',
+        new Date(t2.createdAt).toLocaleDateString(locale),
+        new Date(t2.updatedAt).toLocaleDateString(locale),
       ]);
 
       autoTable(doc, {
@@ -448,12 +440,12 @@ export function TicketListPage() {
 
       doc.save(`tickets_${new Date().toISOString().slice(0, 10)}.pdf`);
       if (truncated) {
-        toast.success('Export PDF terminé (limité à 1000 lignes)');
+        toast.success(t('list.exportPdfSuccessTruncated'));
       } else {
-        toast.success('Export PDF terminé');
+        toast.success(t('list.exportPdfSuccess'));
       }
     } catch {
-      toast.error('Erreur lors de l\'export PDF');
+      toast.error(t('list.exportPdfError'));
     }
   };
 
@@ -462,7 +454,7 @@ export function TicketListPage() {
       <div className="space-y-4">
         {/* Page header */}
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-xl sm:text-2xl font-bold shrink-0">Tickets</h1>
+          <h1 className="text-xl sm:text-2xl font-bold shrink-0">{t('list.title')}</h1>
           <div className="flex items-center gap-2">
             <div className="hidden sm:block">
               <ExportDropdown onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
@@ -470,7 +462,7 @@ export function TicketListPage() {
             {can('tickets.create') && (
               <Button onClick={() => navigate('/tickets/new')}>
                 <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Nouveau ticket</span>
+                <span className="hidden sm:inline">{t('list.newTicket')}</span>
               </Button>
             )}
           </div>
@@ -479,9 +471,9 @@ export function TicketListPage() {
         {/* Stale tickets indicator */}
         {(staleDays || assignedToMe) && (
           <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-200">
-            Filtres actifs depuis l'URL :
-            {staleDays && ` tickets sans mise à jour depuis ${staleDays} jours`}
-            {assignedToMe && ` - Assigné à moi`}
+            {t('list.urlFiltersActive')}
+            {staleDays && t('list.urlStaleFilter', { days: staleDays })}
+            {assignedToMe && t('list.urlAssignedToMe')}
           </div>
         )}
 
@@ -493,7 +485,7 @@ export function TicketListPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Rechercher un ticket, client..."
+                placeholder={t('list.searchPlaceholder')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full h-10 sm:h-9 pl-9 pr-4 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -506,7 +498,7 @@ export function TicketListPage() {
               onClick={() => setFiltersOpen(o => !o)}
             >
               <SlidersHorizontal className="h-4 w-4" />
-              Filtres
+              {t('list.filters')}
               {activeFilterCount > 0 && (
                 <span className="bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center leading-none">
                   {activeFilterCount}
@@ -522,23 +514,23 @@ export function TicketListPage() {
                 options={STATUS_OPTIONS}
                 value={statuses}
                 onChange={setStatuses}
-                placeholder="Statut"
+                placeholder={t('list.status')}
               />
               <MultiSelect
                 options={PRIORITY_OPTIONS}
                 value={priorities}
                 onChange={setPriorities}
-                placeholder="Priorité"
+                placeholder={t('list.priority')}
               />
               <Select
                 value={categoryId || ALL_VALUE}
                 onValueChange={(val) => setCategoryId(val === ALL_VALUE ? '' : val)}
               >
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Toutes les catégories" />
+                  <SelectValue placeholder={t('list.allCategories')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_VALUE}>Toutes les catégories</SelectItem>
+                  <SelectItem value={ALL_VALUE}>{t('list.allCategories')}</SelectItem>
                   {categories?.map(c => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -553,7 +545,7 @@ export function TicketListPage() {
                     : 'border-input bg-background text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Mes tickets
+                {t('list.myTickets')}
               </button>
               {can('tickets.assign') && (
                 <Select
@@ -561,10 +553,10 @@ export function TicketListPage() {
                   onValueChange={(val) => setAssignedToId(val === ALL_VALUE ? '' : val)}
                 >
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Tous les agents" />
+                    <SelectValue placeholder={t('list.allAgents')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={ALL_VALUE}>Tous les agents</SelectItem>
+                    <SelectItem value={ALL_VALUE}>{t('list.allAgents')}</SelectItem>
                     {agents?.map(a => (
                       <SelectItem key={a.id} value={a.id}>{a.firstName} {a.lastName}</SelectItem>
                     ))}
@@ -576,10 +568,10 @@ export function TicketListPage() {
                 onValueChange={(val) => setOrganisationId(val === ALL_VALUE ? '' : val)}
               >
                 <SelectTrigger className="h-9 w-full">
-                  <SelectValue placeholder="Organisation" />
+                  <SelectValue placeholder={t('list.organisation')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_VALUE}>Organisation</SelectItem>
+                  <SelectItem value={ALL_VALUE}>{t('list.organisation')}</SelectItem>
                   {organisations?.map(o => (
                     <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                   ))}
@@ -590,10 +582,10 @@ export function TicketListPage() {
                 onValueChange={(val) => setClubId(val === ALL_VALUE ? '' : val)}
               >
                 <SelectTrigger className="h-9 w-full">
-                  <SelectValue placeholder="Club / Ville" />
+                  <SelectValue placeholder={t('list.club')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_VALUE}>Club / Ville</SelectItem>
+                  <SelectItem value={ALL_VALUE}>{t('list.club')}</SelectItem>
                   {clubs?.map(c => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -617,7 +609,7 @@ export function TicketListPage() {
                   className="col-span-2 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  Réinitialiser les filtres
+                  {t('list.resetFilters')}
                 </button>
               )}
             </div>
@@ -629,13 +621,13 @@ export function TicketListPage() {
               options={STATUS_OPTIONS}
               value={statuses}
               onChange={setStatuses}
-              placeholder="Statut"
+              placeholder={t('list.status')}
             />
             <MultiSelect
               options={PRIORITY_OPTIONS}
               value={priorities}
               onChange={setPriorities}
-              placeholder="Priorité"
+              placeholder={t('list.priority')}
             />
 
             {/* Category select */}
@@ -644,10 +636,10 @@ export function TicketListPage() {
               onValueChange={(val) => setCategoryId(val === ALL_VALUE ? '' : val)}
             >
               <SelectTrigger className="h-9 w-[180px]">
-                <SelectValue placeholder="Toutes les catégories" />
+                <SelectValue placeholder={t('list.allCategories')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_VALUE}>Toutes les catégories</SelectItem>
+                <SelectItem value={ALL_VALUE}>{t('list.allCategories')}</SelectItem>
                 {categories?.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
@@ -664,7 +656,7 @@ export function TicketListPage() {
                   : 'border-input bg-background text-muted-foreground hover:text-foreground hover:border-foreground/40'
               }`}
             >
-              Mes tickets
+              {t('list.myTickets')}
             </button>
 
             {/* Agent select */}
@@ -674,10 +666,10 @@ export function TicketListPage() {
                 onValueChange={(val) => setAssignedToId(val === ALL_VALUE ? '' : val)}
               >
                 <SelectTrigger className="h-9 w-[180px]">
-                  <SelectValue placeholder="Tous les agents" />
+                  <SelectValue placeholder={t('list.allAgents')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_VALUE}>Tous les agents</SelectItem>
+                  <SelectItem value={ALL_VALUE}>{t('list.allAgents')}</SelectItem>
                   {agents?.map(a => (
                     <SelectItem key={a.id} value={a.id}>{a.firstName} {a.lastName}</SelectItem>
                   ))}
@@ -691,10 +683,10 @@ export function TicketListPage() {
               onValueChange={(val) => setOrganisationId(val === ALL_VALUE ? '' : val)}
             >
               <SelectTrigger className="h-9 w-[160px]">
-                <SelectValue placeholder="Organisation" />
+                <SelectValue placeholder={t('list.organisation')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_VALUE}>Organisation</SelectItem>
+                <SelectItem value={ALL_VALUE}>{t('list.organisation')}</SelectItem>
                 {organisations?.map(o => (
                   <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
                 ))}
@@ -707,10 +699,10 @@ export function TicketListPage() {
               onValueChange={(val) => setClubId(val === ALL_VALUE ? '' : val)}
             >
               <SelectTrigger className="h-9 w-[160px]">
-                <SelectValue placeholder="Club / Ville" />
+                <SelectValue placeholder={t('list.club')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_VALUE}>Club / Ville</SelectItem>
+                <SelectItem value={ALL_VALUE}>{t('list.club')}</SelectItem>
                 {clubs?.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}
@@ -738,7 +730,7 @@ export function TicketListPage() {
                 className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground ml-auto"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                Réinitialiser les filtres
+                {t('list.resetFilters')}
               </button>
             )}
           </div>
@@ -750,26 +742,26 @@ export function TicketListPage() {
         ) : isError ? (
           <div className="flex flex-col items-center justify-center py-24 text-center border rounded-lg">
             <TicketIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-1">Impossible de charger les tickets</h3>
-            <p className="text-muted-foreground text-sm mb-4">Une erreur est survenue lors du chargement.</p>
+            <h3 className="text-lg font-semibold mb-1">{t('list.loadError')}</h3>
+            <p className="text-muted-foreground text-sm mb-4">{t('list.loadErrorDesc')}</p>
             <Button variant="outline" onClick={() => refetch()}>
               <RotateCcw className="h-4 w-4 mr-2" />
-              Réessayer
+              {t('list.retry')}
             </Button>
           </div>
         ) : !data || displayedTickets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center border rounded-lg">
             <TicketIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-1">Aucun ticket trouvé</h3>
+            <h3 className="text-lg font-semibold mb-1">{t('list.emptyTitle')}</h3>
             <p className="text-muted-foreground text-sm mb-4">
               {hasFilters
-                ? 'Essayez de modifier vos filtres de recherche.'
-                : 'Aucun ticket pour le moment.'}
+                ? t('list.emptyWithFilters')
+                : t('list.emptyNoFilters')}
             </p>
             {can('tickets.create') && !hasFilters && (
               <Button onClick={() => navigate('/tickets/new')}>
                 <Plus className="h-4 w-4 mr-2" />
-                Créer le premier ticket
+                {t('list.createFirst')}
               </Button>
             )}
           </div>
@@ -808,7 +800,7 @@ export function TicketListPage() {
                     <span>
                       {ticket.assignedTo
                         ? `${ticket.assignedTo.firstName} ${ticket.assignedTo.lastName}`
-                        : 'Non assign\u00e9'}
+                        : t('list.unassigned')}
                     </span>
                   </div>
                 </div>
@@ -820,14 +812,14 @@ export function TicketListPage() {
               <table className="w-full min-w-[600px] text-sm">
                 <thead className="bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <tr>
-                    <th className="px-4 py-3 text-left">#</th>
-                    <th className="px-4 py-3 text-left">Client</th>
-                    <th className="px-4 py-3 text-left">Titre</th>
-                    <th className="px-4 py-3 text-left hidden xl:table-cell">Cat\u00e9gorie</th>
-                    <th className="px-4 py-3 text-left">Priorit\u00e9</th>
-                    <th className="px-4 py-3 text-left">Statut</th>
-                    <th className="px-4 py-3 text-left hidden lg:table-cell">Assign\u00e9</th>
-                    <th className="px-4 py-3 text-left">Cr\u00e9\u00e9 le</th>
+                    <th className="px-4 py-3 text-left">{t('list.columns.number')}</th>
+                    <th className="px-4 py-3 text-left">{t('list.columns.client')}</th>
+                    <th className="px-4 py-3 text-left">{t('list.columns.title')}</th>
+                    <th className="px-4 py-3 text-left hidden xl:table-cell">{t('list.columns.category')}</th>
+                    <th className="px-4 py-3 text-left">{t('list.columns.priority')}</th>
+                    <th className="px-4 py-3 text-left">{t('list.columns.status')}</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">{t('list.columns.assigned')}</th>
+                    <th className="px-4 py-3 text-left">{t('list.columns.createdAt')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -895,7 +887,7 @@ export function TicketListPage() {
                             </span>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-xs">Non assign\u00e9</span>
+                          <span className="text-muted-foreground text-xs">{t('list.unassigned')}</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
@@ -917,7 +909,7 @@ export function TicketListPage() {
             {/* Pagination */}
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs sm:text-sm text-muted-foreground shrink-0">
-                {data.total} ticket{data.total !== 1 ? 's' : ''}
+                {t('list.ticketCount', { count: data.total })}
               </p>
               <Pagination
                 page={data.page}

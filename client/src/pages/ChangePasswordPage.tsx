@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import api from '@/lib/axios';
 
 export function ChangePasswordPage() {
+  const { t } = useTranslation('auth');
   const { setMustChangePassword, user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -19,7 +21,7 @@ export function ChangePasswordPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error(t('changePassword.passwordMismatch'));
       return;
     }
     setLoading(true);
@@ -29,10 +31,10 @@ export function ChangePasswordPage() {
         confirmPassword,
       });
       setMustChangePassword(false);
-      toast.success('Mot de passe mis à jour');
+      toast.success(t('changePassword.successToast'));
       navigate('/dashboard', { replace: true });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors du changement de mot de passe');
+      toast.error(err.response?.data?.error ?? t('changePassword.changeError'));
     } finally {
       setLoading(false);
     }
@@ -42,38 +44,38 @@ export function ChangePasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div className="w-full max-w-sm bg-card rounded-lg border shadow-sm p-6 space-y-5">
         <div className="space-y-1">
-          <h1 className="text-lg font-semibold">Choisissez votre nouveau mot de passe</h1>
+          <h1 className="text-lg font-semibold">{t('changePassword.title')}</h1>
           {user && (
-            <p className="text-sm text-muted-foreground">Bonjour {user.firstName}, veuillez définir votre mot de passe.</p>
+            <p className="text-sm text-muted-foreground">{t('changePassword.greeting', { firstName: user.firstName })}</p>
           )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+            <Label htmlFor="newPassword">{t('changePassword.newPasswordLabel')}</Label>
             <Input
               id="newPassword"
               type="password"
               required
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
+              placeholder={t('changePassword.passwordPlaceholder')}
             />
             <PasswordStrength password={newPassword} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+            <Label htmlFor="confirmPassword">{t('changePassword.confirmPasswordLabel')}</Label>
             <Input
               id="confirmPassword"
               type="password"
               required
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              placeholder="Répétez le mot de passe"
+              placeholder={t('changePassword.confirmPlaceholder')}
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Enregistrement...' : 'Définir le mot de passe'}
+            {loading ? t('changePassword.submitting') : t('changePassword.submit')}
           </Button>
         </form>
       </div>

@@ -10,6 +10,8 @@ import {
   Ticket as TicketIcon, Clock, CheckCircle,
   ExternalLink, AlertTriangle, CalendarDays, CalendarPlus,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthStore } from '@/stores/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,13 +47,6 @@ const PRIORITY_COLORS: Record<string, string> = {
   HIGH:     PRIORITY_TOKENS.HIGH.solid,
   MEDIUM:   PRIORITY_TOKENS.MEDIUM.solid,
   LOW:      PRIORITY_TOKENS.LOW.solid,
-};
-
-const PRIORITY_LABELS: Record<string, string> = {
-  CRITICAL: 'Critique',
-  HIGH: 'Haute',
-  MEDIUM: 'Moyenne',
-  LOW: 'Basse',
 };
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
@@ -107,16 +102,17 @@ interface UrgentTicketsTableProps {
 }
 
 function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
+  const { t } = useTranslation('tickets');
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Tickets urgents</CardTitle>
+          <CardTitle className="text-base">{t('dashboard.urgentTickets')}</CardTitle>
           <Link
             to="/tickets?priority[]=CRITICAL&priority[]=HIGH&status[]=OPEN&status[]=IN_PROGRESS"
             className="text-sm text-primary hover:underline flex items-center gap-1"
           >
-            Voir tous <ExternalLink size={12} />
+            {t('dashboard.viewAll')} <ExternalLink size={12} />
           </Link>
         </div>
       </CardHeader>
@@ -128,19 +124,19 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
             ))}
           </div>
         ) : tickets.length === 0 ? (
-          <p className="px-6 py-4 text-sm text-muted-foreground">Aucun ticket urgent.</p>
+          <p className="px-6 py-4 text-sm text-muted-foreground">{t('dashboard.noUrgentTickets')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px] text-sm">
               <thead>
                 <tr className="border-b bg-muted/30">
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">#</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Client</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Titre</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Priorité</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Statut</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs hidden lg:table-cell">Assigné</th>
-                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs hidden md:table-cell">Créé le</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">{t('dashboard.columns.number')}</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">{t('dashboard.columns.client')}</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">{t('dashboard.columns.title')}</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">{t('dashboard.columns.priority')}</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">{t('dashboard.columns.status')}</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs hidden lg:table-cell">{t('dashboard.columns.assigned')}</th>
+                  <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs hidden md:table-cell">{t('dashboard.columns.createdAt')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -211,6 +207,8 @@ function UrgentTicketsTable({ tickets, loading }: UrgentTicketsTableProps) {
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 
 export function DashboardPage() {
+  const { t } = useTranslation('tickets');
+  const { t: tc } = useTranslation('common');
   const navigate = useNavigate();
   const { can } = usePermissions();
   const user = useAuthStore((s) => s.user);
@@ -268,7 +266,7 @@ export function DashboardPage() {
   const priorityData = stats?.ticketsByPriority
     ? Object.entries(stats.ticketsByPriority)
         .filter(([, v]) => (v as number) > 0)
-        .map(([key, value]) => ({ name: PRIORITY_LABELS[key] ?? key, value: value as number, key }))
+        .map(([key, value]) => ({ name: tc(`priority.${key}`), value: value as number, key }))
     : [];
 
   const donutTotal = priorityData.reduce((sum, d) => sum + d.value, 0);
@@ -287,7 +285,7 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Bienvenue {user?.firstName}</h1>
+      <h1 className="text-2xl font-bold">{t('dashboard.welcome', { name: user?.firstName ?? '' })}</h1>
 
       {/* ── ROW 1 — KPI cards ──────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
@@ -296,7 +294,7 @@ export function DashboardPage() {
         ) : (
           <>
             <KpiCard
-              label="Tickets ouverts"
+              label={t('dashboard.kpiOpen')}
               value={stats?.openTickets ?? 0}
               color="var(--kpi-open)"
               icon={<TicketIcon size={20} />}
@@ -304,7 +302,7 @@ export function DashboardPage() {
             />
 
             <KpiCard
-              label="En cours"
+              label={t('dashboard.kpiInProgress')}
               value={stats?.inProgressTickets ?? 0}
               color="var(--kpi-progress)"
               icon={<Clock size={20} />}
@@ -312,7 +310,7 @@ export function DashboardPage() {
             />
 
             <KpiCard
-              label="Fermés aujourd'hui"
+              label={t('dashboard.kpiClosedToday')}
               value={stats?.closedToday ?? stats?.resolvedToday ?? 0}
               color="var(--kpi-closed)"
               icon={<CheckCircle size={20} />}
@@ -321,62 +319,62 @@ export function DashboardPage() {
 
             {/* Événements aujourd'hui */}
             <KpiCard
-              label="Événements aujourd'hui"
+              label={t('dashboard.kpiEventsToday')}
               value={todayEventCount}
               color="var(--kpi-events-today)"
               icon={<CalendarDays size={20} />}
               onClick={() => navigate('/evenements/aujourd-hui')}
             >
-              <p className="text-xs text-muted-foreground mt-1">Sessions sportives du jour</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('dashboard.kpiEventsTodaySub')}</p>
             </KpiCard>
 
             {/* Sports events this week */}
             <KpiCard
-              label="Événements cette semaine"
+              label={t('dashboard.kpiEventsWeek')}
               value={sportsEventCount}
               color="var(--kpi-events-week)"
               icon={<CalendarDays size={20} />}
               onClick={() => { document.getElementById('sports-section')?.scrollIntoView({ behavior: 'smooth' }); }}
             >
-              <p className="text-xs text-muted-foreground mt-1">Matchs & sessions</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('dashboard.kpiEventsWeekSub')}</p>
             </KpiCard>
 
             {/* Événements commerciaux J+30 */}
             {upcomingEvents.length > 0 && (
               <KpiCard
-                label="Missions Support J+30"
+                label={t('dashboard.kpiMissionsJ30')}
                 value={upcomingEvents.length}
                 color="#185FA5"
                 icon={<CalendarPlus size={20} />}
                 onClick={() => { document.getElementById('commercial-events-section')?.scrollIntoView({ behavior: 'smooth' }); }}
               >
-                <p className="text-xs text-muted-foreground mt-1">Missions Support à venir</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('dashboard.kpiMissionsJ30Sub')}</p>
               </KpiCard>
             )}
 
             {/* Stale tickets card */}
             {stats?.staleTickets !== undefined && (
               <KpiCard
-                label="Tickets en attente de MAJ"
+                label={t('dashboard.kpiStale')}
                 value={stats.staleTickets ?? 0}
                 color="var(--kpi-warning)"
                 icon={<AlertTriangle size={20} />}
                 onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5')}
               >
-                <p className="text-xs text-muted-foreground mt-1">Sans MAJ depuis &gt; 5 jours</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('dashboard.kpiStaleSub')}</p>
               </KpiCard>
             )}
 
             {/* My stale tickets card (agents only) */}
             {!isAdmin && stats?.myStaleTickets !== undefined && (
               <KpiCard
-                label="Mes tickets en attente de MAJ"
+                label={t('dashboard.kpiMyStale')}
                 value={stats.myStaleTickets ?? 0}
                 color="var(--kpi-warning)"
                 icon={<Clock size={20} />}
                 onClick={() => navigate('/tickets?status[]=OPEN&status[]=IN_PROGRESS&status[]=PENDING&staleDays=5&assignedToMe=true')}
               >
-                <p className="text-xs text-muted-foreground mt-1">Mes tickets sans MAJ &gt; 5j</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('dashboard.kpiMyStaleSub')}</p>
               </KpiCard>
             )}
           </>
@@ -388,7 +386,7 @@ export function DashboardPage() {
         {/* Line chart — 60% */}
         <Card className="flex-[3] shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Tickets créés — 30 derniers jours</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.ticketsCreated30d')}</CardTitle>
           </CardHeader>
           <CardContent>
             {trendsLoading ? (
@@ -411,7 +409,7 @@ export function DashboardPage() {
                   />
                   <RechartsTooltip
                     contentStyle={{ fontSize: 12, borderRadius: 6 }}
-                    formatter={(v: number) => [v, 'Tickets']}
+                    formatter={(v: number) => [v, t('dashboard.tickets')]}
                     labelFormatter={(label: string) => label || ''}
                   />
                   <Line
@@ -431,7 +429,7 @@ export function DashboardPage() {
         {/* Donut chart — 40% */}
         <Card className="flex-[2] shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Par priorité</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.byPriority')}</CardTitle>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
@@ -458,7 +456,7 @@ export function DashboardPage() {
                     <tspan fontSize="22" fontWeight="700" fill="currentColor">{donutTotal}</tspan>
                   </text>
                   <text x="50%" y="56%" textAnchor="middle" dominantBaseline="central" className="text-muted-foreground">
-                    <tspan fontSize="11" fill="currentColor">actifs</tspan>
+                    <tspan fontSize="11" fill="currentColor">{t('dashboard.active')}</tspan>
                   </text>
                   <RechartsTooltip
                     contentStyle={{ fontSize: 12, borderRadius: 6 }}
@@ -486,13 +484,13 @@ export function DashboardPage() {
       <div className="flex flex-col lg:flex-row gap-4">
         <Card className="flex-1 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Tickets par agent</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.ticketsByAgent')}</CardTitle>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
               <Skeleton className="h-52 w-full" />
             ) : agentData.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">Aucune donnée disponible.</p>
+              <p className="text-sm text-muted-foreground py-4">{t('dashboard.noData')}</p>
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(160, agentData.length * 36)}>
                 <BarChart
@@ -512,7 +510,7 @@ export function DashboardPage() {
                   />
                   <RechartsTooltip
                     contentStyle={{ fontSize: 12, borderRadius: 6 }}
-                    formatter={(v: number) => [v, 'Tickets']}
+                    formatter={(v: number) => [v, t('dashboard.tickets')]}
                   />
                   <Bar dataKey="count" fill="#185FA5" radius={[0, 4, 4, 0]} maxBarSize={18} />
                 </BarChart>
@@ -534,18 +532,19 @@ export function DashboardPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <CalendarPlus size={16} className="text-primary" />
-                  Missions Support — 30 prochains jours
+                  {t('dashboard.missionsTitle')}
                 </CardTitle>
-                <span className="text-xs text-muted-foreground">{upcomingEvents.length} mission{upcomingEvents.length > 1 ? 's' : ''}</span>
+                <span className="text-xs text-muted-foreground">{t('dashboard.missionCount', { count: upcomingEvents.length })}</span>
               </div>
             </CardHeader>
             <CardContent className="p-0 pb-2">
               <div className="divide-y">
                 {upcomingEvents.map((ev) => {
+                  const evLocale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
                   const fmtDate = (iso: string) =>
-                    new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+                    new Date(iso).toLocaleDateString(evLocale, { day: '2-digit', month: '2-digit' });
                   const fmtTime = (iso: string) =>
-                    new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                    new Date(iso).toLocaleTimeString(evLocale, { hour: '2-digit', minute: '2-digit' });
                   const isSameDay =
                     new Date(ev.startDate).toDateString() === new Date(ev.endDate).toDateString();
                   const dateRange = isSameDay
@@ -582,19 +581,19 @@ export function DashboardPage() {
       {can('tickets.viewAll') && (stats?.ticketsByOrganisation ?? []).length > 0 && (
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Tickets par Organisation</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.ticketsByOrganisation')}</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pb-2">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30">
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Organisation</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Total</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Ouverts</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En cours</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs hidden lg:table-cell">En attente</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Fermés</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">{t('dashboard.colOrganisation')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">{t('dashboard.colTotal')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">{t('dashboard.colOpen')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">{t('dashboard.colInProgress')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs hidden lg:table-cell">{t('dashboard.colPending')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">{t('dashboard.colClosed')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -625,19 +624,19 @@ export function DashboardPage() {
       {can('tickets.viewAll') && (stats?.ticketsByClub ?? []).length > 0 && (
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Tickets par Club</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.ticketsByClub')}</CardTitle>
           </CardHeader>
           <CardContent className="p-0 pb-2">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/30">
-                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">Club</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Total</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Ouverts</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En cours</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">En attente</th>
-                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">Fermés</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">{t('dashboard.colClub')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">{t('dashboard.colTotal')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">{t('dashboard.colOpen')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">{t('dashboard.colInProgress')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">{t('dashboard.colPending')}</th>
+                    <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">{t('dashboard.colClosed')}</th>
                   </tr>
                 </thead>
                 <tbody>

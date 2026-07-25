@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Trash2, Upload, RefreshCw } from 'lucide-react';
@@ -176,6 +177,7 @@ interface ElmsMatchRowProps {
 }
 
 export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowProps) {
+  const { t } = useTranslation('sports');
   const [isDragOver, setIsDragOver] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -202,10 +204,10 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
-      toast.success('PDF ajouté avec succès');
+      toast.success(t('widget.pdfAdded'));
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.error ?? "Erreur lors de l'envoi du fichier");
+      toast.error(err?.response?.data?.error ?? t('widget.uploadError'));
     },
   });
 
@@ -215,10 +217,10 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
-      toast.success('PDF supprimé');
+      toast.success(t('widget.pdfDeleted'));
     },
     onError: () => {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('widget.deleteError'));
     },
   });
 
@@ -230,22 +232,22 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
       setIsDragOver(false);
       const file = e.dataTransfer.files[0];
       if (!file) return;
-      if (file.type !== 'application/pdf') { toast.error('Seuls les fichiers PDF sont acceptés'); return; }
+      if (file.type !== 'application/pdf') { toast.error(t('widget.onlyPdf')); return; }
       uploadMutation.mutate(file);
     },
-    [uploadMutation],
+    [uploadMutation, t],
   );
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      if (file.type !== 'application/pdf') { toast.error('Seuls les fichiers PDF sont acceptés'); return; }
-      if (file.size > 10 * 1024 * 1024) { toast.error('Fichier trop volumineux (max 10 Mo)'); return; }
+      if (file.type !== 'application/pdf') { toast.error(t('widget.onlyPdf')); return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error(t('widget.fileTooLarge')); return; }
       uploadMutation.mutate(file);
       e.target.value = '';
     },
-    [uploadMutation],
+    [uploadMutation, t],
   );
 
   return (
@@ -300,8 +302,8 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
                   className="shrink-0 inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto hover:text-red-600 transition-colors disabled:opacity-50"
                   onClick={() => setDeleteTarget(att.id)}
                   disabled={deleteMutation.isPending}
-                  title="Supprimer"
-                  aria-label="Supprimer le PDF"
+                  title={t('widget.delete')}
+                  aria-label={t('widget.deletePdfAria')}
                 >
                   <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                 </button>
@@ -331,7 +333,7 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
           disabled={uploadMutation.isPending}
         >
           <Upload className="h-4 w-4" />
-          {uploadMutation.isPending ? 'Envoi...' : 'Joindre un PDF'}
+          {uploadMutation.isPending ? t('widget.uploading') : t('widget.attachPdf')}
         </button>
       )}
 
@@ -347,7 +349,7 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <span>{uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}</span>
+          <span>{uploadMutation.isPending ? t('widget.uploading') : t('widget.dropPdf')}</span>
         </div>
       )}
 
@@ -365,9 +367,9 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Supprimer le fichier"
-        description="Cette action est irréversible."
-        confirmLabel="Supprimer"
+        title={t('widget.deleteFileTitle')}
+        description={t('widget.deleteFileDescription')}
+        confirmLabel={t('widget.confirmDelete')}
         variant="destructive"
         loading={deleteMutation.isPending}
         onConfirm={() => {
@@ -389,6 +391,7 @@ interface MatchRowProps {
 }
 
 export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
+  const { t } = useTranslation('sports');
   const [broadcasterError, setBroadcasterError] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -407,10 +410,10 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
-      toast.success('PDF ajouté avec succès');
+      toast.success(t('widget.pdfAdded'));
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.error ?? 'Erreur lors de l\'envoi du fichier');
+      toast.error(err?.response?.data?.error ?? t('widget.uploadError'));
     },
   });
 
@@ -420,10 +423,10 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
-      toast.success('PDF supprimé');
+      toast.success(t('widget.pdfDeleted'));
     },
     onError: () => {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('widget.deleteError'));
     },
   });
 
@@ -445,25 +448,25 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
       if (!file) return;
 
       if (file.type !== 'application/pdf') {
-        toast.error('Seuls les fichiers PDF sont acceptés');
+        toast.error(t('widget.onlyPdf'));
         return;
       }
 
       uploadMutation.mutate(file);
     },
-    [uploadMutation],
+    [uploadMutation, t],
   );
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      if (file.type !== 'application/pdf') { toast.error('Seuls les fichiers PDF sont acceptés'); return; }
-      if (file.size > 10 * 1024 * 1024) { toast.error('Fichier trop volumineux (max 10 Mo)'); return; }
+      if (file.type !== 'application/pdf') { toast.error(t('widget.onlyPdf')); return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error(t('widget.fileTooLarge')); return; }
       uploadMutation.mutate(file);
       e.target.value = '';
     },
-    [uploadMutation],
+    [uploadMutation, t],
   );
 
   return (
@@ -474,7 +477,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
           <TeamLogo logoUrl={match.homeTeamLogo} teamName={match.homeTeam} />
         </div>
 
-        <span className="text-xs text-muted-foreground font-medium px-1.5 shrink-0">vs</span>
+        <span className="text-xs text-muted-foreground font-medium px-1.5 shrink-0">{t('widget.vs')}</span>
 
         <div className="flex items-center gap-2 flex-1 justify-start min-w-0">
           <TeamLogo logoUrl={match.awayTeamLogo} teamName={match.awayTeam} />
@@ -489,7 +492,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
         {match.broadcasterLogo && !broadcasterError && (
           <img
             src={match.broadcasterLogo}
-            alt="Diffuseur"
+            alt={t('widget.broadcasterAlt')}
             className="h-4 object-contain opacity-70"
             onError={() => setBroadcasterError(true)}
           />
@@ -524,8 +527,8 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
                   className="shrink-0 inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto hover:text-red-600 transition-colors disabled:opacity-50"
                   onClick={() => setDeleteTarget(att.id)}
                   disabled={deleteMutation.isPending}
-                  title="Supprimer"
-                  aria-label="Supprimer le PDF"
+                  title={t('widget.delete')}
+                  aria-label={t('widget.deletePdfAria')}
                 >
                   <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                 </button>
@@ -555,7 +558,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
           disabled={uploadMutation.isPending}
         >
           <Upload className="h-4 w-4" />
-          {uploadMutation.isPending ? 'Envoi...' : 'Joindre un PDF'}
+          {uploadMutation.isPending ? t('widget.uploading') : t('widget.attachPdf')}
         </button>
       )}
 
@@ -571,7 +574,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <span>{uploadMutation.isPending ? 'Envoi...' : 'Déposer un PDF'}</span>
+          <span>{uploadMutation.isPending ? t('widget.uploading') : t('widget.dropPdf')}</span>
         </div>
       )}
 
@@ -589,9 +592,9 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
-        title="Supprimer le fichier"
-        description="Cette action est irréversible."
-        confirmLabel="Supprimer"
+        title={t('widget.deleteFileTitle')}
+        description={t('widget.deleteFileDescription')}
+        confirmLabel={t('widget.confirmDelete')}
         variant="destructive"
         loading={deleteMutation.isPending}
         onConfirm={() => {
@@ -609,6 +612,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
 // ─── Main Widget ─────────────────────────────────────────────────────────────
 
 export function SportsMatchesWidget() {
+  const { t } = useTranslation('sports');
   const queryClient = useQueryClient();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['sports-matches'],
@@ -622,7 +626,7 @@ export function SportsMatchesWidget() {
       queryClient.setQueryData(['sports-matches'], freshData);
     },
     onError: () => {
-      toast.error('Impossible de rafraîchir les matchs');
+      toast.error(t('widget.refreshError'));
     },
   });
 
@@ -631,12 +635,12 @@ export function SportsMatchesWidget() {
       <CardHeader className="pb-3 px-3 sm:px-6">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base">Matchs de la semaine</CardTitle>
+            <CardTitle className="text-base">{t('widget.weekMatches')}</CardTitle>
             <button
               onClick={() => refreshMutation.mutate()}
               disabled={refreshMutation.isPending || isLoading}
               className="text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              title="Rafraîchir les matchs"
+              title={t('widget.refreshTitle')}
               type="button"
             >
               <RefreshCw className={`h-4 w-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
@@ -650,7 +654,7 @@ export function SportsMatchesWidget() {
 
         {isError && (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Donn&eacute;es non disponibles
+            {t('widget.dataUnavailable')}
           </p>
         )}
 
@@ -688,6 +692,7 @@ function getCurrentWeekBounds(): { monday: Date; sunday: Date } {
 }
 
 function MatchesList({ matches }: MatchesListProps) {
+  const { t } = useTranslation('sports');
   const { user } = useAuthStore();
 
   // Toujours charger les notes — indépendamment des matchs scrapés,
@@ -780,8 +785,8 @@ function MatchesList({ matches }: MatchesListProps) {
     return (
       <p className="text-sm text-muted-foreground text-center py-4">
         {userCompetitions.length > 0
-          ? 'Aucun match cette semaine pour vos compétitions sélectionnées.'
-          : 'Aucun match cette semaine.'}
+          ? t('widget.noMatchesForCompetitions')
+          : t('widget.noMatches')}
       </p>
     );
   }

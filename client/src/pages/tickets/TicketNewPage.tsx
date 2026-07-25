@@ -6,6 +6,7 @@ import {
   File,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useClientPanel } from '@/contexts/ClientPanelContext';
 import { Button } from '@/components/ui/button';
@@ -89,6 +90,7 @@ interface ClientSearchProps {
 }
 
 function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) {
+  const { t } = useTranslation('tickets');
   const { openClientPanel } = useClientPanel();
   const [query, setQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -137,9 +139,9 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
       setShowCreateForm(false);
       setQuery('');
       queryClient.invalidateQueries({ queryKey: ['clients-search'] });
-      toast.success('Client créé');
+      toast.success(t('new.clientCreated'));
     },
-    onError: () => toast.error('Erreur lors de la création du client'),
+    onError: () => toast.error(t('new.clientCreateError')),
   });
 
   if (selectedClient) {
@@ -162,13 +164,13 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onClear}>Changer</Button>
+          <Button variant="outline" size="sm" onClick={onClear}>{t('new.change')}</Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => openClientPanel(selectedClient.id)}
           >
-            Modifier
+            {t('new.edit')}
           </Button>
         </div>
       </div>
@@ -182,7 +184,7 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Rechercher un client par nom, email, téléphone..."
+            placeholder={t('new.clientSearchPlaceholder')}
             value={query}
             onChange={e => {
               setQuery(e.target.value);
@@ -195,10 +197,10 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
           {showDropdown && debouncedQuery.length >= 1 && (
             <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-md border bg-popover shadow-md overflow-hidden">
               {searching ? (
-                <div className="px-4 py-3 text-sm text-muted-foreground">Recherche...</div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">{t('new.searching')}</div>
               ) : (results?.data ?? []).length === 0 ? (
                 <div className="px-4 py-3 text-sm">
-                  <p className="text-muted-foreground mb-2">Aucun client trouvé pour « {debouncedQuery} »</p>
+                  <p className="text-muted-foreground mb-2">{t('new.noClientFound', { query: debouncedQuery })}</p>
                   <Button
                     size="sm"
                     variant="outline"
@@ -208,7 +210,7 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
                     }}
                   >
                     <Plus className="h-3.5 w-3.5 mr-1" />
-                    Créer ce client
+                    {t('new.createThisClient')}
                   </Button>
                 </div>
               ) : (
@@ -256,7 +258,7 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
       >
         <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
           <div className="flex items-center justify-between">
-            <h4 className="font-medium text-sm">Créer un nouveau client</h4>
+            <h4 className="font-medium text-sm">{t('new.createNewClient')}</h4>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
@@ -267,63 +269,63 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Prénom *</Label>
+              <Label className="text-xs">{t('new.firstNameRequired')}</Label>
               <Input
                 value={createForm.firstName}
                 onChange={e => setCreateForm(f => ({ ...f, firstName: e.target.value }))}
-                placeholder="Prénom"
+                placeholder={t('new.firstName')}
                 className="h-9 text-sm mt-1"
               />
             </div>
             <div>
-              <Label className="text-xs">Nom *</Label>
+              <Label className="text-xs">{t('new.lastNameRequired')}</Label>
               <Input
                 value={createForm.lastName}
                 onChange={e => setCreateForm(f => ({ ...f, lastName: e.target.value }))}
-                placeholder="Nom"
+                placeholder={t('new.lastName')}
                 className="h-9 text-sm mt-1"
               />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Téléphone</Label>
+              <Label className="text-xs">{t('new.phone')}</Label>
               <Input
                 value={createForm.phone}
                 onChange={e => setCreateForm(f => ({ ...f, phone: e.target.value }))}
-                placeholder="Téléphone"
+                placeholder={t('new.phone')}
                 className="h-9 text-sm mt-1"
               />
             </div>
             <div>
-              <Label className="text-xs">Email</Label>
+              <Label className="text-xs">{t('new.email')}</Label>
               <Input
                 type="email"
                 value={createForm.email}
                 onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
-                placeholder="Email"
+                placeholder={t('new.email')}
                 className="h-9 text-sm mt-1"
               />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs">Société</Label>
+              <Label className="text-xs">{t('new.company')}</Label>
               <Input
                 value={createForm.company}
                 onChange={e => setCreateForm(f => ({ ...f, company: e.target.value }))}
-                placeholder="Société"
+                placeholder={t('new.company')}
                 className="h-9 text-sm mt-1"
               />
             </div>
             <div>
-              <Label className="text-xs">Rôle client</Label>
+              <Label className="text-xs">{t('new.clientRole')}</Label>
               <select
                 value={createForm.roleId}
                 onChange={e => setCreateForm(f => ({ ...f, roleId: e.target.value }))}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm mt-1 focus:outline-none"
               >
-                <option value="">Aucun rôle</option>
+                <option value="">{t('new.noRole')}</option>
                 {clientRoles?.map(r => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
@@ -337,7 +339,7 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
               id="create-surveyable"
             />
             <Label htmlFor="create-surveyable" className="text-sm cursor-pointer">
-              Enquêtes de satisfaction
+              {t('new.surveyable')}
             </Label>
           </div>
           <div className="flex items-center gap-2 pt-1">
@@ -347,14 +349,14 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
               disabled={!createForm.firstName || !createForm.lastName || createMutation.isPending}
               onClick={() => createMutation.mutate(createForm)}
             >
-              {createMutation.isPending ? 'Création...' : 'Créer et sélectionner'}
+              {createMutation.isPending ? t('new.creating') : t('new.createAndSelect')}
             </Button>
             <button
               type="button"
               onClick={() => setShowCreateForm(false)}
               className="text-sm text-muted-foreground hover:text-foreground"
             >
-              Annuler
+              {t('new.cancel')}
             </button>
           </div>
         </div>
@@ -367,7 +369,7 @@ function ClientSearch({ selectedClient, onSelect, onClear }: ClientSearchProps) 
           className="flex items-center gap-1 text-sm text-primary hover:underline"
         >
           <Plus className="h-3.5 w-3.5" />
-          Créer un nouveau client
+          {t('new.createNewClient')}
         </button>
       )}
     </div>
@@ -383,6 +385,7 @@ interface AttachmentZoneProps {
 }
 
 function AttachmentZone({ files, onAdd, onRemove }: AttachmentZoneProps) {
+  const { t } = useTranslation('tickets');
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -392,11 +395,11 @@ function AttachmentZone({ files, onAdd, onRemove }: AttachmentZoneProps) {
 
     for (const f of newFiles) {
       if (!ALLOWED_TYPES.includes(f.type)) {
-        errors.push(`${f.name}: type non autorisé`);
+        errors.push(t('new.fileTypeNotAllowed', { name: f.name }));
       } else if (f.size > 10 * 1024 * 1024) {
-        errors.push(`${f.name}: dépasse 10 Mo`);
+        errors.push(t('new.fileTooLarge', { name: f.name }));
       } else if (files.length + valid.length >= 5) {
-        errors.push('Maximum 5 fichiers');
+        errors.push(t('new.maxFiles'));
         break;
       } else {
         valid.push(f);
@@ -425,10 +428,10 @@ function AttachmentZone({ files, onAdd, onRemove }: AttachmentZoneProps) {
       >
         <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground">
-          Déposez vos fichiers ici ou <span className="text-primary underline">cliquez pour sélectionner</span>
+          {t('new.dropFiles')}<span className="text-primary underline">{t('new.clickToSelect')}</span>
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Images, PDF, DOC, DOCX, ZIP, TXT — max 5 fichiers, 10 Mo chacun
+          {t('new.fileConstraints')}
         </p>
         <input
           ref={inputRef}
@@ -481,6 +484,8 @@ function AttachmentZone({ files, onAdd, onRemove }: AttachmentZoneProps) {
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export function TicketNewPage() {
+  const { t } = useTranslation('tickets');
+  const { t: tc } = useTranslation('common');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preloadClientId = searchParams.get('clientId');
@@ -569,12 +574,12 @@ export function TicketNewPage() {
       return ticket;
     },
     onSuccess: (ticket) => {
-      toast.success(`Ticket ${ticket.ticketNumber} créé !`);
+      toast.success(t('new.ticketCreated', { number: ticket.ticketNumber }));
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
       navigate(`/tickets/${ticket.id}`);
     },
     onError: (err: any) => {
-      toast.error(err?.response?.data?.error ?? 'Erreur lors de la création');
+      toast.error(err?.response?.data?.error ?? t('new.createError'));
     },
   });
 
@@ -582,7 +587,7 @@ export function TicketNewPage() {
     e.preventDefault();
 
     if (!selectedClient) {
-      setClientError('Veuillez sélectionner ou créer un client');
+      setClientError(t('new.clientRequired'));
       return;
     }
     setClientError('');
@@ -603,20 +608,20 @@ export function TicketNewPage() {
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Nouveau ticket</h1>
+        <h1 className="text-2xl font-bold">{t('new.title')}</h1>
         <Button
           type="button"
           variant="ghost"
           onClick={() => navigate(-1)}
         >
-          Annuler
+          {t('new.cancel')}
         </Button>
       </div>
 
       {/* Client section */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Client</CardTitle>
+          <CardTitle className="text-base">{t('new.clientSection')}</CardTitle>
         </CardHeader>
         <CardContent>
           <ClientSearch
@@ -633,103 +638,103 @@ export function TicketNewPage() {
       {/* Ticket details */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Détails du ticket</CardTitle>
+          <CardTitle className="text-base">{t('new.ticketDetails')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="title">Titre *</Label>
+            <Label htmlFor="title">{t('new.titleRequired')}</Label>
             <Input
               id="title"
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="Titre du ticket"
+              placeholder={t('new.titlePlaceholder')}
               autoFocus
               className="mt-1"
             />
           </div>
 
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('new.description')}</Label>
             <textarea
               id="description"
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="Description du problème... (Markdown supporté)"
+              placeholder={t('new.descriptionPlaceholder')}
               rows={4}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
             />
-            <p className="text-xs text-muted-foreground mt-1">Markdown supporté : **gras**, *italique*, `code`</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('new.markdownHint')}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="category">Catégorie</Label>
+              <Label htmlFor="category">{t('new.category')}</Label>
               <select
                 id="category"
                 value={categoryId}
                 onChange={e => setCategoryId(e.target.value)}
                 className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">Sans catégorie</option>
+                <option value="">{t('new.noCategory')}</option>
                 {categories?.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <Label htmlFor="priority">Priorité</Label>
+              <Label htmlFor="priority">{t('new.priority')}</Label>
               <select
                 id="priority"
                 value={priority}
                 onChange={e => setPriority(e.target.value)}
                 className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="CRITICAL">Critique</option>
-                <option value="HIGH">Haute</option>
-                <option value="MEDIUM">Moyenne</option>
-                <option value="LOW">Basse</option>
+                <option value="CRITICAL">{tc('priority.CRITICAL')}</option>
+                <option value="HIGH">{tc('priority.HIGH')}</option>
+                <option value="MEDIUM">{tc('priority.MEDIUM')}</option>
+                <option value="LOW">{tc('priority.LOW')}</option>
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="assignedTo">Assigner à</Label>
+              <Label htmlFor="assignedTo">{t('new.assignTo')}</Label>
               <select
                 id="assignedTo"
                 value={assignedToId}
                 onChange={e => setAssignedToId(e.target.value)}
                 className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">Non assigné</option>
+                <option value="">{t('new.unassigned')}</option>
                 {agents?.map(a => (
                   <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
                 ))}
               </select>
             </div>
             <div>
-              <Label htmlFor="pole">Pôle</Label>
+              <Label htmlFor="pole">{t('new.pole')}</Label>
               <select
                 id="pole"
                 value={poleId}
                 onChange={e => setPoleId(e.target.value)}
                 className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">Aucun pôle</option>
+                <option value="">{t('new.noPole')}</option>
                 {poles?.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <Label htmlFor="typeId">Type de ticket</Label>
+              <Label htmlFor="typeId">{t('new.ticketType')}</Label>
               <select
                 id="typeId"
                 value={typeId}
                 onChange={e => setTypeId(e.target.value)}
                 className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">{'\u2014'} Sélectionner {'\u2014'}</option>
+                <option value="">{t('new.selectPlaceholder')}</option>
                 {ticketTypes?.map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -742,7 +747,7 @@ export function TicketNewPage() {
       {/* Attachments */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Pièces jointes</CardTitle>
+          <CardTitle className="text-base">{t('new.attachments')}</CardTitle>
         </CardHeader>
         <CardContent>
           <AttachmentZone
@@ -756,10 +761,10 @@ export function TicketNewPage() {
       {/* Submit */}
       <div className="flex justify-end gap-3 pb-6">
         <Button type="button" variant="outline" onClick={() => navigate(-1)}>
-          Annuler
+          {t('new.cancel')}
         </Button>
         <Button type="submit" disabled={createMutation.isPending || !title.trim()}>
-          {createMutation.isPending ? 'Création en cours...' : 'Créer le ticket'}
+          {createMutation.isPending ? t('new.creatingTicket') : t('new.createTicket')}
         </Button>
       </div>
     </form>

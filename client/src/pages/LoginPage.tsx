@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useBranding } from '@/hooks/useBranding';
 import { useAuthStore } from '@/stores/authStore';
@@ -9,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import api from '@/lib/axios';
 
 export function LoginPage() {
+  const { t } = useTranslation('auth');
   const { logoUrl, companyName } = useBranding();
   const { login } = useAuthStore();
   const navigate = useNavigate();
@@ -30,7 +32,7 @@ export function LoginPage() {
         navigate('/dashboard', { replace: true });
       }
     } catch (err: any) {
-      const message = err.response?.data?.error ?? 'Identifiants incorrects';
+      const message = err.response?.data?.error ?? t('login.error');
       toast.error(message);
     } finally {
       setLoading(false);
@@ -50,10 +52,10 @@ export function LoginPage() {
 
         {/* Form card */}
         <div className="bg-card rounded-lg border shadow-sm p-6 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <h2 className="text-lg font-semibold text-center">Connexion</h2>
+          <h2 className="text-lg font-semibold text-center">{t('login.title')}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('login.emailLabel')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -61,11 +63,11 @@ export function LoginPage() {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="votre@email.com"
+                placeholder={t('login.emailPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">{t('login.passwordLabel')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -78,11 +80,11 @@ export function LoginPage() {
             </div>
             <div className="flex justify-end">
               <Link to="/reset-password" className="text-sm text-primary hover:underline">
-                Mot de passe oublié ?
+                {t('login.forgotPassword')}
               </Link>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Connexion...' : 'Se connecter'}
+              {loading ? t('login.submitting') : t('login.submit')}
             </Button>
           </form>
         </div>

@@ -1,0 +1,115 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "tickets": "Tickets",
+    "clients": "Clients",
+    "kb": "Base de connaissance",
+    "missionSupport": "Mission Support",
+    "administration": "Administration",
+    "settings": "Paramètres",
+    "categories": "Catégories",
+    "clientRoles": "Rôles clients",
+    "roles": "Rôles & permissions",
+    "team": "Équipe",
+    "surveys": "Enquêtes",
+    "organisations": "Organisations",
+    "clubs": "Clubs / Villes",
+    "poles": "Pôles",
+    "ticketTypes": "Types de demande"
+  },
+  "header": {
+    "searchPlaceholder": "Rechercher...",
+    "searchAriaLabel": "Rechercher un ticket ou un client",
+    "resultsTickets": "Tickets",
+    "resultsClients": "Clients",
+    "openMenu": "Ouvrir le menu de navigation",
+    "newTicket": "Nouveau ticket",
+    "myProfile": "Mon profil",
+    "logout": "Déconnexion",
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre",
+    "switchToEnglish": "Passer en anglais",
+    "switchToFrench": "Passer en français"
+  },
+  "status": {
+    "OPEN": "Ouvert",
+    "IN_PROGRESS": "En cours",
+    "PENDING": "En attente",
+    "CLOSED": "Fermé",
+    "RESOLVED": "Résolu"
+  },
+  "priority": {
+    "CRITICAL": "Critique",
+    "HIGH": "Haute",
+    "MEDIUM": "Moyenne",
+    "LOW": "Basse"
+  },
+  "profile": {
+    "title": "Mon profil",
+    "competitionsTitle": "Compétitions suivies",
+    "competitionsDesc": "Sélectionnez les championnats pour lesquels vous assurez le support. Seuls ces événements apparaîtront dans votre widget sports. Si aucune compétition n'est sélectionnée, toutes sont affichées.",
+    "saveCompetitions": "Enregistrer les compétitions",
+    "saving": "Enregistrement...",
+    "securityTitle": "Sécurité",
+    "currentPasswordLabel": "Mot de passe actuel",
+    "newPasswordLabel": "Nouveau mot de passe",
+    "passwordPlaceholder": "Min. 8 caractères, 1 majuscule, 1 chiffre",
+    "confirmPasswordLabel": "Confirmer le mot de passe",
+    "changePassword": "Changer le mot de passe",
+    "logoutNotice": "Après le changement, vous serez déconnecté et redirigé vers la page de connexion.",
+    "competitionsUpdated": "Compétitions suivies mises à jour",
+    "competitionsError": "Erreur lors de l'enregistrement des compétitions",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordUpdated": "Mot de passe mis à jour. Reconnexion requise.",
+    "changeError": "Erreur lors du changement de mot de passe"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "description": "La page que vous cherchez n'existe pas.",
+    "backToDashboard": "Retour au tableau de bord"
+  },
+  "forbidden": {
+    "title": "Accès refusé",
+    "description": "Vous n'avez pas les droits nécessaires pour accéder à cette page.",
+    "backToDashboard": "Retour au tableau de bord"
+  },
+  "survey": {
+    "loading": "Chargement...",
+    "alreadyAnsweredTitle": "Enquête déjà complétée",
+    "expiredTitle": "Lien expiré",
+    "invalidTitle": "Lien invalide",
+    "alreadyAnsweredText": "Vous avez déjà répondu à cette enquête. Merci pour votre participation !",
+    "expiredText": "Ce lien de satisfaction a expiré (valable 30 jours).",
+    "invalidText": "Ce lien n'est pas valide ou a déjà été utilisé.",
+    "thankYouTitle": "Merci pour votre réponse !",
+    "thankYouText": "Votre avis a bien été enregistré. Il nous aide à améliorer notre service.",
+    "surveyPrefix": "Enquête de satisfaction — Ticket",
+    "requiredProgress": "{{answered}} / {{total}} question(s) requise(s)",
+    "answerPlaceholder": "Votre réponse...",
+    "selectPlaceholder": "Sélectionner...",
+    "npsLegendLeft": "0 = Pas du tout probable",
+    "npsLegendRight": "10 = Très probable",
+    "csatLegendLeft": "1 = Très insatisfait",
+    "csatLegendRight": "5 = Très satisfait",
+    "ratingLegendLeft": "1 = Insuffisant",
+    "ratingLegendRight": "{{scale}} = Excellent",
+    "submitError": "Erreur lors de la soumission. Veuillez réessayer.",
+    "submit": "Envoyer mes réponses",
+    "submitting": "Envoi en cours..."
+  },
+  "confirmDialog": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "loading": "Chargement..."
+  },
+  "pagination": {
+    "previous": "Page précédente",
+    "next": "Page suivante"
+  },
+  "errorBoundary": {
+    "title": "Une erreur inattendue est survenue",
+    "description": "Un problème est survenu lors de l'affichage de cette page. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "backToDashboard": "Retour au tableau de bord"
+  }
+}

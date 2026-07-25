@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -39,6 +40,7 @@ interface Club {
 function SortableRow({
   item, onEdit, onDelete,
 }: { item: Club; onEdit: (c: Club) => void; onDelete: (c: Club) => void }) {
+  const { t } = useTranslation('admin');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
   const style = {
@@ -62,7 +64,7 @@ function SortableRow({
       <span className={`text-xs px-1.5 py-0.5 rounded ${
         item.isActive ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'
       }`}>
-        {item.isActive ? 'Actif' : 'Inactif'}
+        {item.isActive ? t('clubs.active') : t('clubs.inactive')}
       </span>
       <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item)}>
@@ -80,6 +82,7 @@ function SortableRow({
 const defaultForm = { name: '', organisationId: '', isActive: true };
 
 export function AdminClubsPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const [items, setItems] = useState<Club[]>([]);
   const [filterOrgId, setFilterOrgId] = useState('');
@@ -125,7 +128,7 @@ export function AdminClubsPage() {
         newItems.map((item, idx) => ({ id: item.id, position: idx + 1 }))
       );
     } catch {
-      toast.error('Erreur lors du reordonnancement');
+      toast.error(t('clubs.reorderError'));
       queryClient.invalidateQueries({ queryKey: ['admin-clubs'] });
     }
   };
@@ -147,21 +150,21 @@ export function AdminClubsPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('Le nom est requis'); return; }
-    if (!form.organisationId) { toast.error('L\'organisation est requise'); return; }
+    if (!form.name.trim()) { toast.error(t('clubs.nameRequired')); return; }
+    if (!form.organisationId) { toast.error(t('clubs.orgRequired')); return; }
     setSaving(true);
     try {
       if (editTarget) {
         await api.put(`/admin/clubs/${editTarget.id}`, form);
-        toast.success('Club mis à jour');
+        toast.success(t('clubs.clubUpdated'));
       } else {
         await api.post('/admin/clubs', form);
-        toast.success('Club créé');
+        toast.success(t('clubs.clubCreated'));
       }
       queryClient.invalidateQueries({ queryKey: ['admin-clubs'] });
       setModalOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err.response?.data?.error ?? t('clubs.saveError'));
     } finally { setSaving(false); }
   };
 
@@ -170,19 +173,19 @@ export function AdminClubsPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/clubs/${deleteTarget.id}`);
-      toast.success('Club supprimé');
+      toast.success(t('clubs.clubDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-clubs'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
+      toast.error(err.response?.data?.error ?? t('clubs.deleteError'));
     } finally { setDeleting(false); setDeleteTarget(null); }
   };
 
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Clubs / Villes</h1>
+        <h1 className="text-2xl font-bold">{t('clubs.title')}</h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />Nouveau club
+          <Plus className="h-4 w-4 mr-2" />{t('clubs.newClub')}
         </Button>
       </div>
 
@@ -193,7 +196,7 @@ export function AdminClubsPage() {
           onChange={e => setFilterOrgId(e.target.value)}
           className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
         >
-          <option value="">Toutes les organisations</option>
+          <option value="">{t('clubs.allOrgs')}</option>
           {organisations.map(o => (
             <option key={o.id} value={o.id}>{o.name}</option>
           ))}
@@ -211,7 +214,7 @@ export function AdminClubsPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucun club. Créez-en un pour commencer.
+                {t('clubs.empty')}
               </p>
             )}
           </div>
@@ -221,23 +224,23 @@ export function AdminClubsPage() {
       <Dialog open={modalOpen} onOpenChange={open => { if (!saving) setModalOpen(open); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editTarget ? 'Modifier le club' : 'Nouveau club'}</DialogTitle>
+            <DialogTitle>{editTarget ? t('clubs.editTitle') : t('clubs.createTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label>Nom <span className="text-destructive">*</span></Label>
+              <Label>{t('clubs.name')} <span className="text-destructive">*</span></Label>
               <Input value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Nom du club" className="mt-1" />
+                placeholder={t('clubs.namePlaceholder')} className="mt-1" />
             </div>
             <div>
-              <Label>Organisation <span className="text-destructive">*</span></Label>
+              <Label>{t('clubs.organisation')} <span className="text-destructive">*</span></Label>
               <select
                 value={form.organisationId}
                 onChange={e => setForm(f => ({ ...f, organisationId: e.target.value }))}
                 className="mt-1 w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none"
               >
-                <option value="">Sélectionner une organisation</option>
+                <option value="">{t('clubs.selectOrg')}</option>
                 {organisations.map(o => (
                   <option key={o.id} value={o.id}>{o.name}</option>
                 ))}
@@ -246,15 +249,15 @@ export function AdminClubsPage() {
             <div className="flex items-center gap-2">
               <Switch id="club-active" checked={form.isActive}
                 onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} />
-              <Label htmlFor="club-active">Actif</Label>
+              <Label htmlFor="club-active">{t('clubs.activeLabel')}</Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>
-              Annuler
+              {t('clubs.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
+              {saving ? t('clubs.saving') : (editTarget ? t('clubs.save') : t('clubs.create'))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -263,13 +266,13 @@ export function AdminClubsPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={open => !open && setDeleteTarget(null)}
-        title="Supprimer le club"
+        title={t('clubs.deleteTitle')}
         description={
           deleteTarget?._count?.clients
-            ? `Ce club est utilisé par ${deleteTarget._count.clients} client(s) et ne peut pas être supprimé.`
-            : `Supprimer le club "${deleteTarget?.name}" ? Cette action est irréversible.`
+            ? t('clubs.deleteInUse', { count: deleteTarget._count.clients })
+            : t('clubs.deleteConfirm', { name: deleteTarget?.name })
         }
-        confirmLabel={deleteTarget?._count?.clients ? 'Fermer' : 'Supprimer'}
+        confirmLabel={deleteTarget?._count?.clients ? t('clubs.close') : t('clubs.delete')}
         variant={deleteTarget?._count?.clients ? 'default' : 'destructive'}
         loading={deleting}
         onConfirm={deleteTarget?._count?.clients ? () => setDeleteTarget(null) : handleDelete}

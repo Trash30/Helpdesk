@@ -1,11 +1,5 @@
+import { useTranslation } from 'react-i18next';
 import { PRIORITY_TOKENS, type PriorityKey } from '@/lib/colors';
-
-const PRIORITY_LABELS: Record<PriorityKey, string> = {
-  CRITICAL: 'Critique',
-  HIGH:     'Haute',
-  MEDIUM:   'Moyenne',
-  LOW:      'Basse',
-};
 
 interface PriorityBadgeProps {
   priority: string;
@@ -13,9 +7,10 @@ interface PriorityBadgeProps {
 }
 
 export function PriorityBadge({ priority, className = '' }: PriorityBadgeProps) {
+  const { t } = useTranslation('common');
   const key = priority as PriorityKey;
   const token = PRIORITY_TOKENS[key];
-  const label = PRIORITY_LABELS[key] ?? priority;
+  const label = token ? t(`priority.${key}`) : priority;
   const style = token
     ? { backgroundColor: token.bg, color: token.fg }
     : { backgroundColor: '#f3f4f6', color: '#6b7280' };

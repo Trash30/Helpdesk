@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { STATUS_TOKENS, type StatusKey } from '@/lib/colors';
 
 interface StatusBadgeProps {
@@ -6,9 +7,10 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
+  const { t } = useTranslation('common');
   const key = status as StatusKey;
   const token = STATUS_TOKENS[key];
-  const label = token?.label ?? status;
+  const label = token ? t(`status.${key}`) : status;
   const style = token
     ? { backgroundColor: token.bg, color: token.fg }
     : { backgroundColor: '#f3f4f6', color: '#6b7280' };

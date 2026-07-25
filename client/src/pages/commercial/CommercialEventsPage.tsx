@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { Pencil, Trash2 } from 'lucide-react';
 import api from '@/lib/axios';
@@ -57,15 +58,15 @@ const EMPTY_FORM: CommercialEventForm = {
   notes: '',
 };
 
-const REQUIRED_FIELDS: { key: keyof CommercialEventForm; label: string }[] = [
-  { key: 'clientName', label: 'Nom du client' },
-  { key: 'startDate', label: 'Date de début' },
-  { key: 'endDate', label: 'Date de fin' },
-  { key: 'location', label: 'Lieu' },
-  { key: 'techContactFirstName', label: 'Prénom du contact' },
-  { key: 'techContactLastName', label: 'Nom du contact' },
-  { key: 'techContactEmail', label: 'Email du contact' },
-  { key: 'techContactPhone', label: 'Téléphone du contact' },
+const REQUIRED_FIELDS: (keyof CommercialEventForm)[] = [
+  'clientName',
+  'startDate',
+  'endDate',
+  'location',
+  'techContactFirstName',
+  'techContactLastName',
+  'techContactEmail',
+  'techContactPhone',
 ];
 
 const TEXTAREA_CLASS =
@@ -90,6 +91,7 @@ function toDatetimeLocal(iso: string): string {
 }
 
 export function CommercialEventsPage() {
+  const { t } = useTranslation('commercial');
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { can } = usePermissions();
@@ -122,10 +124,10 @@ export function CommercialEventsPage() {
       queryClient.invalidateQueries({ queryKey: ['commercial-events'] });
       setForm(EMPTY_FORM);
       setErrors({});
-      toast.success('Mission enregistrée !');
+      toast.success(t('toast.createSuccess'));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Une erreur est survenue');
+      toast.error(error.response?.data?.error || t('toast.genericError'));
     },
   });
 
@@ -142,10 +144,10 @@ export function CommercialEventsPage() {
       queryClient.invalidateQueries({ queryKey: ['commercial-events'] });
       setEditingEvent(null);
       setEditErrors({});
-      toast.success('Mission mise à jour !');
+      toast.success(t('toast.updateSuccess'));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Une erreur est survenue');
+      toast.error(error.response?.data?.error || t('toast.genericError'));
     },
   });
 
@@ -153,10 +155,10 @@ export function CommercialEventsPage() {
     mutationFn: async (id: string) => (await api.delete(`/commercial-events/${id}`)).data,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['commercial-events'] });
-      toast.success('Mission supprimée.');
+      toast.success(t('toast.deleteSuccess'));
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
+      toast.error(error.response?.data?.error || t('toast.deleteError'));
     },
   });
 
@@ -172,22 +174,22 @@ export function CommercialEventsPage() {
     e.preventDefault();
     const newErrors: Partial<Record<keyof CommercialEventForm, string>> = {};
 
-    for (const { key, label } of REQUIRED_FIELDS) {
+    for (const key of REQUIRED_FIELDS) {
       if (!form[key].trim()) {
-        newErrors[key] = `${label} est obligatoire`;
+        newErrors[key] = t('validation.required', { label: t(`requiredFields.${key}`) });
       }
     }
     if (form.techContactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.techContactEmail)) {
-      newErrors.techContactEmail = 'Email invalide';
+      newErrors.techContactEmail = t('validation.invalidEmail');
     }
     if (form.startDate && form.endDate && new Date(form.endDate) < new Date(form.startDate)) {
-      newErrors.endDate = 'La date de fin doit être postérieure à la date de début';
+      newErrors.endDate = t('validation.endBeforeStart');
     }
 
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      const firstKey = REQUIRED_FIELDS.find((f) => newErrors[f.key])?.key ?? Object.keys(newErrors)[0];
+      const firstKey = REQUIRED_FIELDS.find((k) => newErrors[k]) ?? Object.keys(newErrors)[0];
       const el = document.getElementById(firstKey as string);
       if (el) el.focus();
       return;
@@ -202,22 +204,22 @@ export function CommercialEventsPage() {
 
     const newErrors: Partial<Record<keyof CommercialEventForm, string>> = {};
 
-    for (const { key, label } of REQUIRED_FIELDS) {
+    for (const key of REQUIRED_FIELDS) {
       if (!editForm[key].trim()) {
-        newErrors[key] = `${label} est obligatoire`;
+        newErrors[key] = t('validation.required', { label: t(`requiredFields.${key}`) });
       }
     }
     if (editForm.techContactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.techContactEmail)) {
-      newErrors.techContactEmail = 'Email invalide';
+      newErrors.techContactEmail = t('validation.invalidEmail');
     }
     if (editForm.startDate && editForm.endDate && new Date(editForm.endDate) < new Date(editForm.startDate)) {
-      newErrors.endDate = 'La date de fin doit être postérieure à la date de début';
+      newErrors.endDate = t('validation.endBeforeStart');
     }
 
     setEditErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      const firstKey = REQUIRED_FIELDS.find((f) => newErrors[f.key])?.key ?? Object.keys(newErrors)[0];
+      const firstKey = REQUIRED_FIELDS.find((k) => newErrors[k]) ?? Object.keys(newErrors)[0];
       const el = document.getElementById(`edit-${firstKey}`);
       if (el) el.focus();
       return;
@@ -245,17 +247,17 @@ export function CommercialEventsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl sm:text-2xl font-bold">Enregistrer une mission Support</h1>
+      <h1 className="text-xl sm:text-2xl font-bold">{t('pageTitle')}</h1>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Nouvelle mission</CardTitle>
+          <CardTitle className="text-base">{t('newMission')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="clientName">Nom du client <span className="text-destructive">*</span></Label>
+                <Label htmlFor="clientName">{t('fields.clientName')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="clientName"
                   type="text"
@@ -269,7 +271,7 @@ export function CommercialEventsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="startDate">Date de début <span className="text-destructive">*</span></Label>
+                <Label htmlFor="startDate">{t('fields.startDate')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="startDate"
                   type="datetime-local"
@@ -281,7 +283,7 @@ export function CommercialEventsPage() {
                 {errors.startDate && <p className="text-xs text-destructive">{errors.startDate}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="endDate">Date de fin <span className="text-destructive">*</span></Label>
+                <Label htmlFor="endDate">{t('fields.endDate')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="endDate"
                   type="datetime-local"
@@ -294,7 +296,7 @@ export function CommercialEventsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="location">Lieu <span className="text-destructive">*</span></Label>
+                <Label htmlFor="location">{t('fields.location')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="location"
                   type="text"
@@ -307,12 +309,12 @@ export function CommercialEventsPage() {
                 {errors.location && <p className="text-xs text-destructive">{errors.location}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="competition">Compétition <span className="text-xs text-muted-foreground font-normal">(facultatif)</span></Label>
+                <Label htmlFor="competition">{t('fields.competition')} <span className="text-xs text-muted-foreground font-normal">{t('optional')}</span></Label>
                 <Input id="competition" type="text" value={form.competition} onChange={setField('competition')} />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="techContactFirstName">Contact technique — Prénom <span className="text-destructive">*</span></Label>
+                <Label htmlFor="techContactFirstName">{t('fields.techFirstName')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="techContactFirstName"
                   type="text"
@@ -325,7 +327,7 @@ export function CommercialEventsPage() {
                 {errors.techContactFirstName && <p className="text-xs text-destructive">{errors.techContactFirstName}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="techContactLastName">Contact technique — Nom <span className="text-destructive">*</span></Label>
+                <Label htmlFor="techContactLastName">{t('fields.techLastName')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="techContactLastName"
                   type="text"
@@ -339,7 +341,7 @@ export function CommercialEventsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="techContactEmail">Contact technique — Email <span className="text-destructive">*</span></Label>
+                <Label htmlFor="techContactEmail">{t('fields.techEmail')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="techContactEmail"
                   type="email"
@@ -353,7 +355,7 @@ export function CommercialEventsPage() {
                 {errors.techContactEmail && <p className="text-xs text-destructive">{errors.techContactEmail}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="techContactPhone">Contact technique — Téléphone <span className="text-destructive">*</span></Label>
+                <Label htmlFor="techContactPhone">{t('fields.techPhone')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="techContactPhone"
                   type="tel"
@@ -368,7 +370,7 @@ export function CommercialEventsPage() {
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="notes">Notes <span className="text-xs text-muted-foreground font-normal">(facultatif)</span></Label>
+                <Label htmlFor="notes">{t('fields.notes')} <span className="text-xs text-muted-foreground font-normal">{t('optional')}</span></Label>
                 <textarea
                   id="notes"
                   rows={4}
@@ -382,7 +384,7 @@ export function CommercialEventsPage() {
 
             <div className="flex justify-end">
               <Button type="submit" disabled={createMutation.isPending} className="w-full sm:w-auto">
-                {createMutation.isPending ? 'Enregistrement…' : "Enregistrer la mission"}
+                {createMutation.isPending ? t('submitting') : t('submit')}
               </Button>
             </div>
           </form>
@@ -390,7 +392,7 @@ export function CommercialEventsPage() {
       </Card>
 
       <div className="space-y-3">
-        <h2 className="text-base font-semibold text-foreground">Missions à venir — 30 jours</h2>
+        <h2 className="text-base font-semibold text-foreground">{t('upcomingTitle')}</h2>
 
         {isLoading && (
           <div className="space-y-3">
@@ -403,7 +405,7 @@ export function CommercialEventsPage() {
         {!isLoading && events.length === 0 && (
           <Card className="shadow-sm">
             <CardContent className="py-10 text-center text-muted-foreground">
-              Aucune mission dans les 30 prochains jours.
+              {t('empty')}
             </CardContent>
           </Card>
         )}
@@ -424,7 +426,7 @@ export function CommercialEventsPage() {
                           size="sm"
                           variant="ghost"
                           className="h-7 w-7 p-0"
-                          aria-label="Modifier la mission"
+                          aria-label={t('editAriaLabel')}
                           onClick={() => openEdit(ev)}
                         >
                           <Pencil size={13} />
@@ -433,7 +435,7 @@ export function CommercialEventsPage() {
                           size="sm"
                           variant="ghost"
                           className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          aria-label="Supprimer la mission"
+                          aria-label={t('deleteAriaLabel')}
                           onClick={() => setDeletingId(ev.id)}
                         >
                           <Trash2 size={13} />
@@ -460,12 +462,12 @@ export function CommercialEventsPage() {
       <Sheet open={!!editingEvent} onOpenChange={(open) => { if (!open) setEditingEvent(null); }}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Modifier la mission</SheetTitle>
+            <SheetTitle>{t('editTitle')}</SheetTitle>
           </SheetHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="edit-clientName">Nom du client <span className="text-destructive">*</span></Label>
+                <Label htmlFor="edit-clientName">{t('fields.clientName')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="edit-clientName"
                   type="text"
@@ -479,7 +481,7 @@ export function CommercialEventsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="edit-startDate">Date de début <span className="text-destructive">*</span></Label>
+                <Label htmlFor="edit-startDate">{t('fields.startDate')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="edit-startDate"
                   type="datetime-local"
@@ -491,7 +493,7 @@ export function CommercialEventsPage() {
                 {editErrors.startDate && <p className="text-xs text-destructive">{editErrors.startDate}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="edit-endDate">Date de fin <span className="text-destructive">*</span></Label>
+                <Label htmlFor="edit-endDate">{t('fields.endDate')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="edit-endDate"
                   type="datetime-local"
@@ -504,7 +506,7 @@ export function CommercialEventsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="edit-location">Lieu <span className="text-destructive">*</span></Label>
+                <Label htmlFor="edit-location">{t('fields.location')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="edit-location"
                   type="text"
@@ -517,12 +519,12 @@ export function CommercialEventsPage() {
                 {editErrors.location && <p className="text-xs text-destructive">{editErrors.location}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="edit-competition">Compétition <span className="text-xs text-muted-foreground font-normal">(facultatif)</span></Label>
+                <Label htmlFor="edit-competition">{t('fields.competition')} <span className="text-xs text-muted-foreground font-normal">{t('optional')}</span></Label>
                 <Input id="edit-competition" type="text" value={editForm.competition} onChange={setEditField('competition')} />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="edit-techContactFirstName">Contact technique — Prénom <span className="text-destructive">*</span></Label>
+                <Label htmlFor="edit-techContactFirstName">{t('fields.techFirstName')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="edit-techContactFirstName"
                   type="text"
@@ -535,7 +537,7 @@ export function CommercialEventsPage() {
                 {editErrors.techContactFirstName && <p className="text-xs text-destructive">{editErrors.techContactFirstName}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="edit-techContactLastName">Contact technique — Nom <span className="text-destructive">*</span></Label>
+                <Label htmlFor="edit-techContactLastName">{t('fields.techLastName')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="edit-techContactLastName"
                   type="text"
@@ -549,7 +551,7 @@ export function CommercialEventsPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="edit-techContactEmail">Contact technique — Email <span className="text-destructive">*</span></Label>
+                <Label htmlFor="edit-techContactEmail">{t('fields.techEmail')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="edit-techContactEmail"
                   type="email"
@@ -563,7 +565,7 @@ export function CommercialEventsPage() {
                 {editErrors.techContactEmail && <p className="text-xs text-destructive">{editErrors.techContactEmail}</p>}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="edit-techContactPhone">Contact technique — Téléphone <span className="text-destructive">*</span></Label>
+                <Label htmlFor="edit-techContactPhone">{t('fields.techPhone')} <span className="text-destructive">*</span></Label>
                 <Input
                   id="edit-techContactPhone"
                   type="tel"
@@ -578,7 +580,7 @@ export function CommercialEventsPage() {
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="edit-notes">Notes <span className="text-xs text-muted-foreground font-normal">(facultatif)</span></Label>
+                <Label htmlFor="edit-notes">{t('fields.notes')} <span className="text-xs text-muted-foreground font-normal">{t('optional')}</span></Label>
                 <textarea
                   id="edit-notes"
                   rows={4}
@@ -591,9 +593,9 @@ export function CommercialEventsPage() {
             </div>
 
             <SheetFooter>
-              <Button type="button" variant="outline" onClick={() => setEditingEvent(null)}>Annuler</Button>
+              <Button type="button" variant="outline" onClick={() => setEditingEvent(null)}>{t('cancel')}</Button>
               <Button type="submit" disabled={editMutation.isPending}>
-                {editMutation.isPending ? 'Mise à jour…' : 'Mettre à jour'}
+                {editMutation.isPending ? t('updating') : t('update')}
               </Button>
             </SheetFooter>
           </form>
@@ -603,17 +605,17 @@ export function CommercialEventsPage() {
       <Dialog open={!!deletingId} onOpenChange={(open) => { if (!open) setDeletingId(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Supprimer la mission ?</DialogTitle>
+            <DialogTitle>{t('deleteTitle')}</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">Cette action est irréversible.</p>
+          <p className="text-sm text-muted-foreground">{t('deleteDesc')}</p>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeletingId(null)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setDeletingId(null)}>{t('cancel')}</Button>
             <Button
               variant="destructive"
               disabled={deleteMutation.isPending}
               onClick={() => { if (deletingId) deleteMutation.mutate(deletingId); setDeletingId(null); }}
             >
-              Supprimer
+              {t('delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -9,6 +9,8 @@ import {
   SlidersHorizontal, BookOpen,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import api from '@/lib/axios';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthStore } from '@/stores/authStore';
@@ -38,12 +40,12 @@ function relativeTime(dateStr: string): string {
   const min = Math.floor(diff / 60000);
   const hour = Math.floor(min / 60);
   const day = Math.floor(hour / 24);
-  if (min < 1) return "à l'instant";
-  if (min < 60) return `il y a ${min}min`;
-  if (hour < 24) return `il y a ${hour}h`;
-  if (day === 1) return 'hier';
-  if (day < 30) return `il y a ${day}j`;
-  return date.toLocaleDateString('fr-FR');
+  if (min < 1) return i18n.t('tickets:time.justNow');
+  if (min < 60) return i18n.t('tickets:time.minutesAgo', { min });
+  if (hour < 24) return i18n.t('tickets:time.hoursAgo', { hour });
+  if (day === 1) return i18n.t('tickets:time.yesterday');
+  if (day < 30) return i18n.t('tickets:time.daysAgo', { day });
+  return date.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'fr-FR');
 }
 
 function getInitials(firstName: string, lastName: string) {
@@ -64,7 +66,7 @@ function formatBytes(bytes: number): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('fr-FR', {
+  return new Date(dateStr).toLocaleString(i18n.language === 'en' ? 'en-US' : 'fr-FR', {
     day: '2-digit', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
@@ -150,6 +152,7 @@ function InlineTitle({
   onSave: (v: string) => void;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation('tickets');
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
@@ -180,7 +183,7 @@ function InlineTitle({
     <div
       className={`group/title flex items-center ${canEdit ? 'cursor-text hover:bg-muted/40 rounded px-1 -mx-1' : ''}`}
       onClick={() => canEdit && setEditing(true)}
-      title={canEdit ? 'Cliquer pour modifier' : undefined}
+      title={canEdit ? t('detail.clickToEdit') : undefined}
     >
       <h1 className="text-xl sm:text-2xl font-bold leading-snug break-words">
         {value}
@@ -203,6 +206,7 @@ function InlineDescription({
   onSave: (v: string) => void;
   canEdit: boolean;
 }) {
+  const { t } = useTranslation('tickets');
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -253,15 +257,15 @@ function InlineDescription({
       <div ref={containerRef} className="space-y-1">
         <div className="flex gap-1 border-b pb-1">
           <button type="button" onClick={() => insertMarkdown('**')}
-            className="p-1 rounded hover:bg-muted" title="Gras (Ctrl+B)">
+            className="p-1 rounded hover:bg-muted" title={t('detail.boldTitle')}>
             <Bold className="h-3.5 w-3.5" />
           </button>
           <button type="button" onClick={() => insertMarkdown('*')}
-            className="p-1 rounded hover:bg-muted" title="Italique (Ctrl+I)">
+            className="p-1 rounded hover:bg-muted" title={t('detail.italicTitle')}>
             <Italic className="h-3.5 w-3.5" />
           </button>
           <button type="button" onClick={() => insertMarkdown('`')}
-            className="p-1 rounded hover:bg-muted" title="Code (Ctrl+`)">
+            className="p-1 rounded hover:bg-muted" title={t('detail.codeTitle')}>
             <Code className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -284,7 +288,7 @@ function InlineDescription({
         onClick={() => canEdit && setEditing(true)}
         className={`text-muted-foreground text-sm italic ${canEdit ? 'cursor-text hover:bg-muted/30 rounded p-1' : ''}`}
       >
-        {canEdit ? 'Cliquer pour ajouter une description...' : 'Aucune description'}
+        {canEdit ? t('detail.clickToAddDescription') : t('detail.noDescription')}
       </div>
     );
   }
@@ -310,6 +314,7 @@ function Timeline({
   currentUserId: string;
   canDeleteAny: boolean;
 }) {
+  const { t } = useTranslation('tickets');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const queryClient = useQueryClient();
@@ -320,9 +325,9 @@ function Timeline({
     try {
       await api.delete(`/comments/${deleteId}`);
       queryClient.invalidateQueries({ queryKey: ['ticket'] });
-      toast.success('Commentaire supprimé');
+      toast.success(t('detail.commentDeleted'));
     } catch {
-      toast.error('Erreur lors de la suppression');
+      toast.error(t('detail.deleteError'));
     } finally {
       setDeleting(false);
       setDeleteId(null);
@@ -340,7 +345,7 @@ function Timeline({
                 <div className="mt-2 h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0 ml-3" />
                 <p className="text-xs text-muted-foreground italic py-1">
                   <span className="font-medium text-foreground not-italic">
-                    {log.user ? `${log.user.firstName} ${log.user.lastName}` : 'Système'}
+                    {log.user ? `${log.user.firstName} ${log.user.lastName}` : t('detail.system')}
                   </span>{' '}
                   {log.action}
                   {' · '}
@@ -376,7 +381,7 @@ function Timeline({
                   </span>
                   {comment.isInternal && (
                     <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-yellow-200 text-yellow-800">
-                      Note interne
+                      {t('detail.internalNote')}
                     </span>
                   )}
                 </div>
@@ -392,7 +397,7 @@ function Timeline({
                   <button
                     onClick={() => setDeleteId(comment.id)}
                     className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity ml-2 text-muted-foreground hover:text-destructive"
-                    title="Supprimer"
+                    title={t('detail.delete')}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -433,9 +438,9 @@ function Timeline({
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={open => !open && setDeleteId(null)}
-        title="Supprimer le commentaire"
-        description="Cette action est irréversible."
-        confirmLabel="Supprimer"
+        title={t('detail.confirmDeleteTitle')}
+        description={t('detail.confirmDeleteDesc')}
+        confirmLabel={t('detail.delete')}
         variant="destructive"
         loading={deleting}
         onConfirm={doDelete}
@@ -447,6 +452,7 @@ function Timeline({
 // ── Comment input ─────────────────────────────────────────────────────────────
 
 function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => void }) {
+  const { t } = useTranslation('tickets');
   const [content, setContent] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -494,7 +500,7 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
       setFiles([]);
       onAdded();
     } catch {
-      toast.error('Erreur lors de l\'ajout du commentaire');
+      toast.error(t('detail.commentError'));
     } finally {
       setSubmitting(false);
     }
@@ -514,15 +520,15 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
       {/* Toolbar */}
       <div className="flex gap-1 border-b px-3 py-2 bg-muted/30">
         <button type="button" onClick={() => insertMarkdown('**')}
-          className="p-1 rounded hover:bg-muted text-muted-foreground" title="Gras (Ctrl+B)">
+          className="p-1 rounded hover:bg-muted text-muted-foreground" title={t('detail.boldTitle')}>
           <Bold className="h-4 w-4" />
         </button>
         <button type="button" onClick={() => insertMarkdown('*')}
-          className="p-1 rounded hover:bg-muted text-muted-foreground" title="Italique (Ctrl+I)">
+          className="p-1 rounded hover:bg-muted text-muted-foreground" title={t('detail.italicTitle')}>
           <Italic className="h-4 w-4" />
         </button>
         <button type="button" onClick={() => insertMarkdown('`')}
-          className="p-1 rounded hover:bg-muted text-muted-foreground" title="Code (Ctrl+`)">
+          className="p-1 rounded hover:bg-muted text-muted-foreground" title={t('detail.codeTitle')}>
           <Code className="h-4 w-4" />
         </button>
       </div>
@@ -532,7 +538,7 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
         value={content}
         onChange={e => setContent(e.target.value)}
         onKeyDown={onKey}
-        placeholder="Ajouter un commentaire... (Ctrl+Entrée pour envoyer)"
+        placeholder={t('detail.commentPlaceholder')}
         rows={3}
         className="w-full px-3 py-2 text-sm focus:outline-none resize-y bg-background"
       />
@@ -564,17 +570,17 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
             htmlFor="internal-toggle"
             className={`text-sm cursor-pointer ${isInternal ? 'text-yellow-700 font-medium' : 'text-muted-foreground'}`}
           >
-            Note interne
+            {t('detail.internalNote')}
           </label>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1.5 py-1 rounded hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
-            title={files.length >= 5 ? '5 fichiers maximum atteint' : 'Ajouter des pi\u00e8ces jointes'}
+            title={files.length >= 5 ? t('detail.maxFilesReached') : t('detail.addAttachments')}
             disabled={files.length >= 5}
           >
             <Paperclip className="h-3.5 w-3.5" />
-            {files.length >= 5 ? 'Max atteint' : 'Joindre'}
+            {files.length >= 5 ? t('detail.maxReached') : t('detail.attach')}
           </button>
           <input
             ref={fileInputRef}
@@ -590,7 +596,7 @@ function CommentInput({ ticketId, onAdded }: { ticketId: string; onAdded: () => 
           disabled={submitting || !canSubmit}
           className="w-full sm:w-auto h-10 sm:h-8"
         >
-          {submitting ? 'Envoi...' : 'Commenter'}
+          {submitting ? t('detail.sending') : t('detail.comment')}
         </Button>
       </div>
     </div>
@@ -617,6 +623,8 @@ function FieldRow({
 // ── Main page ────────────────────────────────────────────────────────────────
 
 export function TicketDetailPage() {
+  const { t } = useTranslation('tickets');
+  const { t: tc } = useTranslation('common');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { can } = usePermissions();
@@ -679,7 +687,7 @@ export function TicketDetailPage() {
       await api.put(`/tickets/${id}`, fields);
       invalidate();
     } catch {
-      toast.error('Erreur lors de la mise à jour');
+      toast.error(t('detail.updateError'));
       invalidate();
     }
   }, [id, invalidate]);
@@ -693,7 +701,7 @@ export function TicketDetailPage() {
       await api.patch(`/tickets/${id}/status`, { status });
       invalidate();
     } catch {
-      toast.error('Erreur lors du changement de statut');
+      toast.error(t('detail.statusChangeError'));
       invalidate();
     }
   }, [id, invalidate, queryClient]);
@@ -703,7 +711,7 @@ export function TicketDetailPage() {
       await api.patch(`/tickets/${id}/assign`, { assignedToId });
       invalidate();
     } catch {
-      toast.error('Erreur lors de l\'assignation');
+      toast.error(t('detail.assignError'));
     }
   }, [id, invalidate]);
 
@@ -727,13 +735,13 @@ export function TicketDetailPage() {
       const statusMap = { close: 'CLOSED', reopen: 'OPEN' };
       await api.patch(`/tickets/${id}/status`, { status: statusMap[confirmAction] });
       invalidate();
-      toast.success('Statut mis a jour');
+      toast.success(t('detail.statusUpdated'));
       // Propose KB creation when closing via this path
       if (confirmAction === 'close' && can('kb.write')) {
         setTimeout(() => openKbModal(), 300);
       }
     } catch {
-      toast.error('Erreur lors de l\'action');
+      toast.error(t('detail.actionError'));
     } finally {
       setActionLoading(false);
       setConfirmAction(null);
@@ -746,7 +754,7 @@ export function TicketDetailPage() {
     try {
       await api.patch(`/tickets/${id}/status`, { status: 'CLOSED', closingNote: closingNote.trim() });
       invalidate();
-      toast.success('Ticket ferme');
+      toast.success(t('detail.ticketClosed'));
       setClosingNoteOpen(false);
       setClosingNote('');
       // Propose KB creation if user has permission
@@ -755,7 +763,7 @@ export function TicketDetailPage() {
         setTimeout(() => openKbModal(), 300);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Erreur lors de la fermeture');
+      toast.error(err.response?.data?.error || t('detail.closeError'));
     } finally {
       setClosingLoading(false);
     }
@@ -767,11 +775,11 @@ export function TicketDetailPage() {
     try {
       await api.patch(`/tickets/${id}/status`, { status: 'PENDING', pendingNote: pendingNote.trim() });
       invalidate();
-      toast.success('Ticket mis en attente');
+      toast.success(t('detail.ticketPending'));
       setPendingNoteOpen(false);
       setPendingNote('');
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Erreur lors de la mise en attente');
+      toast.error(err.response?.data?.error || t('detail.pendingError'));
     } finally {
       setPendingLoading(false);
     }
@@ -793,14 +801,14 @@ export function TicketDetailPage() {
       }
       toast.success(
         <span>
-          Article KB cree !{' '}
-          <a href={`/kb/${articleId}`} className="underline font-medium">Voir l&apos;article</a>
+          {t('detail.kbCreated')}{' '}
+          <a href={`/kb/${articleId}`} className="underline font-medium">{t('detail.viewArticle')}</a>
         </span>
       );
       setKbModalOpen(false);
     },
     onError: () => {
-      toast.error('Ticket ferme, mais echec de la creation KB');
+      toast.error(t('detail.kbError'));
       setKbModalOpen(false);
     },
   });
@@ -828,9 +836,9 @@ export function TicketDetailPage() {
   if (error || !ticket) {
     return (
       <div className="text-center py-24">
-        <p className="text-muted-foreground">Ticket introuvable.</p>
+        <p className="text-muted-foreground">{t('detail.notFound')}</p>
         <Button variant="ghost" onClick={() => navigate('/tickets')} className="mt-4">
-          Retour aux tickets
+          {t('detail.backToTickets')}
         </Button>
       </div>
     );
@@ -858,8 +866,8 @@ export function TicketDetailPage() {
   const canDeleteAnyComment = can('comments.deleteAny');
 
   const actionLabels = {
-    close: { title: 'Fermer le ticket', description: 'Le ticket sera fermé définitivement.' },
-    reopen: { title: 'Rouvrir le ticket', description: 'Le ticket sera rouvert.' },
+    close: { title: t('detail.closeTitle'), description: t('detail.closeDesc') },
+    reopen: { title: t('detail.reopenTitle'), description: t('detail.reopenDesc') },
   };
 
   return (
@@ -871,7 +879,7 @@ export function TicketDetailPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0 space-y-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Link to="/tickets" className="hover:text-foreground">Tickets</Link>
+                <Link to="/tickets" className="hover:text-foreground">{t('detail.breadcrumb')}</Link>
                 <span>/</span>
                 <span className="font-mono">{ticket.ticketNumber}</span>
               </div>
@@ -889,7 +897,7 @@ export function TicketDetailPage() {
 
           {/* Description */}
           <div className="border rounded-lg p-4 space-y-2">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Description</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{t('detail.description')}</h3>
             <InlineDescription
               value={ticket.description}
               onSave={v => updateField({ description: v })}
@@ -900,10 +908,10 @@ export function TicketDetailPage() {
           {/* Timeline */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Activité & commentaires
+              {t('detail.activityAndComments')}
             </h3>
             {timeline.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">Aucune activité pour ce ticket.</p>
+              <p className="text-sm text-muted-foreground italic">{t('detail.noActivity')}</p>
             ) : (
               <Timeline
                 items={timeline}
@@ -923,7 +931,7 @@ export function TicketDetailPage() {
           {/* Status, priority, category, assign */}
           <div className="border rounded-lg p-4 space-y-4">
 
-            <FieldRow label="Statut">
+            <FieldRow label={t('detail.status')}>
               <select
                 value={ticket.status}
                 onChange={e => {
@@ -943,37 +951,33 @@ export function TicketDetailPage() {
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
                 {['OPEN', 'IN_PROGRESS', 'PENDING', 'CLOSED'].map(s => (
-                  <option key={s} value={s}>
-                    {s === 'OPEN' ? 'Ouvert' :
-                     s === 'IN_PROGRESS' ? 'En cours' :
-                     s === 'PENDING' ? 'En attente' : 'Fermé'}
-                  </option>
+                  <option key={s} value={s}>{tc(`status.${s}`)}</option>
                 ))}
               </select>
             </FieldRow>
 
-            <FieldRow label="Priorité">
+            <FieldRow label={t('detail.priority')}>
               <select
                 value={ticket.priority}
                 onChange={e => updateField({ priority: e.target.value })}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="CRITICAL">Critique</option>
-                <option value="HIGH">Haute</option>
-                <option value="MEDIUM">Moyenne</option>
-                <option value="LOW">Basse</option>
+                <option value="CRITICAL">{tc('priority.CRITICAL')}</option>
+                <option value="HIGH">{tc('priority.HIGH')}</option>
+                <option value="MEDIUM">{tc('priority.MEDIUM')}</option>
+                <option value="LOW">{tc('priority.LOW')}</option>
               </select>
             </FieldRow>
 
-            <FieldRow label="Catégorie">
+            <FieldRow label={t('detail.category')}>
               <select
                 value={ticket.category?.id ?? ''}
                 onChange={e => updateField({ categoryId: e.target.value || null })}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Sans catégorie</option>
+                <option value="">{t('detail.noCategory')}</option>
                 {categories?.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -987,13 +991,13 @@ export function TicketDetailPage() {
                 || ticket.category?.slug?.toLowerCase() === 'pmateriel';
               if (!isPmateriel || !canEdit) return null;
               return (
-                <FieldRow label="Materiel concerne (optionnel)">
+                <FieldRow label={t('detail.materialLabel')}>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={materialDetail}
                       onChange={e => setMaterialDetail(e.target.value)}
-                      placeholder="Ex: Ecran Dell P2422H, Switch HP 1820..."
+                      placeholder={t('detail.materialPlaceholder')}
                       className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                     <Button
@@ -1005,38 +1009,38 @@ export function TicketDetailPage() {
                         const append = `\n\n**Materiel concerne :** ${materialDetail.trim()}`;
                         updateField({ description: (ticket.description ?? '') + append });
                         setMaterialDetail('');
-                        toast.success('Materiel ajoute a la description');
+                        toast.success(t('detail.materialAdded'));
                       }}
                     >
-                      Ajouter
+                      {t('detail.add')}
                     </Button>
                   </div>
                 </FieldRow>
               );
             })()}
 
-            <FieldRow label="Pôle">
+            <FieldRow label={t('detail.pole')}>
               <select
                 value={ticket.pole?.id ?? ''}
                 onChange={e => updateField({ poleId: e.target.value || null })}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Aucun pôle</option>
+                <option value="">{t('detail.noPole')}</option>
                 {poles?.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </FieldRow>
 
-            <FieldRow label="Assigné à">
+            <FieldRow label={t('detail.assignedTo')}>
               <select
                 value={ticket.assignedTo?.id ?? ''}
                 onChange={e => updateAssign(e.target.value || null)}
                 disabled={!canAssign}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Non assigné</option>
+                <option value="">{t('detail.unassigned')}</option>
                 {agents?.map(a => (
                   <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
                 ))}
@@ -1090,13 +1094,13 @@ export function TicketDetailPage() {
                   <div className="space-y-1 text-sm border-t pt-2">
                     {ticket.client.organisation && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Organisation</span>
+                        <span className="text-muted-foreground">{t('detail.organisation')}</span>
                         <span className="font-medium">{ticket.client.organisation.name}</span>
                       </div>
                     )}
                     {ticket.client.club && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Club / Ville</span>
+                        <span className="text-muted-foreground">{t('detail.club')}</span>
                         <span className="font-medium">{ticket.client.club.name}</span>
                       </div>
                     )}
@@ -1107,7 +1111,7 @@ export function TicketDetailPage() {
                   className="flex items-center gap-1 text-xs text-primary hover:underline"
                 >
                   <ExternalLink className="h-3 w-3" />
-                  Voir la fiche client
+                  {t('detail.viewClient')}
                 </Link>
               </div>
               <Separator />
@@ -1117,17 +1121,17 @@ export function TicketDetailPage() {
           {/* Ticket info */}
           <div className="border rounded-lg p-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Numéro</span>
+              <span className="text-muted-foreground">{t('detail.number')}</span>
               <span className="font-mono font-medium">{ticket.ticketNumber}</span>
             </div>
             {ticket.createdBy && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Créé par</span>
+                <span className="text-muted-foreground">{t('detail.createdBy')}</span>
                 <span>{ticket.createdBy.firstName} {ticket.createdBy.lastName}</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Créé le</span>
+              <span className="text-muted-foreground">{t('detail.createdAt')}</span>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="cursor-default">{relativeTime(ticket.createdAt)}</span>
@@ -1136,12 +1140,12 @@ export function TicketDetailPage() {
               </Tooltip>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Mis à jour</span>
+              <span className="text-muted-foreground">{t('detail.updatedAt')}</span>
               <span>{relativeTime(ticket.updatedAt)}</span>
             </div>
             {ticket.resolvedAt && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Résolu le</span>
+                <span className="text-muted-foreground">{t('detail.resolvedAt')}</span>
                 <span>{formatDate(ticket.resolvedAt)}</span>
               </div>
             )}
@@ -1156,7 +1160,7 @@ export function TicketDetailPage() {
                 onClick={() => { setClosingNote(''); setClosingNoteOpen(true); }}
               >
                 <XCircle className="h-4 w-4 mr-2" />
-                Fermer
+                {t('detail.close')}
               </Button>
             )}
             {canEdit && ticket.status === 'CLOSED' && (
@@ -1166,7 +1170,7 @@ export function TicketDetailPage() {
                 onClick={() => setConfirmAction('reopen')}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Rouvrir
+                {t('detail.reopen')}
               </Button>
             )}
           </div>
@@ -1180,7 +1184,7 @@ export function TicketDetailPage() {
           onOpenChange={open => !open && setConfirmAction(null)}
           title={actionLabels[confirmAction].title}
           description={actionLabels[confirmAction].description}
-          confirmLabel="Confirmer"
+          confirmLabel={t('detail.confirm')}
           loading={actionLoading}
           onConfirm={handleAction}
         />
@@ -1190,19 +1194,19 @@ export function TicketDetailPage() {
       <Dialog open={closingNoteOpen} onOpenChange={open => { if (!open) { setClosingNoteOpen(false); setClosingNote(''); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cloture du ticket</DialogTitle>
+            <DialogTitle>{t('detail.closingTitle')}</DialogTitle>
             <DialogDescription>
-              Veuillez fournir une note de fermeture avant de clore ce ticket.
+              {t('detail.closingDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Note de fermeture <span className="text-destructive">*</span>
+              {t('detail.closingNote')} <span className="text-destructive">*</span>
             </label>
             <textarea
               value={closingNote}
               onChange={e => setClosingNote(e.target.value)}
-              placeholder="Decrivez la resolution ou la raison de la fermeture..."
+              placeholder={t('detail.closingPlaceholder')}
               rows={4}
               maxLength={500}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
@@ -1213,13 +1217,13 @@ export function TicketDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setClosingNoteOpen(false); setClosingNote(''); }}>
-              Annuler
+              {t('detail.cancel')}
             </Button>
             <Button
               onClick={handleClosingNote}
               disabled={!closingNote.trim() || closingLoading}
             >
-              {closingLoading ? 'Fermeture...' : 'Confirmer la fermeture'}
+              {closingLoading ? t('detail.closing') : t('detail.confirmClose')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1229,32 +1233,32 @@ export function TicketDetailPage() {
       <Dialog open={pendingNoteOpen} onOpenChange={open => { if (!open) { setPendingNoteOpen(false); setPendingNote(''); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Mise en attente du ticket</DialogTitle>
+            <DialogTitle>{t('detail.pendingTitle')}</DialogTitle>
             <DialogDescription>
-              Veuillez indiquer le motif de mise en attente avant de continuer.
+              {t('detail.pendingDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Motif <span className="text-destructive">*</span>
+              {t('detail.reason')} <span className="text-destructive">*</span>
             </label>
             <textarea
               value={pendingNote}
               onChange={e => setPendingNote(e.target.value)}
-              placeholder="Décrivez la raison de la mise en attente..."
+              placeholder={t('detail.pendingPlaceholder')}
               rows={4}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
             />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setPendingNoteOpen(false); setPendingNote(''); }}>
-              Annuler
+              {t('detail.cancel')}
             </Button>
             <Button
               onClick={handlePendingNote}
               disabled={!pendingNote.trim() || pendingLoading}
             >
-              {pendingLoading ? 'Mise en attente...' : 'Confirmer'}
+              {pendingLoading ? t('detail.pending') : t('detail.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1272,10 +1276,10 @@ export function TicketDetailPage() {
       <Sheet open={mobileActionsOpen} onOpenChange={setMobileActionsOpen}>
         <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Actions rapides</SheetTitle>
+            <SheetTitle>{t('detail.quickActions')}</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 pt-4">
-            <FieldRow label="Statut">
+            <FieldRow label={t('detail.status')}>
               <select
                 value={ticket.status}
                 onChange={e => {
@@ -1297,65 +1301,61 @@ export function TicketDetailPage() {
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
                 {['OPEN', 'IN_PROGRESS', 'PENDING', 'CLOSED'].map(s => (
-                  <option key={s} value={s}>
-                    {s === 'OPEN' ? 'Ouvert' :
-                     s === 'IN_PROGRESS' ? 'En cours' :
-                     s === 'PENDING' ? 'En attente' : 'Fermé'}
-                  </option>
+                  <option key={s} value={s}>{tc(`status.${s}`)}</option>
                 ))}
               </select>
             </FieldRow>
 
-            <FieldRow label="Priorité">
+            <FieldRow label={t('detail.priority')}>
               <select
                 value={ticket.priority}
                 onChange={e => updateField({ priority: e.target.value })}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="CRITICAL">Critique</option>
-                <option value="HIGH">Haute</option>
-                <option value="MEDIUM">Moyenne</option>
-                <option value="LOW">Basse</option>
+                <option value="CRITICAL">{tc('priority.CRITICAL')}</option>
+                <option value="HIGH">{tc('priority.HIGH')}</option>
+                <option value="MEDIUM">{tc('priority.MEDIUM')}</option>
+                <option value="LOW">{tc('priority.LOW')}</option>
               </select>
             </FieldRow>
 
-            <FieldRow label="Catégorie">
+            <FieldRow label={t('detail.category')}>
               <select
                 value={ticket.category?.id ?? ''}
                 onChange={e => updateField({ categoryId: e.target.value || null })}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Sans catégorie</option>
+                <option value="">{t('detail.noCategory')}</option>
                 {categories?.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </FieldRow>
 
-            <FieldRow label="Pôle">
+            <FieldRow label={t('detail.pole')}>
               <select
                 value={ticket.pole?.id ?? ''}
                 onChange={e => updateField({ poleId: e.target.value || null })}
                 disabled={!canEdit}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Aucun pôle</option>
+                <option value="">{t('detail.noPole')}</option>
                 {poles?.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </FieldRow>
 
-            <FieldRow label="Assign\u00e9 \u00e0">
+            <FieldRow label={t('detail.assignedTo')}>
               <select
                 value={ticket.assignedTo?.id ?? ''}
                 onChange={e => updateAssign(e.target.value || null)}
                 disabled={!canAssign}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
               >
-                <option value="">Non assign\u00e9</option>
+                <option value="">{t('detail.unassigned')}</option>
                 {agents?.map(a => (
                   <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>
                 ))}
@@ -1367,7 +1367,7 @@ export function TicketDetailPage() {
               <>
                 <Separator />
                 <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Client</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('detail.client')}</p>
                   <p className="font-semibold">{ticket.client.firstName} {ticket.client.lastName}</p>
                   {ticket.client.phone && (
                     <a href={`tel:${ticket.client.phone}`} className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1393,7 +1393,7 @@ export function TicketDetailPage() {
                   onClick={() => { setMobileActionsOpen(false); setClosingNote(''); setClosingNoteOpen(true); }}
                 >
                   <XCircle className="h-4 w-4 mr-2" />
-                  Fermer le ticket
+                  {t('detail.closeTicket')}
                 </Button>
               )}
               {canEdit && ticket.status === 'CLOSED' && (
@@ -1403,7 +1403,7 @@ export function TicketDetailPage() {
                   onClick={() => { setMobileActionsOpen(false); setConfirmAction('reopen'); }}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Rouvrir
+                  {t('detail.reopen')}
                 </Button>
               )}
             </div>
@@ -1417,17 +1417,17 @@ export function TicketDetailPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" />
-              Documenter dans la base de connaissance ?
+              {t('detail.kbModalTitle')}
             </DialogTitle>
             <DialogDescription>
-              Ce ticket peut etre utile pour les prochaines fois.
+              {t('detail.kbModalDesc')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             {/* Title */}
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Titre</label>
+              <label className="text-sm font-medium">{t('detail.titleLabel')}</label>
               <input
                 type="text"
                 value={kbTitle}
@@ -1444,13 +1444,13 @@ export function TicketDetailPage() {
                 onChange={e => setKbIncludeDescription(e.target.checked)}
                 className="rounded border-input h-4 w-4"
               />
-              <span className="text-sm">Inclure la description du ticket</span>
+              <span className="text-sm">{t('detail.includeDescription')}</span>
             </label>
 
             {/* Comment selection */}
             {ticket && ticket.comments.length > 0 && (
               <div className="space-y-2">
-                <p className="text-sm font-medium">Commentaires a inclure</p>
+                <p className="text-sm font-medium">{t('detail.commentsToInclude')}</p>
                 <div className="max-h-48 overflow-y-auto space-y-1 border rounded-md p-2">
                   {ticket.comments
                     .map(c => (
@@ -1470,7 +1470,7 @@ export function TicketDetailPage() {
                         <span className="text-sm text-muted-foreground leading-snug">
                           {c.isInternal && (
                             <span className="inline-flex items-center mr-1.5 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                              Note de résolution
+                              {t('detail.resolutionNote')}
                             </span>
                           )}
                           <span className="font-medium text-foreground">
@@ -1480,7 +1480,7 @@ export function TicketDetailPage() {
                           {c.content.length > 80 ? c.content.slice(0, 80) + '...' : c.content}
                           {' - '}
                           <span className="text-xs">
-                            {new Date(c.createdAt).toLocaleDateString('fr-FR')}
+                            {new Date(c.createdAt).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'fr-FR')}
                           </span>
                         </span>
                       </label>
@@ -1491,7 +1491,7 @@ export function TicketDetailPage() {
 
             {/* Article status */}
             <div className="space-y-2">
-              <p className="text-sm font-medium">Statut de l&apos;article</p>
+              <p className="text-sm font-medium">{t('detail.articleStatus')}</p>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1501,7 +1501,7 @@ export function TicketDetailPage() {
                     onChange={() => setKbStatus('DRAFT')}
                     className="h-4 w-4"
                   />
-                  <span className="text-sm">Brouillon</span>
+                  <span className="text-sm">{t('detail.draft')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -1511,7 +1511,7 @@ export function TicketDetailPage() {
                     onChange={() => setKbStatus('PUBLISHED')}
                     className="h-4 w-4"
                   />
-                  <span className="text-sm">Publier directement</span>
+                  <span className="text-sm">{t('detail.publishNow')}</span>
                 </label>
               </div>
             </div>
@@ -1519,13 +1519,13 @@ export function TicketDetailPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setKbModalOpen(false)}>
-              Ignorer
+              {t('detail.ignore')}
             </Button>
             <Button
               onClick={handleKbCreate}
               disabled={!kbTitle.trim() || kbMutation.isPending}
             >
-              {kbMutation.isPending ? 'Creation...' : 'Creer l\'article KB'}
+              {kbMutation.isPending ? t('detail.creatingKb') : t('detail.createKb')}
             </Button>
           </DialogFooter>
         </DialogContent>

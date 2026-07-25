@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -23,6 +24,7 @@ const COMPETITIONS = [
 ] as const;
 
 export function ProfilePage() {
+  const { t } = useTranslation('common');
   const { user, logout, updateSportCompetitions } = useAuthStore();
   const { can } = usePermissions();
   const navigate = useNavigate();
@@ -41,9 +43,9 @@ export function ProfilePage() {
     try {
       await api.patch('/auth/sport-competitions', { sportCompetitions: selectedComps });
       updateSportCompetitions(selectedComps);
-      toast.success('Compétitions suivies mises à jour');
+      toast.success(t('profile.competitionsUpdated'));
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de l\'enregistrement des compétitions');
+      toast.error(err.response?.data?.error ?? t('profile.competitionsError'));
     } finally {
       setCompLoading(false);
     }
@@ -52,18 +54,18 @@ export function ProfilePage() {
   const handlePasswordChange = async (e: FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error(t('profile.passwordMismatch'));
       return;
     }
     setPwLoading(true);
     try {
       await api.patch('/auth/change-password', { currentPassword, newPassword, confirmPassword });
-      toast.success('Mot de passe mis à jour. Reconnexion requise.');
+      toast.success(t('profile.passwordUpdated'));
       try { await api.post('/auth/logout'); } catch {}
       logout();
       navigate('/login', { replace: true });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors du changement de mot de passe');
+      toast.error(err.response?.data?.error ?? t('profile.changeError'));
     } finally {
       setPwLoading(false);
     }
@@ -73,7 +75,7 @@ export function ProfilePage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold">Mon profil</h1>
+      <h1 className="text-2xl font-bold">{t('profile.title')}</h1>
 
       {/* User info card */}
       <div className="bg-card rounded-lg border p-6 flex items-center gap-5">
@@ -93,11 +95,9 @@ export function ProfilePage() {
 
       {/* Sport competitions section */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Compétitions suivies</h2>
+        <h2 className="text-lg font-semibold">{t('profile.competitionsTitle')}</h2>
         <p className="text-sm text-muted-foreground">
-          Sélectionnez les championnats pour lesquels vous assurez le support.
-          Seuls ces événements apparaîtront dans votre widget sports.
-          Si aucune compétition n'est sélectionnée, toutes sont affichées.
+          {t('profile.competitionsDesc')}
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {COMPETITIONS.map(({ key, label }) => (
@@ -120,7 +120,7 @@ export function ProfilePage() {
           ))}
         </div>
         <Button onClick={handleSaveCompetitions} disabled={compLoading} variant="outline">
-          {compLoading ? 'Enregistrement...' : 'Enregistrer les compétitions'}
+          {compLoading ? t('profile.saving') : t('profile.saveCompetitions')}
         </Button>
       </div>
 
@@ -128,11 +128,11 @@ export function ProfilePage() {
 
       {/* Security section */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Sécurité</h2>
+        <h2 className="text-lg font-semibold">{t('profile.securityTitle')}</h2>
 
         <form onSubmit={handlePasswordChange} className="space-y-4 max-w-sm">
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">Mot de passe actuel</Label>
+            <Label htmlFor="currentPassword">{t('profile.currentPasswordLabel')}</Label>
             <Input
               id="currentPassword"
               type="password"
@@ -142,19 +142,19 @@ export function ProfilePage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+            <Label htmlFor="newPassword">{t('profile.newPasswordLabel')}</Label>
             <Input
               id="newPassword"
               type="password"
               required
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
+              placeholder={t('profile.passwordPlaceholder')}
             />
             <PasswordStrength password={newPassword} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+            <Label htmlFor="confirmPassword">{t('profile.confirmPasswordLabel')}</Label>
             <Input
               id="confirmPassword"
               type="password"
@@ -164,10 +164,10 @@ export function ProfilePage() {
             />
           </div>
           <Button type="submit" variant="outline" disabled={pwLoading}>
-            {pwLoading ? 'Enregistrement...' : 'Changer le mot de passe'}
+            {pwLoading ? t('profile.saving') : t('profile.changePassword')}
           </Button>
           <p className="text-xs text-muted-foreground">
-            Après le changement, vous serez déconnecté et redirigé vers la page de connexion.
+            {t('profile.logoutNotice')}
           </p>
         </form>
       </div>

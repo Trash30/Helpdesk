@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -9,6 +10,7 @@ interface PaginationProps {
 }
 
 export function Pagination({ page, totalPages, onChange }: PaginationProps) {
+  const { t } = useTranslation('common');
   if (totalPages <= 1) return null;
 
   const pages: number[] = [];
@@ -18,7 +20,7 @@ export function Pagination({ page, totalPages, onChange }: PaginationProps) {
 
   return (
     <div className="flex items-center gap-1">
-      <Button variant="outline" size="sm" onClick={() => onChange(page - 1)} disabled={page === 1}>
+      <Button variant="outline" size="sm" onClick={() => onChange(page - 1)} disabled={page === 1} aria-label={t('pagination.previous')}>
         <ChevronLeft className="h-4 w-4" />
       </Button>
       {start > 1 && (
@@ -40,7 +42,7 @@ export function Pagination({ page, totalPages, onChange }: PaginationProps) {
           </Button>
         </>
       )}
-      <Button variant="outline" size="sm" onClick={() => onChange(page + 1)} disabled={page === totalPages}>
+      <Button variant="outline" size="sm" onClick={() => onChange(page + 1)} disabled={page === totalPages} aria-label={t('pagination.next')}>
         <ChevronRight className="h-4 w-4" />
       </Button>
     </div>

@@ -6,11 +6,11 @@ export const PRIORITY_TOKENS = {
 } as const;
 
 export const STATUS_TOKENS = {
-  OPEN:        { bg: '#E6F1FB', fg: '#185FA5', label: 'Ouvert' },
-  IN_PROGRESS: { bg: '#FAEEDA', fg: '#854F0B', label: 'En cours' },
-  PENDING:     { bg: '#FBEAF0', fg: '#993556', label: 'En attente' },
-  CLOSED:      { bg: '#F1EFE8', fg: '#3D3C39', label: 'Fermé' },
-  RESOLVED:    { bg: '#EAF3DE', fg: '#3B6D11', label: 'Résolu' },
+  OPEN:        { bg: '#E6F1FB', fg: '#185FA5' },
+  IN_PROGRESS: { bg: '#FAEEDA', fg: '#854F0B' },
+  PENDING:     { bg: '#FBEAF0', fg: '#993556' },
+  CLOSED:      { bg: '#F1EFE8', fg: '#3D3C39' },
+  RESOLVED:    { bg: '#EAF3DE', fg: '#3B6D11' },
 } as const;
 
 export type PriorityKey = keyof typeof PRIORITY_TOKENS;

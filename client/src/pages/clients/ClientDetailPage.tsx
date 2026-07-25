@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   CheckCircle, BellOff, Phone, Mail, Plus, Ticket,
   Pencil, Trash2, ArrowLeft,
@@ -21,17 +23,17 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function relativeTime(dateStr: string): string {
+function relativeTime(dateStr: string, t: TFunction): string {
   const date = new Date(dateStr);
   const diff = Date.now() - date.getTime();
   const min = Math.floor(diff / 60000);
   const hour = Math.floor(min / 60);
   const day = Math.floor(hour / 24);
-  if (min < 1) return "à l'instant";
-  if (min < 60) return `il y a ${min}min`;
-  if (hour < 24) return `il y a ${hour}h`;
-  if (day === 1) return 'hier';
-  if (day < 30) return `il y a ${day}j`;
+  if (min < 1) return t('time.justNow');
+  if (min < 60) return t('time.minutesAgo', { count: min });
+  if (hour < 24) return t('time.hoursAgo', { count: hour });
+  if (day === 1) return t('time.yesterday');
+  if (day < 30) return t('time.daysAgo', { count: day });
   return date.toLocaleDateString('fr-FR');
 }
 
@@ -110,6 +112,7 @@ function KpiCard({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function ClientDetailPage() {
+  const { t } = useTranslation('clients');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { openClientPanel } = useClientPanel();
@@ -128,12 +131,12 @@ export function ClientDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/clients/${id}`),
     onSuccess: () => {
-      toast.success('Client supprimé');
+      toast.success(t('detail.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       navigate('/clients');
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.error ?? 'Erreur lors de la suppression';
+      const msg = err?.response?.data?.error ?? t('detail.deleteError');
       toast.error(msg);
     },
   });
@@ -167,10 +170,10 @@ export function ClientDetailPage() {
   if (error || !client) {
     return (
       <div className="text-center py-24">
-        <p className="text-muted-foreground">Client introuvable.</p>
+        <p className="text-muted-foreground">{t('detail.notFound')}</p>
         <Button variant="ghost" onClick={() => navigate('/clients')} className="mt-4">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour aux clients
+          {t('detail.backToClients')}
         </Button>
       </div>
     );
@@ -187,7 +190,7 @@ export function ClientDetailPage() {
         {/* Back link */}
         <Link to="/clients" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
-          Retour aux clients
+          {t('detail.backToClients')}
         </Link>
 
         {/* Header */}
@@ -212,7 +215,7 @@ export function ClientDetailPage() {
           {can('clients.edit') && (
             <Button variant="outline" onClick={() => openClientPanel(client.id)}>
               <Pencil className="h-4 w-4 mr-2" />
-              Modifier
+              {t('detail.edit')}
             </Button>
           )}
         </div>
@@ -222,51 +225,51 @@ export function ClientDetailPage() {
         {/* Info grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Société</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{t('detail.company')}</p>
             <p>{client.company || '—'}</p>
           </div>
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Téléphone</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{t('detail.phone')}</p>
             {client.phone
               ? <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-primary hover:underline"><Phone className="h-3.5 w-3.5" />{client.phone}</a>
               : <p className="text-muted-foreground">—</p>
             }
           </div>
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Email</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{t('detail.email')}</p>
             {client.email
               ? <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-primary hover:underline"><Mail className="h-3.5 w-3.5" />{client.email}</a>
               : <p className="text-muted-foreground">—</p>
             }
           </div>
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Organisation</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{t('detail.organisation')}</p>
             <p>{client.organisation?.name || '—'}</p>
           </div>
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Club / Ville</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{t('detail.clubCity')}</p>
             <p>{client.club?.name || '—'}</p>
           </div>
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Enquêtes</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{t('detail.surveys')}</p>
             {client.isSurveyable ? (
               <span className="flex items-center gap-1.5 text-green-700">
-                <CheckCircle className="h-4 w-4" />Activées
+                <CheckCircle className="h-4 w-4" />{t('detail.surveysEnabled')}
               </span>
             ) : (
               <span className="flex items-center gap-1.5 text-muted-foreground">
-                <BellOff className="h-4 w-4" />Désactivées
+                <BellOff className="h-4 w-4" />{t('detail.surveysDisabled')}
               </span>
             )}
           </div>
           {client.notes && (
             <div className="col-span-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Notes</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{t('detail.notes')}</p>
               <p className="text-sm whitespace-pre-wrap">{client.notes}</p>
             </div>
           )}
           <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Membre depuis</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">{t('detail.memberSince')}</p>
             <p>{new Date(client.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
           </div>
         </div>
@@ -275,11 +278,11 @@ export function ClientDetailPage() {
 
         {/* Stats row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <KpiCard label="Total tickets" value={totalCount} />
-          <KpiCard label="Tickets ouverts" value={openCount} color={openCount > 0 ? '#185FA5' : '#6b7280'} />
-          <KpiCard label="Tickets résolus" value={resolvedCount} color="#3B6D11" />
+          <KpiCard label={t('detail.kpiTotal')} value={totalCount} />
+          <KpiCard label={t('detail.kpiOpen')} value={openCount} color={openCount > 0 ? '#185FA5' : '#6b7280'} />
+          <KpiCard label={t('detail.kpiResolved')} value={resolvedCount} color="#3B6D11" />
           <KpiCard
-            label="Temps moyen résolution"
+            label={t('detail.kpiAvgResolution')}
             value={avgResolution != null ? formatHours(avgResolution) : '—'}
           />
         </div>
@@ -290,7 +293,7 @@ export function ClientDetailPage() {
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Historique des tickets</h2>
+              <h2 className="text-lg font-semibold">{t('detail.ticketHistory')}</h2>
               <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium">
                 {totalCount}
               </span>
@@ -303,7 +306,7 @@ export function ClientDetailPage() {
                 onClick={() => navigate(`/tickets/new?clientId=${client.id}`)}
               >
                 <Plus className="h-4 w-4 mr-1.5" />
-                Cr\u00e9er un ticket
+                {t('detail.createTicket')}
               </Button>
             )}
           </div>
@@ -311,7 +314,7 @@ export function ClientDetailPage() {
           {client.tickets.length === 0 ? (
             <div className="text-center py-12 border rounded-lg">
               <Ticket className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground text-sm">Aucun ticket pour ce client</p>
+              <p className="text-muted-foreground text-sm">{t('detail.noTickets')}</p>
             </div>
           ) : (
             <>
@@ -325,7 +328,7 @@ export function ClientDetailPage() {
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-mono text-xs text-primary font-medium">{ticket.ticketNumber}</span>
-                    <span className="text-xs text-muted-foreground">{relativeTime(ticket.createdAt)}</span>
+                    <span className="text-xs text-muted-foreground">{relativeTime(ticket.createdAt, t)}</span>
                   </div>
                   <p className="text-sm font-medium leading-snug line-clamp-2 mb-2">{ticket.title}</p>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -349,13 +352,13 @@ export function ClientDetailPage() {
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   <tr>
-                    <th className="px-4 py-3 text-left">#</th>
-                    <th className="px-4 py-3 text-left">Titre</th>
-                    <th className="px-4 py-3 text-left hidden lg:table-cell">Cat\u00e9gorie</th>
-                    <th className="px-4 py-3 text-left">Priorit\u00e9</th>
-                    <th className="px-4 py-3 text-left">Statut</th>
-                    <th className="px-4 py-3 text-left hidden lg:table-cell">Assign\u00e9</th>
-                    <th className="px-4 py-3 text-left">Cr\u00e9\u00e9 le</th>
+                    <th className="px-4 py-3 text-left">{t('detail.colNumber')}</th>
+                    <th className="px-4 py-3 text-left">{t('detail.colTitle')}</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">{t('detail.colCategory')}</th>
+                    <th className="px-4 py-3 text-left">{t('detail.colPriority')}</th>
+                    <th className="px-4 py-3 text-left">{t('detail.colStatus')}</th>
+                    <th className="px-4 py-3 text-left hidden lg:table-cell">{t('detail.colAssigned')}</th>
+                    <th className="px-4 py-3 text-left">{t('detail.colCreatedAt')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -398,7 +401,7 @@ export function ClientDetailPage() {
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span className="text-xs text-muted-foreground cursor-default">
-                              {relativeTime(ticket.createdAt)}
+                              {relativeTime(ticket.createdAt, t)}
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
@@ -420,9 +423,9 @@ export function ClientDetailPage() {
           <>
             <Separator />
             <div className="border border-destructive/30 rounded-lg p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-destructive">Zone de danger</h3>
+              <h3 className="text-sm font-semibold text-destructive">{t('detail.dangerZone')}</h3>
               <p className="text-sm text-muted-foreground">
-                La suppression d'un client est irréversible. Tous ses tickets doivent être fermés au préalable.
+                {t('detail.dangerDesc')}
               </p>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -434,13 +437,13 @@ export function ClientDetailPage() {
                       onClick={() => setShowDeleteConfirm(true)}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Supprimer ce client
+                      {t('detail.deleteClient')}
                     </Button>
                   </span>
                 </TooltipTrigger>
                 {openCount > 0 && (
                   <TooltipContent>
-                    Ce client a {openCount} ticket{openCount > 1 ? 's' : ''} ouvert{openCount > 1 ? 's' : ''}
+                    {t('detail.openTicketsWarning', { count: openCount })}
                   </TooltipContent>
                 )}
               </Tooltip>
@@ -453,9 +456,9 @@ export function ClientDetailPage() {
       <ConfirmDialog
         open={showDeleteConfirm}
         onOpenChange={open => !open && setShowDeleteConfirm(false)}
-        title={`Supprimer ${client.firstName} ${client.lastName} ?`}
-        description="Cette action est irréversible. Toutes les données associées à ce client seront définitivement supprimées."
-        confirmLabel="Supprimer"
+        title={t('detail.deleteConfirmTitle', { name: `${client.firstName} ${client.lastName}` })}
+        description={t('detail.deleteConfirmDesc')}
+        confirmLabel={t('detail.deleteConfirmLabel')}
         variant="destructive"
         loading={deleting}
         onConfirm={handleDelete}

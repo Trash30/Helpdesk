@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '@/lib/axios';
@@ -23,6 +24,7 @@ interface Settings {
 interface Agent { id: string; firstName: string; lastName: string }
 
 export function AdminSettingsPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const setBranding = useBrandingStore(s => s.setBranding);
 
@@ -53,9 +55,9 @@ export function AdminSettingsPage() {
   }, [settings.company_name]);
 
   const handleLogoFile = (file: File) => {
-    if (file.size > 2 * 1024 * 1024) { toast.error('Image trop grande (max 2 Mo)'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error(t('settings.imageTooBig')); return; }
     if (!['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp'].includes(file.type)) {
-      toast.error('Format non supporté (PNG, JPG, SVG, WebP)'); return;
+      toast.error(t('settings.formatNotSupported')); return;
     }
     setLogoFile(file);
     setLogoPreview(URL.createObjectURL(file));
@@ -76,9 +78,9 @@ export function AdminSettingsPage() {
       await api.put('/admin/settings', { company_name: companyName });
       setBranding(newLogoUrl, companyName || 'HelpDesk');
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
-      toast.success('Apparence enregistrée');
+      toast.success(t('settings.appearanceSaved'));
       setLogoFile(null);
-    } catch { toast.error('Erreur lors de la sauvegarde'); }
+    } catch { toast.error(t('settings.saveError')); }
     finally { setSavingAppearance(false); }
   };
 
@@ -88,8 +90,8 @@ export function AdminSettingsPage() {
       setBranding(null, companyName || 'HelpDesk');
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
       setLogoPreview(null); setLogoFile(null);
-      toast.success('Logo supprimé');
-    } catch { toast.error('Erreur lors de la suppression'); }
+      toast.success(t('settings.logoDeleted'));
+    } catch { toast.error(t('settings.deleteError')); }
     finally { setShowDeleteLogo(false); }
   };
 
@@ -114,8 +116,8 @@ export function AdminSettingsPage() {
         auto_close_days: autoCloseDays,
       });
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
-      toast.success('Paramètres tickets enregistrés');
-    } catch { toast.error('Erreur lors de la sauvegarde'); }
+      toast.success(t('settings.ticketSettingsSaved'));
+    } catch { toast.error(t('settings.saveError')); }
     finally { setSavingTickets(false); }
   };
 
@@ -137,8 +139,8 @@ export function AdminSettingsPage() {
         survey_cooldown_days: surveyCooldown,
       });
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
-      toast.success('Paramètres enquêtes enregistrés');
-    } catch { toast.error('Erreur lors de la sauvegarde'); }
+      toast.success(t('settings.surveySettingsSaved'));
+    } catch { toast.error(t('settings.saveError')); }
     finally { setSavingSurveys(false); }
   };
 
@@ -146,24 +148,24 @@ export function AdminSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold">Paramètres</h1>
+      <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
 
       {/* Apparence */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Apparence</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t('settings.appearance')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="mb-2 block">Logo</Label>
+            <Label className="mb-2 block">{t('settings.logo')}</Label>
             {currentLogo ? (
               <div className="flex items-start gap-4">
                 <img src={currentLogo} alt="Logo" className="max-w-[200px] max-h-[80px] object-contain border rounded p-2" />
                 <div className="space-y-2">
                   <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>
-                    Changer
+                    {t('settings.change')}
                   </Button>
                   <Button variant="ghost" size="sm" className="block text-destructive hover:text-destructive"
                     onClick={() => setShowDeleteLogo(true)}>
-                    Supprimer le logo
+                    {t('settings.deleteLogo')}
                   </Button>
                 </div>
               </div>
@@ -177,23 +179,23 @@ export function AdminSettingsPage() {
                   ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/30 hover:border-muted-foreground/50'}`}
               >
                 <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">Glissez votre logo ici ou <span className="text-primary underline">cliquez</span></p>
-                <p className="text-xs text-muted-foreground mt-1">PNG, JPG, SVG, WebP — max 2 Mo</p>
+                <p className="text-sm text-muted-foreground">{t('settings.dragLogoPrefix')}<span className="text-primary underline">{t('settings.dragLogoLink')}</span></p>
+                <p className="text-xs text-muted-foreground mt-1">{t('settings.logoFormats')}</p>
               </div>
             )}
             <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp"
               className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoFile(f); e.target.value = ''; }} />
-            {logoFile && <p className="text-xs text-green-700 mt-1">Nouveau logo sélectionné : {logoFile.name}</p>}
+            {logoFile && <p className="text-xs text-green-700 mt-1">{t('settings.newLogoSelected', { name: logoFile.name })}</p>}
           </div>
 
           <div>
-            <Label htmlFor="company-name">Nom de l'entreprise</Label>
+            <Label htmlFor="company-name">{t('settings.companyName')}</Label>
             <Input id="company-name" value={companyName} onChange={e => setCompanyName(e.target.value)}
-              placeholder="Mon Helpdesk" className="mt-1" />
+              placeholder={t('settings.companyNamePlaceholder')} className="mt-1" />
           </div>
           <div className="flex justify-end">
             <Button onClick={saveAppearance} disabled={savingAppearance}>
-              {savingAppearance ? 'Enregistrement...' : 'Enregistrer'}
+              {savingAppearance ? t('settings.saving') : t('settings.save')}
             </Button>
           </div>
         </CardContent>
@@ -201,37 +203,37 @@ export function AdminSettingsPage() {
 
       {/* Tickets */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Tickets</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t('settings.tickets')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="def-priority">Priorité par défaut</Label>
+            <Label htmlFor="def-priority">{t('settings.defaultPriority')}</Label>
             <select id="def-priority" value={defaultPriority} onChange={e => setDefaultPriority(e.target.value)}
               className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none">
-              <option value="LOW">Basse</option>
-              <option value="MEDIUM">Moyenne</option>
-              <option value="HIGH">Haute</option>
-              <option value="CRITICAL">Critique</option>
+              <option value="LOW">{t('settings.priorityLow')}</option>
+              <option value="MEDIUM">{t('settings.priorityMedium')}</option>
+              <option value="HIGH">{t('settings.priorityHigh')}</option>
+              <option value="CRITICAL">{t('settings.priorityCritical')}</option>
             </select>
           </div>
           <div>
-            <Label htmlFor="def-agent">Agent assigné par défaut</Label>
+            <Label htmlFor="def-agent">{t('settings.defaultAgent')}</Label>
             <select id="def-agent" value={defaultAssignedTo} onChange={e => setDefaultAssignedTo(e.target.value)}
               className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none">
-              <option value="">Non assigné</option>
+              <option value="">{t('settings.unassigned')}</option>
               {agents.map(a => <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>)}
             </select>
           </div>
           <div>
-            <Label htmlFor="auto-close">Fermeture automatique après (jours)</Label>
+            <Label htmlFor="auto-close">{t('settings.autoClose')}</Label>
             <Input id="auto-close" type="number" min="0" value={autoCloseDays}
               onChange={e => setAutoCloseDays(e.target.value)} className="mt-1" />
             <p className="text-xs text-muted-foreground mt-1">
-              Les tickets résolus seront automatiquement fermés après ce nombre de jours (0 = désactivé)
+              {t('settings.autoCloseHelp')}
             </p>
           </div>
           <div className="flex justify-end">
             <Button onClick={saveTickets} disabled={savingTickets}>
-              {savingTickets ? 'Enregistrement...' : 'Enregistrer'}
+              {savingTickets ? t('settings.saving') : t('settings.save')}
             </Button>
           </div>
         </CardContent>
@@ -239,33 +241,33 @@ export function AdminSettingsPage() {
 
       {/* Enquêtes */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Enquêtes de satisfaction</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t('settings.surveys')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="survey-delay">Délai avant envoi</Label>
+            <Label htmlFor="survey-delay">{t('settings.surveyDelay')}</Label>
             <div className="flex items-center gap-2 mt-1">
               <Input id="survey-delay" type="number" min="1" value={surveyDelay}
                 onChange={e => setSurveyDelay(e.target.value)} className="w-28" />
-              <span className="text-sm text-muted-foreground">heures</span>
+              <span className="text-sm text-muted-foreground">{t('settings.hours')}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Délai après la résolution d'un ticket avant d'envoyer l'enquête
+              {t('settings.surveyDelayHelp')}
             </p>
           </div>
           <div>
-            <Label htmlFor="survey-cooldown">Cooldown entre deux enquêtes</Label>
+            <Label htmlFor="survey-cooldown">{t('settings.surveyCooldown')}</Label>
             <div className="flex items-center gap-2 mt-1">
               <Input id="survey-cooldown" type="number" min="1" value={surveyCooldown}
                 onChange={e => setSurveyCooldown(e.target.value)} className="w-28" />
-              <span className="text-sm text-muted-foreground">jours</span>
+              <span className="text-sm text-muted-foreground">{t('settings.days')}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Un même client ne recevra pas deux enquêtes dans cet intervalle
+              {t('settings.surveyCooldownHelp')}
             </p>
           </div>
           <div className="flex justify-end">
             <Button onClick={saveSurveys} disabled={savingSurveys}>
-              {savingSurveys ? 'Enregistrement...' : 'Enregistrer'}
+              {savingSurveys ? t('settings.saving') : t('settings.save')}
             </Button>
           </div>
         </CardContent>
@@ -274,9 +276,9 @@ export function AdminSettingsPage() {
       <ConfirmDialog
         open={showDeleteLogo}
         onOpenChange={open => !open && setShowDeleteLogo(false)}
-        title="Supprimer le logo"
-        description="Le logo sera supprimé définitivement."
-        confirmLabel="Supprimer"
+        title={t('settings.deleteLogoTitle')}
+        description={t('settings.deleteLogoDesc')}
+        confirmLabel={t('settings.delete')}
         variant="destructive"
         onConfirm={handleDeleteLogo}
       />

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { Document, Packer, Paragraph, TextRun, ImageRun, HeadingLevel, AlignmentType, BorderStyle } from 'docx';
@@ -292,6 +293,8 @@ function formatNoteDate(dateStr: string, time: string): string {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export function MatchReportExport() {
+  const { t, i18n } = useTranslation('sports');
+  const dateLocale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
@@ -310,7 +313,7 @@ export function MatchReportExport() {
       });
 
       if (validNotes.length === 0) {
-        toast.error('Aucune note à exporter cette semaine');
+        toast.error(t('reportExport.noNotes'));
         setIsExporting(false);
         return;
       }
@@ -359,7 +362,7 @@ export function MatchReportExport() {
       // Title
       sections.push(
         new Paragraph({
-          children: [new TextRun({ text: `CR SUPPORT SEMAINE ${weekNumber} \u2014 ${year}`, bold: true, size: 32 })],
+          children: [new TextRun({ text: t('reportExport.reportTitle', { week: weekNumber, year }), bold: true, size: 32 })],
           heading: HeadingLevel.HEADING_1,
           spacing: { after: 200 },
         })
@@ -369,7 +372,7 @@ export function MatchReportExport() {
       sections.push(
         new Paragraph({
           children: [
-            new TextRun({ text: 'Techniciens : ', bold: true, size: 22 }),
+            new TextRun({ text: t('reportExport.techniciansLabel'), bold: true, size: 22 }),
             new TextRun({ text: '', size: 22 }),
           ],
           spacing: { after: 300 },
@@ -419,7 +422,11 @@ export function MatchReportExport() {
           // Feu tricolore : image canvas + libellé
           const statusTextColor = { VERT: '007700', ORANGE: 'CC6600', ROUGE: 'BB0000' }[noteStatus];
           const statusLabel =
-            noteStatus === 'VERT' ? 'RAS' : noteStatus === 'ORANGE' ? 'À surveiller' : "Point d'attention";
+            noteStatus === 'VERT'
+              ? t('reportExport.statusGreen')
+              : noteStatus === 'ORANGE'
+                ? t('reportExport.statusOrange')
+                : t('reportExport.statusRed');
 
           sections.push(
             new Paragraph({
@@ -471,7 +478,7 @@ export function MatchReportExport() {
             sections.push(
               new Paragraph({
                 children: [
-                  new TextRun({ text: 'Diffuseur : ', bold: true, size: 20, color: '555555' }),
+                  new TextRun({ text: t('reportExport.broadcasterLabel'), bold: true, size: 20, color: '555555' }),
                   makeImageRun(broadcasterImg, 20),
                 ],
                 spacing: { after: 200 },
@@ -484,7 +491,7 @@ export function MatchReportExport() {
             sections.push(
               new Paragraph({
                 children: [
-                  new TextRun({ text: 'Production : ', bold: true, size: 20, color: '555555' }),
+                  new TextRun({ text: t('reportExport.productionLabel'), bold: true, size: 20, color: '555555' }),
                   new TextRun({ text: note.production, size: 20 }),
                 ],
                 spacing: { after: 120 },
@@ -498,7 +505,7 @@ export function MatchReportExport() {
             sections.push(
               new Paragraph({
                 children: [
-                  new TextRun({ text: 'Match chaperonné par : ', bold: true, size: 20, color: '185FA5' }),
+                  new TextRun({ text: t('reportExport.chaperonedBy'), bold: true, size: 20, color: '185FA5' }),
                   new TextRun({ text: techName, size: 20, color: '185FA5' }),
                 ],
                 spacing: { after: 200 },
@@ -537,7 +544,7 @@ export function MatchReportExport() {
                 options: {
                   children: [
                     new Paragraph({
-                      children: [new TextRun({ text: `Généré le ${new Date().toLocaleDateString('fr-FR')} \u2014 VOGO Support`, italics: true, color: '999999', size: 16 })],
+                      children: [new TextRun({ text: t('reportExport.generatedOn', { date: new Date().toLocaleDateString(dateLocale) }), italics: true, color: '999999', size: 16 })],
                       alignment: AlignmentType.CENTER,
                     }),
                   ],
@@ -556,9 +563,9 @@ export function MatchReportExport() {
       a.click();
       URL.revokeObjectURL(blobUrl);
 
-      toast.success('Rapport exporté avec succès');
+      toast.success(t('reportExport.exportSuccess'));
     } catch (err: any) {
-      toast.error(err?.response?.data?.error ?? "Erreur lors de l'export du rapport");
+      toast.error(err?.response?.data?.error ?? t('reportExport.exportError'));
     } finally {
       setIsExporting(false);
     }
@@ -574,7 +581,7 @@ export function MatchReportExport() {
       className="h-11 sm:h-8 text-sm sm:text-xs gap-1.5 px-3"
     >
       {isExporting ? <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin" /> : <Download className="h-4 w-4 sm:h-3.5 sm:w-3.5" />}
-      Exporter CR
+      {t('reportExport.exportButton')}
     </Button>
   );
 }

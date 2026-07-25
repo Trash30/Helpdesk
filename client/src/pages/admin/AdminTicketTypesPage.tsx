@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -32,6 +33,7 @@ interface TicketType {
 function SortableRow({
   item, onEdit, onDelete,
 }: { item: TicketType; onEdit: (t: TicketType) => void; onDelete: (t: TicketType) => void }) {
+  const { t } = useTranslation('admin');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
   const style = {
@@ -52,7 +54,7 @@ function SortableRow({
       <span className={`text-xs px-1.5 py-0.5 rounded ${
         item.isActive ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'
       }`}>
-        {item.isActive ? 'Actif' : 'Inactif'}
+        {item.isActive ? t('ticketTypes.active') : t('ticketTypes.inactive')}
       </span>
       <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(item)}>
@@ -70,6 +72,7 @@ function SortableRow({
 const defaultForm = { name: '', isActive: true };
 
 export function AdminTicketTypesPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const [items, setItems] = useState<TicketType[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -105,7 +108,7 @@ export function AdminTicketTypesPage() {
         newItems.map((item, idx) => ({ id: item.id, position: idx + 1 }))
       );
     } catch {
-      toast.error('Erreur lors du reordonnancement');
+      toast.error(t('ticketTypes.reorderError'));
       queryClient.invalidateQueries({ queryKey: ['admin-ticket-types'] });
     }
   };
@@ -123,20 +126,20 @@ export function AdminTicketTypesPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('Le nom est requis'); return; }
+    if (!form.name.trim()) { toast.error(t('ticketTypes.nameRequired')); return; }
     setSaving(true);
     try {
       if (editTarget) {
         await api.put(`/admin/ticket-types/${editTarget.id}`, form);
-        toast.success('Type de demande mis à jour');
+        toast.success(t('ticketTypes.typeUpdated'));
       } else {
         await api.post('/admin/ticket-types', form);
-        toast.success('Type de demande créé');
+        toast.success(t('ticketTypes.typeCreated'));
       }
       queryClient.invalidateQueries({ queryKey: ['admin-ticket-types'] });
       setModalOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err.response?.data?.error ?? t('ticketTypes.saveError'));
     } finally { setSaving(false); }
   };
 
@@ -145,19 +148,19 @@ export function AdminTicketTypesPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/ticket-types/${deleteTarget.id}`);
-      toast.success('Type de demande supprimé');
+      toast.success(t('ticketTypes.typeDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-ticket-types'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
+      toast.error(err.response?.data?.error ?? t('ticketTypes.deleteError'));
     } finally { setDeleting(false); setDeleteTarget(null); }
   };
 
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Types de demande</h1>
+        <h1 className="text-2xl font-bold">{t('ticketTypes.title')}</h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />Nouveau type
+          <Plus className="h-4 w-4 mr-2" />{t('ticketTypes.newType')}
         </Button>
       </div>
 
@@ -172,7 +175,7 @@ export function AdminTicketTypesPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucun type de demande. Créez-en un pour commencer.
+                {t('ticketTypes.empty')}
               </p>
             )}
           </div>
@@ -182,27 +185,27 @@ export function AdminTicketTypesPage() {
       <Dialog open={modalOpen} onOpenChange={open => { if (!saving) setModalOpen(open); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editTarget ? 'Modifier le type' : 'Nouveau type de demande'}</DialogTitle>
+            <DialogTitle>{editTarget ? t('ticketTypes.editTitle') : t('ticketTypes.createTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label>Nom <span className="text-destructive">*</span></Label>
+              <Label>{t('ticketTypes.name')} <span className="text-destructive">*</span></Label>
               <Input value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Ex: Incident, Demande de service..." className="mt-1" />
+                placeholder={t('ticketTypes.namePlaceholder')} className="mt-1" />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="tt-active" checked={form.isActive}
                 onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} />
-              <Label htmlFor="tt-active">Actif</Label>
+              <Label htmlFor="tt-active">{t('ticketTypes.activeLabel')}</Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>
-              Annuler
+              {t('ticketTypes.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
+              {saving ? t('ticketTypes.saving') : (editTarget ? t('ticketTypes.save') : t('ticketTypes.create'))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -211,13 +214,13 @@ export function AdminTicketTypesPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={open => !open && setDeleteTarget(null)}
-        title="Supprimer le type de demande"
+        title={t('ticketTypes.deleteTitle')}
         description={
           deleteTarget?._count?.tickets
-            ? `Ce type est utilisé par ${deleteTarget._count.tickets} ticket(s) et ne peut pas être supprimé.`
-            : `Supprimer le type "${deleteTarget?.name}" ? Cette action est irréversible.`
+            ? t('ticketTypes.deleteInUse', { count: deleteTarget._count.tickets })
+            : t('ticketTypes.deleteConfirm', { name: deleteTarget?.name })
         }
-        confirmLabel={deleteTarget?._count?.tickets ? 'Fermer' : 'Supprimer'}
+        confirmLabel={deleteTarget?._count?.tickets ? t('ticketTypes.close') : t('ticketTypes.delete')}
         variant={deleteTarget?._count?.tickets ? 'default' : 'destructive'}
         loading={deleting}
         onConfirm={deleteTarget?._count?.tickets ? () => setDeleteTarget(null) : handleDelete}

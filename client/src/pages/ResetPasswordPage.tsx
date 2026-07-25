@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useBranding } from '@/hooks/useBranding';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import api from '@/lib/axios';
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation('auth');
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { logoUrl, companyName } = useBranding();
@@ -42,25 +44,25 @@ export function ResetPasswordPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      toast.error('Les mots de passe ne correspondent pas');
+      toast.error(t('resetPassword.passwordMismatch'));
       return;
     }
     setLoading(true);
     try {
       await api.post('/auth/reset-password', { token, newPassword, confirmPassword });
       setDone(true);
-      toast.success('Mot de passe mis à jour');
+      toast.success(t('resetPassword.successToast'));
       setTimeout(() => navigate('/login', { replace: true }), 3000);
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la réinitialisation');
+      toast.error(err.response?.data?.error ?? t('resetPassword.resetError'));
     } finally {
       setLoading(false);
     }
   };
 
   const reasonMessages: Record<string, string> = {
-    expired: 'Ce lien de réinitialisation a expiré. Demandez un nouveau lien à votre administrateur.',
-    invalid: 'Ce lien est invalide ou a déjà été utilisé.',
+    expired: t('resetPassword.expired'),
+    invalid: t('resetPassword.invalid'),
   };
 
   return (
@@ -72,34 +74,34 @@ export function ResetPasswordPage() {
         </div>
 
         <div className="bg-card rounded-lg border shadow-sm p-6 space-y-4">
-          <h1 className="text-lg font-semibold">Réinitialisation du mot de passe</h1>
+          <h1 className="text-lg font-semibold">{t('resetPassword.title')}</h1>
 
-          {validating && <p className="text-sm text-muted-foreground">Vérification du lien...</p>}
+          {validating && <p className="text-sm text-muted-foreground">{t('resetPassword.validating')}</p>}
 
           {!validating && !tokenValid && (
             <div className="space-y-3">
               <p className="text-sm text-destructive">{reasonMessages[tokenReason] ?? reasonMessages.invalid}</p>
-              <p className="text-sm text-muted-foreground">Contactez votre administrateur pour obtenir un nouveau lien.</p>
+              <p className="text-sm text-muted-foreground">{t('resetPassword.contactAdmin')}</p>
             </div>
           )}
 
           {!validating && tokenValid && !done && (
             <form onSubmit={handleSubmit} className="space-y-4">
-              {userEmail && <p className="text-sm text-muted-foreground">Compte : <strong>{userEmail}</strong></p>}
+              {userEmail && <p className="text-sm text-muted-foreground">{t('resetPassword.account')} <strong>{userEmail}</strong></p>}
               <div className="space-y-2">
-                <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+                <Label htmlFor="newPassword">{t('resetPassword.newPasswordLabel')}</Label>
                 <Input
                   id="newPassword"
                   type="password"
                   required
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  placeholder="Min. 8 caractères, 1 majuscule, 1 chiffre"
+                  placeholder={t('resetPassword.passwordPlaceholder')}
                 />
                 <PasswordStrength password={newPassword} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+                <Label htmlFor="confirmPassword">{t('resetPassword.confirmPasswordLabel')}</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -109,15 +111,15 @@ export function ResetPasswordPage() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Enregistrement...' : 'Réinitialiser le mot de passe'}
+                {loading ? t('resetPassword.submitting') : t('resetPassword.submit')}
               </Button>
             </form>
           )}
 
           {done && (
             <div className="space-y-2">
-              <p className="text-sm text-green-600 font-medium">Mot de passe mis à jour avec succès.</p>
-              <p className="text-sm text-muted-foreground">Redirection vers la page de connexion...</p>
+              <p className="text-sm text-green-600 font-medium">{t('resetPassword.successTitle')}</p>
+              <p className="text-sm text-muted-foreground">{t('resetPassword.redirecting')}</p>
             </div>
           )}
         </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
@@ -39,6 +40,7 @@ interface ClientRole {
 function SortableRow({
   role, onEdit, onDelete,
 }: { role: ClientRole; onEdit: (r: ClientRole) => void; onDelete: (r: ClientRole) => void }) {
+  const { t } = useTranslation('admin');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: role.id });
   const style = {
@@ -63,7 +65,7 @@ function SortableRow({
       <span className={`text-xs px-1.5 py-0.5 rounded ${
         role.isActive ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'
       }`}>
-        {role.isActive ? 'Actif' : 'Inactif'}
+        {role.isActive ? t('clientRoles.active') : t('clientRoles.inactive')}
       </span>
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(role)}>
@@ -81,6 +83,7 @@ function SortableRow({
 const defaultForm = { name: '', description: '', color: '#185FA5', isActive: true };
 
 export function AdminClientRolesPage() {
+  const { t } = useTranslation('admin');
   const queryClient = useQueryClient();
   const [items, setItems] = useState<ClientRole[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -117,7 +120,7 @@ export function AdminClientRolesPage() {
         newItems.map((item, idx) => ({ id: item.id, position: idx + 1 }))
       );
     } catch {
-      toast.error('Erreur lors du réordonnancement');
+      toast.error(t('clientRoles.reorderError'));
       queryClient.invalidateQueries({ queryKey: ['admin-client-roles'] });
     }
   };
@@ -142,20 +145,20 @@ export function AdminClientRolesPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { toast.error('Le nom est requis'); return; }
+    if (!form.name.trim()) { toast.error(t('clientRoles.nameRequired')); return; }
     setSaving(true);
     try {
       if (editTarget) {
         await api.put(`/admin/client-roles/${editTarget.id}`, form);
-        toast.success('Rôle mis à jour');
+        toast.success(t('clientRoles.roleUpdated'));
       } else {
         await api.post('/admin/client-roles', form);
-        toast.success('Rôle créé');
+        toast.success(t('clientRoles.roleCreated'));
       }
       queryClient.invalidateQueries({ queryKey: ['admin-client-roles'] });
       setModalOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la sauvegarde');
+      toast.error(err.response?.data?.error ?? t('clientRoles.saveError'));
     } finally { setSaving(false); }
   };
 
@@ -164,10 +167,10 @@ export function AdminClientRolesPage() {
     setDeleting(true);
     try {
       await api.delete(`/admin/client-roles/${deleteTarget.id}`);
-      toast.success('Rôle supprimé');
+      toast.success(t('clientRoles.roleDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-client-roles'] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error ?? 'Erreur lors de la suppression');
+      toast.error(err.response?.data?.error ?? t('clientRoles.deleteError'));
     } finally { setDeleting(false); setDeleteTarget(null); }
   };
 
@@ -179,9 +182,9 @@ export function AdminClientRolesPage() {
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Rôles clients</h1>
+        <h1 className="text-2xl font-bold">{t('clientRoles.title')}</h1>
         <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />Nouveau rôle
+          <Plus className="h-4 w-4 mr-2" />{t('clientRoles.newRole')}
         </Button>
       </div>
 
@@ -196,7 +199,7 @@ export function AdminClientRolesPage() {
             ))}
             {items.length === 0 && (
               <p className="text-center text-muted-foreground py-12">
-                Aucun rôle client. Créez-en un pour commencer.
+                {t('clientRoles.empty')}
               </p>
             )}
           </div>
@@ -207,7 +210,7 @@ export function AdminClientRolesPage() {
       <Dialog open={modalOpen} onOpenChange={open => { if (!saving) setModalOpen(open); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editTarget ? 'Modifier le rôle' : 'Nouveau rôle client'}</DialogTitle>
+            <DialogTitle>{editTarget ? t('clientRoles.editTitle') : t('clientRoles.createTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             {/* Preview */}
@@ -216,33 +219,33 @@ export function AdminClientRolesPage() {
                 style={{ backgroundColor: form.color }} />
               <span className="text-xs font-medium px-2 py-0.5 rounded text-white"
                 style={{ backgroundColor: form.color }}>
-                {form.name || 'Aperçu du rôle'}
+                {form.name || t('clientRoles.previewPlaceholder')}
               </span>
             </div>
 
             <div>
-              <Label>Nom <span className="text-destructive">*</span></Label>
+              <Label>{t('clientRoles.name')} <span className="text-destructive">*</span></Label>
               <Input value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Responsable IT" className="mt-1" />
+                placeholder={t('clientRoles.namePlaceholder')} className="mt-1" />
             </div>
 
             <div>
-              <Label>Description</Label>
+              <Label>{t('clientRoles.description')}</Label>
               <Input value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Description optionnelle" className="mt-1" />
+                placeholder={t('clientRoles.descriptionPlaceholder')} className="mt-1" />
             </div>
 
             <div className="flex items-center gap-2">
               <Switch id="crole-active" checked={form.isActive}
                 onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} />
-              <Label htmlFor="crole-active">Rôle actif</Label>
+              <Label htmlFor="crole-active">{t('clientRoles.roleActive')}</Label>
             </div>
 
             {/* Color picker */}
             <div>
-              <Label className="mb-2 block">Couleur</Label>
+              <Label className="mb-2 block">{t('clientRoles.color')}</Label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {SWATCHES.map(c => (
                   <button key={c} onClick={() => selectColor(c)}
@@ -269,10 +272,10 @@ export function AdminClientRolesPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalOpen(false)} disabled={saving}>
-              Annuler
+              {t('clientRoles.cancel')}
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? 'Enregistrement...' : (editTarget ? 'Enregistrer' : 'Créer')}
+              {saving ? t('clientRoles.saving') : (editTarget ? t('clientRoles.save') : t('clientRoles.create'))}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -281,13 +284,13 @@ export function AdminClientRolesPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={open => !open && setDeleteTarget(null)}
-        title="Supprimer le rôle"
+        title={t('clientRoles.deleteTitle')}
         description={
           deleteTarget?._count?.clients
-            ? `Ce rôle est utilisé par ${deleteTarget._count.clients} client(s) et ne peut pas être supprimé.`
-            : `Supprimer le rôle "${deleteTarget?.name}" ? Cette action est irréversible.`
+            ? t('clientRoles.deleteInUse', { count: deleteTarget._count.clients })
+            : t('clientRoles.deleteConfirm', { name: deleteTarget?.name })
         }
-        confirmLabel={deleteTarget?._count?.clients ? 'Fermer' : 'Supprimer'}
+        confirmLabel={deleteTarget?._count?.clients ? t('clientRoles.close') : t('clientRoles.delete')}
         variant={deleteTarget?._count?.clients ? 'default' : 'destructive'}
         loading={deleting}
         onConfirm={deleteTarget?._count?.clients ? () => setDeleteTarget(null) : handleDelete}
