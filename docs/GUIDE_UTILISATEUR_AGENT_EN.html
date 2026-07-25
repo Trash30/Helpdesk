@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Guide — Helpdesk VOGO</title>
+<style>
+/* ═══════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1e293b;background:#f8fafc;line-height:1.7;font-size:15px}
+
+/* ═══════════════════════════════════════════
+   LAYOUT DU GUIDE
+═══════════════════════════════════════════ */
+.guide-header{background:linear-gradient(135deg,#185FA5 0%,#0f3d6e 100%);color:white;padding:48px 60px;position:relative;overflow:hidden}
+.guide-header::after{content:'VOGO';position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-size:120px;font-weight:900;opacity:.06;letter-spacing:-4px}
+.guide-header h1{font-size:32px;font-weight:700;letter-spacing:-.5px}
+.guide-header p{margin-top:8px;opacity:.85;font-size:16px}
+.guide-header .meta{margin-top:20px;display:flex;gap:24px;font-size:13px;opacity:.7}
+.guide-header .meta span::before{content:'•';margin-right:6px}
+.guide-header .meta span:first-child::before{content:''}
+
+.toc{background:white;border-bottom:1px solid #e2e8f0;padding:24px 60px;position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.toc-inner{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.toc-label{font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-right:8px}
+.toc a{text-decoration:none;color:#475569;font-size:13px;padding:4px 12px;border-radius:20px;border:1px solid #e2e8f0;transition:all .15s;white-space:nowrap}
+.toc a:hover{background:#185FA5;color:white;border-color:#185FA5}
+
+.content{max-width:960px;margin:0 auto;padding:48px 40px}
+
+section{margin-bottom:64px}
+section h2{font-size:22px;font-weight:700;color:#0f172a;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+section h2 .num{background:#185FA5;color:white;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+.section-intro{color:#64748b;margin-bottom:24px;font-size:15px;border-left:3px solid #185FA5;padding-left:14px}
+
+h3{font-size:16px;font-weight:600;color:#1e293b;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid #f1f5f9}
+h4{font-size:14px;font-weight:600;color:#475569;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.05em}
+
+p{margin-bottom:12px;color:#374151}
+ul,ol{margin:10px 0 16px 20px;color:#374151}
+li{margin-bottom:6px}
+
+.tip{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;font-size:14px;color:#1e40af;margin:16px 0;display:flex;gap:10px}
+.tip::before{content:'💡';flex-shrink:0}
+.warn{background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;font-size:14px;color:#92400e;margin:16px 0;display:flex;gap:10px}
+.warn::before{content:'⚠️';flex-shrink:0}
+
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+th{background:#f8fafc;padding:10px 14px;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0}
+td{padding:9px 14px;border-bottom:1px solid #f1f5f9;color:#374151;vertical-align:top}
+tr:last-child td{border-bottom:none}
+
+kbd{background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:2px 7px;font-family:monospace;font-size:12px;color:#334155}
+
+/* ═══════════════════════════════════════════
+   FRAME ÉCRAN (mockup)
+═══════════════════════════════════════════ */
+.screen{border-radius:10px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.15);margin:20px 0 32px;border:1px solid #e2e8f0;font-size:12px;line-height:1.4;background:white}
+.screen-bar{background:#f1f5f9;border-bottom:1px solid #e2e8f0;padding:8px 14px;display:flex;align-items:center;gap:7px}
+.sd{width:11px;height:11px;border-radius:50%}
+.sd.r{background:#ff5f57}.sd.y{background:#febc2e}.sd.g{background:#28c840}
+.screen-url{margin-left:10px;background:white;border:1px solid #e2e8f0;border-radius:6px;padding:3px 12px;font-size:11px;color:#94a3b8;flex:1;max-width:340px}
+
+/* ═══════════════════════════════════════════
+   APP SHELL (sidebar + content)
+═══════════════════════════════════════════ */
+.app{display:flex;min-height:420px;background:#f8fafc}
+.sidebar{width:210px;background:#0f172a;padding:16px 0;flex-shrink:0;display:flex;flex-direction:column}
+.sidebar-logo{padding:8px 16px 20px;border-bottom:1px solid #1e293b}
+.sidebar-logo-text{color:white;font-weight:800;font-size:15px;letter-spacing:-.3px}
+.sidebar-logo-sub{color:#64748b;font-size:10px;margin-top:1px}
+.sidebar-nav{padding:12px 8px;flex:1}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:7px;color:#94a3b8;font-size:12px;font-weight:500;margin-bottom:2px;cursor:default}
+.nav-item.active{background:#185FA5;color:white}
+.nav-item:hover:not(.active){background:#1e293b;color:#cbd5e1}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.8}
+.nav-item.active .nav-icon{opacity:1}
+.sidebar-user{padding:12px 16px;border-top:1px solid #1e293b;display:flex;align-items:center;gap:9px}
+.user-avatar-sm{width:28px;height:28px;border-radius:7px;background:#185FA5;color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.user-info-sm{min-width:0}
+.user-name-sm{color:#e2e8f0;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role-sm{color:#64748b;font-size:10px}
+
+.main-content{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{background:white;border-bottom:1px solid #e2e8f0;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-weight:600;color:#0f172a;font-size:13px}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.page-body{padding:16px 20px;flex:1}
+
+/* ═══════════════════════════════════════════
+   COMPOSANTS UI
+═══════════════════════════════════════════ */
+/* Boutons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-size:12px;font-weight:500;cursor:default;border:none;white-space:nowrap}
+.btn-primary{background:#185FA5;color:white}
+.btn-secondary{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
+.btn-ghost{background:transparent;color:#185FA5;border:1px solid #bfdbfe}
+.btn-danger{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.btn-sm{padding:4px 10px;font-size:11px;border-radius:5px}
+.btn-icon{width:28px;height:28px;padding:0;justify-content:center}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.badge-open{background:#dbeafe;color:#1d4ed8}
+.badge-progress{background:#fef3c7;color:#d97706}
+.badge-pending{background:#f3e8ff;color:#7c3aed}
+.badge-closed{background:#dcfce7;color:#16a34a}
+.badge-critical{background:#fee2e2;color:#dc2626}
+.badge-high{background:#ffedd5;color:#ea580c}
+.badge-medium{background:#fef9c3;color:#ca8a04}
+.badge-low{background:#f1f5f9;color:#64748b}
+.badge-vert{background:#dcfce7;color:#16a34a}
+.badge-orange{background:#ffedd5;color:#ea580c}
+.badge-rouge{background:#fee2e2;color:#dc2626}
+.badge-internal{background:#fef9c3;color:#92400e;border:1px dashed #fde68a}
+
+/* KPI Cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.kpi-card{background:white;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;cursor:default}
+.kpi-card:hover{border-color:#185FA5}
+.kpi-label{font-size:10px;color:#94a3b8;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.kpi-value{font-size:22px;font-weight:700;color:#0f172a;margin:4px 0}
+.kpi-sub{font-size:10px;color:#64748b}
+.kpi-card.blue .kpi-value{color:#185FA5}
+.kpi-card.green .kpi-value{color:#16a34a}
+.kpi-card.amber .kpi-value{color:#d97706}
+.kpi-card.red .kpi-value{color:#dc2626}
+
+/* Inputs */
+.input{background:white;border:1px solid #e2e8f0;border-radius:7px;padding:7px 11px;font-size:12px;color:#1e293b;width:100%}
+.input:focus-like{border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.label{font-size:11px;font-weight:500;color:#64748b;margin-bottom:4px;display:block}
+.form-group{margin-bottom:12px}
+select.input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2394a3b8'%3E%3Cpath d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:14px;padding-right:28px}
+
+/* Cards */
+.card{background:white;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+.card-header{padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between}
+.card-title{font-weight:600;font-size:13px;color:#0f172a}
+.card-body{padding:14px 16px}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse;font-size:11px}
+.data-table th{background:#f8fafc;padding:8px 10px;text-align:left;font-weight:600;color:#64748b;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+.data-table td{padding:8px 10px;border-bottom:1px solid #f8fafc;color:#374151;vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#f8fafc}
+
+/* Toggle */
+.toggle{display:inline-flex;width:32px;height:18px;border-radius:9px;background:#e2e8f0;position:relative;cursor:default;flex-shrink:0}
+.toggle.on{background:#185FA5}
+.toggle::after{content:'';width:14px;height:14px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:left .15s}
+.toggle.on::after{left:16px}
+
+/* Textarea */
+.textarea{background:white;border:1px solid #e2e8f0;border-radius:7px;padding:9px 11px;font-size:12px;color:#374151;width:100%;min-height:64px;resize:none}
+
+/* Divider */
+hr{border:none;border-top:1px solid #f1f5f9;margin:16px 0}
+
+/* Avatar */
+.avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0}
+
+/* Progress bar */
+.progress{background:#f1f5f9;border-radius:20px;height:6px;overflow:hidden}
+.progress-fill{height:100%;border-radius:20px}
+
+/* Overlay dialog */
+.dialog-overlay{background:rgba(15,23,42,.5);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10}
+.dialog{background:white;border-radius:12px;padding:20px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.dialog-title{font-size:14px;font-weight:700;color:#0f172a;margin-bottom:6px}
+.dialog-desc{font-size:12px;color:#64748b;margin-bottom:14px}
+
+/* Feu tricolore */
+.traffic{display:flex;gap:8px;margin-bottom:12px}
+.traffic-btn{padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:default;border:2px solid transparent;display:flex;align-items:center;gap:5px}
+.traffic-btn.vert{background:#dcfce7;color:#16a34a;border-color:#16a34a}
+.traffic-btn.orange{background:#f1f5f9;color:#94a3b8;border-color:#e2e8f0}
+.traffic-btn.rouge{background:#f1f5f9;color:#94a3b8;border-color:#e2e8f0}
+.traffic-dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+
+/* Chart helpers */
+.chart-bar{background:#e2e8f0;border-radius:4px;height:8px;margin-bottom:6px;overflow:hidden;display:flex;align-items:center}
+.chart-bar-fill{height:100%;border-radius:4px;background:#185FA5}
+.chart-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chart-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:#64748b}
+.chart-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* Slider panel */
+.slide-panel{position:absolute;right:0;top:0;bottom:0;width:240px;background:white;border-left:1px solid #e2e8f0;padding:14px;box-shadow:-4px 0 20px rgba(0,0,0,.08);z-index:5}
+
+/* Match row */
+.match-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#f8fafc;margin-bottom:6px;border:1px solid #f1f5f9}
+.match-teams{flex:1;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:#1e293b}
+.team-logo{width:18px;height:18px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#64748b;flex-shrink:0;overflow:hidden}
+.match-vs{color:#94a3b8;font-size:10px}
+.match-time{font-size:10px;color:#64748b;white-space:nowrap;flex-shrink:0}
+.match-actions{display:flex;gap:4px;flex-shrink:0}
+.match-note-btn{width:22px;height:22px;border-radius:5px;background:white;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:9px;cursor:default}
+.comp-header{display:flex;align-items:center;gap:8px;padding:6px 0;margin-bottom:6px;border-bottom:1px solid #f1f5f9}
+.comp-favicon{width:16px;height:16px;border-radius:3px;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:7px;color:white;font-weight:700}
+.comp-name{font-size:11px;font-weight:700;color:#0f172a}
+.comp-count{margin-left:auto;font-size:10px;color:#94a3b8}
+
+/* Timeline */
+.timeline{display:flex;flex-direction:column;gap:0}
+.timeline-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f8fafc}
+.timeline-item:last-child{border-bottom:none}
+.timeline-avatar{flex-shrink:0;padding-top:2px}
+.timeline-body{flex:1;min-width:0}
+.timeline-header{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+.timeline-author{font-size:11px;font-weight:600;color:#0f172a}
+.timeline-time{font-size:10px;color:#94a3b8}
+.timeline-text{font-size:11px;color:#374151;line-height:1.5}
+.timeline-item.internal{background:#fefce8;border-radius:8px;padding:10px;margin-bottom:6px;border:1px solid #fef08a}
+.timeline-log{font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:6px;padding:6px 0}
+.timeline-log::before{content:'';width:16px;height:1px;background:#e2e8f0;flex-shrink:0}
+
+/* Status workflow */
+.workflow{display:flex;align-items:center;gap:0;margin:12px 0}
+.wf-step{padding:6px 12px;font-size:11px;font-weight:500;color:#94a3b8;background:#f1f5f9;flex:1;text-align:center}
+.wf-step.active{background:#185FA5;color:white}
+.wf-step.done{background:#dcfce7;color:#16a34a}
+.wf-arrow{color:#cbd5e1;font-size:12px;flex-shrink:0}
+.wf-step:first-child{border-radius:6px 0 0 6px}
+.wf-step:last-child{border-radius:0 6px 6px 0}
+
+/* Filter bar */
+.filter-bar{background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.filter-input{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:5px 10px;font-size:11px;color:#374151;width:150px}
+.filter-select{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:5px 10px;font-size:11px;color:#374151;appearance:none;padding-right:20px}
+
+/* Rich text toolbar */
+.editor-toolbar{background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px 7px 0 0;padding:6px 10px;display:flex;gap:4px;align-items:center}
+.toolbar-btn{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:default;background:white;border:1px solid #e2e8f0;color:#374151}
+.toolbar-btn:hover{background:#185FA5;color:white}
+.toolbar-sep{width:1px;height:16px;background:#e2e8f0;margin:0 2px}
+.editor-body{background:white;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 7px 7px;padding:10px 12px;font-size:12px;color:#374151;min-height:80px}
+
+/* Login specific */
+.login-card{background:white;border:1px solid #e2e8f0;border-radius:12px;padding:32px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,.08)}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo-mark{display:inline-block;width:48px;height:48px;background:#185FA5;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:20px;font-weight:900;color:white}
+.login-title{font-size:18px;font-weight:700;color:#0f172a;text-align:center;margin-bottom:4px}
+.login-sub{font-size:12px;color:#94a3b8;text-align:center;margin-bottom:24px}
+
+/* Checkbox */
+.checkbox-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;border:1px solid #e2e8f0;background:white;margin-bottom:6px;cursor:default}
+.checkbox{width:16px;height:16px;border-radius:4px;border:1.5px solid #e2e8f0;background:white;flex-shrink:0}
+.checkbox.checked{background:#185FA5;border-color:#185FA5;display:flex;align-items:center;justify-content:center}
+.checkbox.checked::after{content:'✓';color:white;font-size:10px;font-weight:700}
+.checkbox-label{font-size:12px;color:#374151;font-weight:500}
+.checkbox-row.checked-row{border-color:#bfdbfe;background:#f0f9ff}
+
+/* Donut chart */
+.donut-wrap{position:relative;width:90px;height:90px;flex-shrink:0}
+.donut-svg{}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#0f172a;line-height:1.1}
+.donut-center small{font-size:9px;color:#94a3b8;font-weight:400}
+
+/* Fullscreen centered */
+.centered-page{display:flex;align-items:center;justify-content:center;min-height:380px;background:#f8fafc}
+
+/* Print */
+@media print{
+  .toc{position:static}
+  .screen{break-inside:avoid;page-break-inside:avoid}
+  section{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ HEADER -->
+<div class="guide-header">
+  <h1>User Guide — Helpdesk VOGO</h1>
+  <p>All application features explained and illustrated</p>
+  <div class="meta">
+    <span>Support agents, Supervisors, Administrators</span>
+    <span>June 2026 — v2</span>
+    <span>helpdesk.local</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ TOC -->
+<div class="toc">
+  <div class="toc-inner">
+    <span class="toc-label">Contents</span>
+    <a href="#login">1. Login</a>
+    <a href="#dashboard">2. Dashboard</a>
+    <a href="#tickets">3. Tickets</a>
+    <a href="#clients">4. Clients</a>
+    <a href="#sports">5. Sports</a>
+    <a href="#kb">6. Knowledge base</a>
+    <a href="#profile">7. My profile</a>
+    <a href="#admin">8. Administration</a>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ══════════════════════════════════════════════════════
+     1. LOGIN
+══════════════════════════════════════════════════════ -->
+<section id="login">
+  <h2><span class="num">1</span> Login</h2>
+  <p class="section-intro">Access <strong>http://helpdesk.local</strong> from any workstation on the internal network.</p>
+
+  <!-- MOCKUP LOGIN -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/login</div>
+    </div>
+    <div class="centered-page">
+      <div class="login-card">
+        <div class="login-logo">
+          <div class="login-logo-mark">V</div>
+          <div class="login-title">Helpdesk VOGO</div>
+          <div class="login-sub">Sign in to your support workspace</div>
+        </div>
+        <div class="form-group">
+          <div class="label">Email address</div>
+          <div class="input" style="color:#94a3b8">agent@vogo.fr</div>
+        </div>
+        <div class="form-group">
+          <div class="label">Password</div>
+          <div class="input" style="color:#94a3b8">••••••••</div>
+        </div>
+        <div class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;padding:10px 0">Login</div>
+        <div style="text-align:center;margin-top:12px;font-size:11px;color:#185FA5">Forgot password?</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Login process</h3>
+  <ol>
+    <li>Enter your <strong>email address</strong> and <strong>password</strong> provided by the administrator</li>
+    <li>Click <strong>Login</strong> — the session lasts <strong>8 hours</strong> then expires automatically</li>
+    <li><strong>First access:</strong> a password change is required before accessing the application</li>
+  </ol>
+
+  <div class="tip">The password must contain at least 8 characters, one uppercase letter and one digit. A strength indicator is displayed as you type.</div>
+
+  <h3>Forgotten password</h3>
+  <p>Click <strong>"Forgot password?"</strong> → enter the email address → a reset link is sent by email (valid for 24h, single use).</p>
+
+  <h3>Logout</h3>
+  <p>Click the <strong>avatar</strong> at the top left of the sidebar → <strong>Log out</strong>.</p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     2. DASHBOARD
+══════════════════════════════════════════════════════ -->
+<section id="dashboard">
+  <h2><span class="num">2</span> Dashboard</h2>
+  <p class="section-intro">Home page: real-time overview of support activity. Refreshes automatically every 60 seconds.</p>
+
+  <!-- MOCKUP DASHBOARD -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/dashboard</div>
+    </div>
+    <div class="app">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-text">Helpdesk VOGO</div>
+          <div class="sidebar-logo-sub">Technical support</div>
+        </div>
+        <div class="sidebar-nav">
+          <div class="nav-item active">
+            <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+            Dashboard
+          </div>
+          <div class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v1H2V3zm0 3h12v7a1 1 0 01-1 1H3a1 1 0 01-1-1V6zm4 2a1 1 0 000 2h4a1 1 0 000-2H6z"/></svg>
+            Tickets
+          </div>
+          <div class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-4 6a4 4 0 018 0H4z"/></svg>
+            Clients
+          </div>
+          <div class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="1" width="12" height="14" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="5" x2="11" y2="5" stroke="currentColor" stroke-width="1.5"/><line x1="5" y1="8" x2="9" y2="8" stroke="currentColor" stroke-width="1.5"/></svg>
+            Events
+          </div>
+          <div class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M3 1a1 1 0 00-1 1v12l3-2 2 2 2-2 3 2V2a1 1 0 00-1-1H3z"/></svg>
+            Knowledge base
+          </div>
+        </div>
+        <div class="sidebar-user">
+          <div class="user-avatar-sm">NB</div>
+          <div class="user-info-sm">
+            <div class="user-name-sm">N. Broutin</div>
+            <div class="user-role-sm">Administrator</div>
+          </div>
+        </div>
+      </div>
+      <!-- Main -->
+      <div class="main-content">
+        <div class="topbar">
+          <div class="topbar-title">Dashboard</div>
+          <div class="topbar-actions">
+            <div style="font-size:10px;color:#94a3b8">Updated 12s ago</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <!-- KPIs -->
+          <div class="kpi-grid">
+            <div class="kpi-card blue">
+              <div class="kpi-label">Open tickets</div>
+              <div class="kpi-value">14</div>
+              <div class="kpi-sub">↑ 2 since yesterday</div>
+            </div>
+            <div class="kpi-card amber">
+              <div class="kpi-label">In progress</div>
+              <div class="kpi-value">7</div>
+              <div class="kpi-sub">assigned</div>
+            </div>
+            <div class="kpi-card green">
+              <div class="kpi-label">Closed today</div>
+              <div class="kpi-value">5</div>
+              <div class="kpi-sub">since 00:00</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Events today</div>
+              <div class="kpi-value">3</div>
+              <div class="kpi-sub">matches in progress</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">This week</div>
+              <div class="kpi-value">11</div>
+              <div class="kpi-sub">matches in total</div>
+            </div>
+            <div class="kpi-card red">
+              <div class="kpi-label">Awaiting update</div>
+              <div class="kpi-value">3</div>
+              <div class="kpi-sub">+5 days without reply</div>
+            </div>
+          </div>
+          <!-- Charts row -->
+          <div style="display:grid;grid-template-columns:1fr 140px;gap:10px;margin-bottom:12px">
+            <div class="card">
+              <div class="card-header"><div class="card-title">Tickets created — 30 days</div></div>
+              <div class="card-body" style="padding:10px 14px 8px">
+                <svg viewBox="0 0 400 60" style="width:100%;display:block">
+                  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#185FA5" stop-opacity=".15"/><stop offset="100%" stop-color="#185FA5" stop-opacity="0"/></linearGradient></defs>
+                  <polyline points="0,50 40,42 80,45 120,28 160,32 200,22 240,35 280,18 320,24 360,14 400,19" fill="none" stroke="#185FA5" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M0,50 40,42 80,45 120,28 160,32 200,22 240,35 280,18 320,24 360,14 400,19 400,60 0,60Z" fill="url(#g)"/>
+                  <line x1="0" y1="55" x2="400" y2="55" stroke="#f1f5f9" stroke-width="1"/>
+                  <text x="0" y="60" font-size="7" fill="#94a3b8">May 17</text>
+                  <text x="180" y="60" font-size="7" fill="#94a3b8">Jun 1</text>
+                  <text x="370" y="60" font-size="7" fill="#94a3b8">Jun 14</text>
+                </svg>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Priority</div></div>
+              <div class="card-body" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px">
+                <div class="donut-wrap">
+                  <svg class="donut-svg" viewBox="0 0 90 90">
+                    <circle cx="45" cy="45" r="35" fill="none" stroke="#ef4444" stroke-width="14" stroke-dasharray="22 198" stroke-dashoffset="0"/>
+                    <circle cx="45" cy="45" r="35" fill="none" stroke="#f97316" stroke-width="14" stroke-dasharray="55 198" stroke-dashoffset="-22"/>
+                    <circle cx="45" cy="45" r="35" fill="none" stroke="#eab308" stroke-width="14" stroke-dasharray="88 198" stroke-dashoffset="-77"/>
+                    <circle cx="45" cy="45" r="35" fill="none" stroke="#94a3b8" stroke-width="14" stroke-dasharray="33 198" stroke-dashoffset="-165"/>
+                  </svg>
+                  <div class="donut-center"><span>21</span><small>active</small></div>
+                </div>
+                <div class="chart-legend" style="flex-direction:column;gap:3px">
+                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#ef4444"></div>Critical · 5</div>
+                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#f97316"></div>High · 8</div>
+                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#eab308"></div>Medium · 6</div>
+                  <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#94a3b8"></div>Low · 2</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Urgent tickets table -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Urgent tickets</div>
+              <div style="font-size:10px;color:#185FA5">View all →</div>
+            </div>
+            <div style="overflow:auto">
+              <table class="data-table">
+                <thead><tr><th>#</th><th>Client</th><th>Title</th><th>Priority</th><th>Status</th><th>Assigned</th></tr></thead>
+                <tbody>
+                  <tr><td style="color:#185FA5">TK-0128</td><td>PSG Handball</td><td>IPTV feed down in the stand</td><td><span class="badge badge-critical">CRITICAL</span></td><td><span class="badge badge-open">OPEN</span></td><td>N. Broutin</td></tr>
+                  <tr><td style="color:#185FA5">TK-0125</td><td>Racing 92</td><td>Locker room screen out of service</td><td><span class="badge badge-high">HIGH</span></td><td><span class="badge badge-progress">IN PROGRESS</span></td><td>M. Dupont</td></tr>
+                  <tr><td style="color:#185FA5">TK-0119</td><td>Stade Toulousain</td><td>Microphone sound cut during broadcast</td><td><span class="badge badge-high">HIGH</span></td><td><span class="badge badge-open">OPEN</span></td><td>—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>KPI counters</h3>
+  <p>Each card is <strong>clickable</strong> and opens the corresponding filtered ticket list (or the events page for sports cards).</p>
+
+  <table>
+    <thead><tr><th>Card</th><th>Action on click</th></tr></thead>
+    <tbody>
+      <tr><td>Open tickets</td><td>Filtered list → OPEN status</td></tr>
+      <tr><td>In progress</td><td>Filtered list → IN_PROGRESS status</td></tr>
+      <tr><td>Closed today</td><td>Filtered list → closed today</td></tr>
+      <tr><td>Events today</td><td>Today's events page</td></tr>
+      <tr><td>This week</td><td>Scrolls to the sports widget</td></tr>
+      <tr><td>Awaiting update</td><td>Tickets with no update for +5 days</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     3. TICKETS
+══════════════════════════════════════════════════════ -->
+<section id="tickets">
+  <h2><span class="num">3</span> Tickets</h2>
+  <p class="section-intro">Central module for managing support requests — from creation through to closing.</p>
+
+  <h3>3.1 — Ticket list</h3>
+
+  <!-- MOCKUP LISTE TICKETS -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/tickets</div>
+    </div>
+    <div class="app">
+      <div class="sidebar" style="width:44px;padding:8px 0">
+        <div style="height:100%;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:14px">
+          <div style="width:28px;height:28px;background:#185FA5;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:white">V</div>
+          <div style="width:28px;height:28px;background:#1e293b;border-radius:6px;display:flex;align-items:center;justify-content:center;opacity:.5;font-size:9px;color:#94a3b8">⊞</div>
+          <div style="width:28px;height:28px;background:#185FA5;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;color:white">🎫</div>
+          <div style="width:28px;height:28px;background:#1e293b;border-radius:6px;display:flex;align-items:center;justify-content:center;opacity:.5;font-size:9px;color:#94a3b8">👤</div>
+        </div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <div class="topbar-title">Tickets <span style="color:#94a3b8;font-weight:400">(47)</span></div>
+          <div class="topbar-actions">
+            <div class="btn btn-secondary btn-sm">📄 CSV</div>
+            <div class="btn btn-secondary btn-sm">📑 PDF</div>
+            <div class="btn btn-primary btn-sm">+ New ticket</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <!-- Filtres -->
+          <div class="filter-bar">
+            <input class="filter-input" value="🔍  Search..." readonly style="opacity:.6">
+            <select class="filter-select"><option>Status: OPEN, IN PROGRESS, PEND.</option></select>
+            <select class="filter-select"><option>Priority: All</option></select>
+            <select class="filter-select"><option>Category: All</option></select>
+            <div class="btn btn-ghost btn-sm">My tickets</div>
+            <div class="btn btn-secondary btn-sm" style="margin-left:auto;font-size:10px;color:#94a3b8">Reset filters</div>
+          </div>
+          <!-- Table -->
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Client</th><th>Title</th><th>Category</th><th>Priority</th><th>Status</th><th>Assigned</th><th>Created on</th></tr></thead>
+            <tbody>
+              <tr>
+                <td style="color:#185FA5;font-weight:600">TK-0128</td>
+                <td>PSG Handball</td>
+                <td>IPTV feed down in the press stand</td>
+                <td style="color:#64748b">Network</td>
+                <td><span class="badge badge-critical">CRITICAL</span></td>
+                <td><span class="badge badge-open">OPEN</span></td>
+                <td>N. Broutin</td>
+                <td style="color:#94a3b8;font-size:10px">2h ago</td>
+              </tr>
+              <tr>
+                <td style="color:#185FA5;font-weight:600">TK-0127</td>
+                <td>Racing 92</td>
+                <td>Locker room screen out of service</td>
+                <td style="color:#64748b">Hardware</td>
+                <td><span class="badge badge-high">HIGH</span></td>
+                <td><span class="badge badge-progress">IN PROGRESS</span></td>
+                <td>M. Dupont</td>
+                <td style="color:#94a3b8;font-size:10px">yesterday 16:42</td>
+              </tr>
+              <tr>
+                <td style="color:#185FA5;font-weight:600">TK-0126</td>
+                <td>Montpellier HB</td>
+                <td>Access to commentator portal</td>
+                <td style="color:#64748b">Access</td>
+                <td><span class="badge badge-medium">MEDIUM</span></td>
+                <td><span class="badge badge-pending">PENDING</span></td>
+                <td>—</td>
+                <td style="color:#94a3b8;font-size:10px">Jun 12</td>
+              </tr>
+              <tr>
+                <td style="color:#185FA5;font-weight:600">TK-0125</td>
+                <td>Stade Toulousain</td>
+                <td>Microphone sound cut during broadcast</td>
+                <td style="color:#64748b">Audio/Video</td>
+                <td><span class="badge badge-high">HIGH</span></td>
+                <td><span class="badge badge-open">OPEN</span></td>
+                <td>—</td>
+                <td style="color:#94a3b8;font-size:10px">Jun 11</td>
+              </tr>
+              <tr>
+                <td style="color:#185FA5;font-weight:600">TK-0124</td>
+                <td>La Rochelle</td>
+                <td>Encoding software update</td>
+                <td style="color:#64748b">Software</td>
+                <td><span class="badge badge-low">LOW</span></td>
+                <td><span class="badge badge-closed">CLOSED</span></td>
+                <td>N. Broutin</td>
+                <td style="color:#94a3b8;font-size:10px">Jun 9</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:11px;color:#94a3b8">
+            <span>47 tickets • page 1/2</span>
+            <div style="display:flex;gap:4px">
+              <div class="btn btn-secondary btn-sm">← Prev.</div>
+              <div class="btn btn-primary btn-sm">Next →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Available filters</h4>
+  <table>
+    <thead><tr><th>Filter</th><th>Usage</th></tr></thead>
+    <tbody>
+      <tr><td>Text search</td><td>Searches the number, title and client name (400 ms delay)</td></tr>
+      <tr><td>Status</td><td>Multi-select: OPEN / IN_PROGRESS / PENDING / CLOSED</td></tr>
+      <tr><td>Priority</td><td>Multi-select: CRITICAL / HIGH / MEDIUM / LOW</td></tr>
+      <tr><td>Category</td><td>Filter by request type</td></tr>
+      <tr><td>My tickets</td><td>Shows only tickets assigned to you</td></tr>
+      <tr><td>Organisation / Club</td><td>Filter by client structure</td></tr>
+      <tr><td>Creation date</td><td>Start / end period</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:10px">Export: <strong>CSV</strong> (Excel) and landscape <strong>PDF</strong> (max 1,000 rows) buttons top right.</p>
+
+  <h3>3.2 — Create a ticket</h3>
+  <p><strong>"+ New ticket"</strong> button at the top of the list.</p>
+
+  <!-- MOCKUP CREATION -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/tickets/new</div>
+    </div>
+    <div class="app">
+      <div class="sidebar" style="width:44px;background:#0f172a"></div>
+      <div class="main-content">
+        <div class="topbar"><div class="topbar-title">New ticket</div></div>
+        <div class="page-body">
+          <div style="max-width:560px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="form-group" style="grid-column:1/-1">
+                <div class="label">Title *</div>
+                <div class="input" style="color:#1e293b">IPTV feed down in the press stand</div>
+              </div>
+              <div class="form-group" style="grid-column:1/-1">
+                <div class="label">Description</div>
+                <div class="textarea" style="color:#374151">Since 6:30 PM, the IPTV feed no longer displays on the screens in the press stand (section C). The locker room screens are working normally.</div>
+              </div>
+              <div class="form-group">
+                <div class="label">Client *</div>
+                <div class="input" style="color:#1e293b">PSG Handball — Jean Martin</div>
+              </div>
+              <div class="form-group">
+                <div class="label">Category *</div>
+                <select class="input"><option>Network</option></select>
+              </div>
+              <div class="form-group">
+                <div class="label">Priority *</div>
+                <select class="input"><option>CRITICAL</option></select>
+              </div>
+              <div class="form-group">
+                <div class="label">Type</div>
+                <select class="input"><option>Incident</option></select>
+              </div>
+              <div class="form-group">
+                <div class="label">Division</div>
+                <select class="input"><option>Production</option></select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <div class="btn btn-primary">Create ticket</div>
+              <div class="btn btn-secondary">Cancel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>3.3 — Process a ticket</h3>
+
+  <!-- MOCKUP DETAIL TICKET -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/tickets/tk-0128</div>
+    </div>
+    <div class="app">
+      <div class="sidebar" style="width:44px;background:#0f172a"></div>
+      <div class="main-content">
+        <div class="topbar">
+          <div style="font-size:11px;color:#94a3b8">Tickets / <span style="color:#185FA5">TK-0128</span></div>
+        </div>
+        <div style="display:flex;flex:1;min-height:0">
+          <!-- Colonne gauche -->
+          <div style="flex:1;padding:14px;min-width:0;overflow:auto;border-right:1px solid #f1f5f9">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+              <div>
+                <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:6px">IPTV feed down in the press stand</div>
+                <div style="display:flex;gap:6px">
+                  <span class="badge badge-open">OPEN</span>
+                  <span class="badge badge-critical">CRITICAL</span>
+                </div>
+              </div>
+            </div>
+            <div style="background:#f8fafc;border-radius:7px;padding:10px;font-size:11px;color:#374151;margin-bottom:12px">
+              Since 6:30 PM, the IPTV feed no longer displays on the screens in the press stand (section C). The locker room screens are working normally.
+            </div>
+            <!-- Workflow -->
+            <div class="workflow">
+              <div class="wf-step done">OPEN</div>
+              <div class="wf-step active">IN PROGRESS</div>
+              <div class="wf-step">PENDING</div>
+              <div class="wf-step">CLOSED</div>
+            </div>
+            <!-- Timeline -->
+            <div style="margin-top:12px">
+              <div class="timeline-log">2h ago — Ticket created by N. Broutin</div>
+              <div class="timeline-log">1h30 ago — Status changed: OPEN → IN PROGRESS</div>
+              <div class="timeline-item">
+                <div class="timeline-avatar">
+                  <div class="avatar" style="background:#185FA5;width:24px;height:24px;font-size:9px">NB</div>
+                </div>
+                <div class="timeline-body">
+                  <div class="timeline-header">
+                    <div class="timeline-author">N. Broutin</div>
+                    <div class="timeline-time">1h ago</div>
+                  </div>
+                  <div class="timeline-text">I checked the switch on the control room side. A port seems to have lost its VLAN configuration. Investigation in progress.</div>
+                </div>
+              </div>
+              <div class="timeline-item internal">
+                <div class="timeline-avatar">
+                  <div class="avatar" style="background:#ca8a04;width:24px;height:24px;font-size:9px">MD</div>
+                </div>
+                <div class="timeline-body">
+                  <div class="timeline-header">
+                    <div class="timeline-author">M. Dupont</div>
+                    <span class="badge badge-internal">Internal note</span>
+                    <div class="timeline-time">30min ago</div>
+                  </div>
+                  <div class="timeline-text">Contact the stadium's network manager — number in the client profile.</div>
+                </div>
+              </div>
+            </div>
+            <!-- Zone commentaire -->
+            <div style="margin-top:12px;border:1px solid #e2e8f0;border-radius:8px;padding:10px">
+              <div class="editor-toolbar">
+                <div class="toolbar-btn">B</div>
+                <div class="toolbar-btn" style="font-style:italic">I</div>
+                <div class="toolbar-btn" style="font-family:monospace">`</div>
+                <div class="toolbar-sep"></div>
+                <div style="flex:1"></div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#64748b">
+                  Internal note <div class="toggle"></div>
+                </div>
+              </div>
+              <div class="editor-body" style="min-height:50px;color:#94a3b8">Add a comment… (Ctrl+Enter to send)</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+                <div style="font-size:10px;color:#94a3b8">📎 Attach files (max 5 × 5 MB)</div>
+                <div class="btn btn-primary btn-sm">Send</div>
+              </div>
+            </div>
+          </div>
+          <!-- Colonne droite -->
+          <div style="width:200px;padding:14px;flex-shrink:0;background:white">
+            <div style="margin-bottom:14px">
+              <div class="label">Status</div>
+              <select class="input"><option>IN PROGRESS</option></select>
+            </div>
+            <div style="margin-bottom:14px">
+              <div class="label">Priority</div>
+              <select class="input"><option>CRITICAL</option></select>
+            </div>
+            <div style="margin-bottom:14px">
+              <div class="label">Assigned to</div>
+              <select class="input"><option>N. Broutin</option></select>
+            </div>
+            <div style="margin-bottom:14px">
+              <div class="label">Category</div>
+              <select class="input"><option>Network</option></select>
+            </div>
+            <hr>
+            <div style="margin-bottom:10px">
+              <div class="label" style="margin-bottom:6px">Client</div>
+              <div style="font-size:11px;font-weight:600;color:#0f172a">Jean Martin</div>
+              <div style="font-size:10px;color:#185FA5">j.martin@psg.fr</div>
+              <div style="font-size:10px;color:#64748b">PSG Handball · Technical Director</div>
+            </div>
+            <hr>
+            <div style="font-size:10px;color:#94a3b8;line-height:1.7">
+              <div>Created on June 14 at 6:32 PM</div>
+              <div>By N. Broutin</div>
+              <div>Last update 30min ago</div>
+            </div>
+            <div class="btn btn-danger btn-sm" style="width:100%;justify-content:center;margin-top:12px">Close ticket</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Change the status</h4>
+  <p>Select the new status in the right panel. Two transitions require confirmation:</p>
+  <ul>
+    <li><strong>PENDING:</strong> a dialog asks for the reason for putting the ticket on hold</li>
+    <li><strong>CLOSED:</strong> a closing note is <strong>required</strong> (500 characters max)</li>
+  </ul>
+
+  <!-- MOCKUP DIALOG FERMETURE -->
+  <div class="screen" style="max-width:500px;margin:16px auto">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+    </div>
+    <div style="padding:24px;background:rgba(15,23,42,.4);display:flex;align-items:center;justify-content:center;min-height:200px">
+      <div class="dialog">
+        <div class="dialog-title">Close ticket TK-0128</div>
+        <div class="dialog-desc">Add a closing note describing the resolution of the issue.</div>
+        <div class="label">Closing note *</div>
+        <div class="textarea" style="margin-bottom:12px;color:#374151">VLAN 40 reconfigured on port 18 of the control room switch. IPTV feed restored at 8:15 PM. Tested in the presence of the network manager.</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <div class="btn btn-secondary btn-sm">Cancel</div>
+          <div class="btn btn-primary btn-sm">Confirm closing</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4>Internal notes</h4>
+  <p>The <strong>"Internal note"</strong> toggle in the comment area (yellow background) makes the comment visible only to agents — never to clients.</p>
+
+  <h4>Create a knowledge base article from a closed ticket</h4>
+  <p>After closing, if you have the <code>kb.write</code> permission, a dialog offers to create a pre-filled KB article with the ticket's title and comments. Useful for capturing resolutions for future reference.</p>
+
+  <div class="tip">Shortcuts: <kbd>Ctrl+Enter</kbd> to send a comment · <kbd>Ctrl+B</kbd> bold · <kbd>Ctrl+I</kbd> italic · <kbd>Ctrl+`</kbd> code</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     4. CLIENTS
+══════════════════════════════════════════════════════ -->
+<section id="clients">
+  <h2><span class="num">4</span> Clients</h2>
+  <p class="section-intro">Directory of external contacts associated with tickets. Organised as Organisations → Clubs → Contacts.</p>
+
+  <!-- MOCKUP CLIENTS -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/clients</div>
+    </div>
+    <div class="app">
+      <div class="sidebar" style="width:44px;background:#0f172a"></div>
+      <div class="main-content">
+        <div class="topbar">
+          <div class="topbar-title">Clients <span style="color:#94a3b8;font-weight:400">(83)</span></div>
+          <div class="topbar-actions"><div class="btn btn-primary btn-sm">+ New client</div></div>
+        </div>
+        <div class="page-body">
+          <div class="filter-bar">
+            <input class="filter-input" value="🔍  Search..." readonly style="opacity:.6">
+            <select class="filter-select"><option>Organisation: All</option></select>
+            <select class="filter-select"><option>Club: All</option></select>
+            <div class="btn btn-ghost btn-sm" style="font-size:10px">Open tickets only</div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Club</th><th>Role</th><th>Open tickets</th></tr></thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:600;color:#0f172a">Jean Martin</td>
+                <td style="color:#185FA5">j.martin@psg.fr</td>
+                <td>PSG Handball</td>
+                <td><span class="badge badge-open" style="font-size:9px">Technical Dir.</span></td>
+                <td style="text-align:center"><span class="badge badge-critical">2</span></td>
+              </tr>
+              <tr>
+                <td style="font-weight:600;color:#0f172a">Sophie Lefranc</td>
+                <td style="color:#185FA5">s.lefranc@racing92.fr</td>
+                <td>Racing 92</td>
+                <td><span class="badge badge-medium" style="font-size:9px">IT Manager</span></td>
+                <td style="text-align:center"><span class="badge badge-high">1</span></td>
+              </tr>
+              <tr>
+                <td style="font-weight:600;color:#0f172a">Marc Dubois</td>
+                <td style="color:#185FA5">m.dubois@stade-toulousain.fr</td>
+                <td>Stade Toulousain</td>
+                <td><span class="badge badge-medium" style="font-size:9px">Coordinator</span></td>
+                <td style="text-align:center;color:#94a3b8">0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Client profile</h3>
+  <p>Click on a client to access their full profile: contact details, ticket statistics and history.</p>
+  <p>Quick access from a ticket: click the <strong>client's name</strong> in the right panel → a side panel opens without leaving the ticket.</p>
+
+  <table>
+    <thead><tr><th>Information</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Total tickets</td><td>Cumulative number since the contact was created</td></tr>
+      <tr><td>Open tickets</td><td>Requests currently in progress</td></tr>
+      <tr><td>Average resolution time</td><td>Calculated on closed tickets</td></tr>
+      <tr><td>Full history</td><td>All of the contact's tickets, with statuses and dates</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     5. SPORTS
+══════════════════════════════════════════════════════ -->
+<section id="sports">
+  <h2><span class="num">5</span> Sports events</h2>
+  <p class="section-intro">Tracking of the week's matches, support notes and export of the weekly report.</p>
+
+  <h3>5.1 — Weekly calendar</h3>
+
+  <!-- MOCKUP SPORTS WIDGET -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/dashboard  ↓ bottom of page</div>
+    </div>
+    <div style="background:white;padding:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:700;color:#0f172a">⚽ Matches of the week</div>
+        <div style="display:flex;gap:6px">
+          <div class="btn btn-secondary btn-sm">↻ Refresh</div>
+          <div class="btn btn-primary btn-sm">📄 Export report</div>
+        </div>
+      </div>
+      <!-- TOP14 -->
+      <div class="comp-header">
+        <div class="comp-favicon">T</div>
+        <div class="comp-name">TOP 14</div>
+        <div class="comp-count">3 matches</div>
+      </div>
+      <div class="match-row">
+        <div class="match-teams">
+          <div class="team-logo">STT</div>
+          <span>Stade Toulousain</span>
+          <span class="match-vs">vs</span>
+          <span>Racing 92</span>
+          <div class="team-logo">R92</div>
+        </div>
+        <div class="match-time">Fri 21:05</div>
+        <div class="match-actions">
+          <div class="match-note-btn" style="background:#dcfce7;border-color:#16a34a;color:#16a34a">✓</div>
+          <div class="match-note-btn">📎</div>
+        </div>
+      </div>
+      <div class="match-row">
+        <div class="match-teams">
+          <div class="team-logo">UBB</div>
+          <span>Bordeaux-Bègles</span>
+          <span class="match-vs">vs</span>
+          <span>La Rochelle</span>
+          <div class="team-logo">SR</div>
+        </div>
+        <div class="match-time">Sat 16:00</div>
+        <div class="match-actions">
+          <div class="match-note-btn">📝</div>
+          <div class="match-note-btn">📎</div>
+        </div>
+      </div>
+      <!-- LNH -->
+      <div class="comp-header" style="margin-top:10px">
+        <div class="comp-favicon" style="background:#0284c7">H</div>
+        <div class="comp-name">Liqui Moly Starligue</div>
+        <div class="comp-count">2 matches</div>
+      </div>
+      <div class="match-row">
+        <div class="match-teams">
+          <div class="team-logo" style="background:#004170;color:white">PSG</div>
+          <span>PSG Handball</span>
+          <span class="match-vs">vs</span>
+          <span>Montpellier HB</span>
+          <div class="team-logo" style="background:#e8650a;color:white">MHB</div>
+        </div>
+        <div class="match-time">Thu 20:45</div>
+        <div class="match-actions">
+          <div class="match-note-btn" style="background:#ffedd5;border-color:#f97316;color:#ea580c">⚠</div>
+          <div class="match-note-btn">📎 1</div>
+        </div>
+      </div>
+      <!-- ELMS -->
+      <div class="comp-header" style="margin-top:10px">
+        <div class="comp-favicon" style="background:#16a34a">E</div>
+        <div class="comp-name">ELMS</div>
+        <div class="comp-count">1 event</div>
+      </div>
+      <div class="match-row" style="background:#f0fdf4;border-color:#bbf7d0">
+        <div style="flex:1">
+          <div style="font-size:10px;color:#16a34a;font-weight:600;margin-bottom:2px">4 Hours of Spa · <span style="background:#3b82f6;color:white;padding:1px 6px;border-radius:10px;font-size:9px">RACE</span> 🇧🇪</div>
+          <div style="font-size:11px;color:#374151">LMP2 · GT3 — Spa-Francorchamps Circuit</div>
+        </div>
+        <div class="match-time">Sat 11:00</div>
+        <div class="match-actions">
+          <div class="match-note-btn">📝</div>
+          <div class="match-note-btn">📎</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>Matches are <strong>filtered according to your preferences</strong> (see <a href="#profile">section 7 — Profile</a>). If no preference is configured, all competitions are shown.</p>
+  <p><strong>↻ Refresh</strong> button: forces a reload from the scraper (30 second cooldown).</p>
+
+  <h4>PDF attachments per match</h4>
+  <p>Click <strong>📎</strong> on a match to attach a PDF (route sheet, mission order…). Max size 10 MB. <strong>Files are automatically deleted 6h after the match.</strong></p>
+
+  <h3>5.2 — Support notes (editor)</h3>
+  <p>Click <strong>📝</strong> or <strong>"Note"</strong> on a match to open the editor.</p>
+
+  <!-- MOCKUP NOTE EDITOR -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">helpdesk.local — note editor</div>
+    </div>
+    <div style="background:white;padding:16px">
+      <!-- En-tête match -->
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#0f172a;flex:1">
+          <div class="team-logo" style="background:#004170;color:white;width:24px;height:24px;font-size:9px">PSG</div>
+          PSG Handball
+          <span style="color:#94a3b8;font-weight:400">vs</span>
+          Montpellier HB
+          <div class="team-logo" style="background:#e8650a;color:white;width:24px;height:24px;font-size:9px">MHB</div>
+        </div>
+        <div style="font-size:11px;color:#64748b">Thu June 14 · 20:45 · AccorHotels Arena</div>
+      </div>
+      <!-- Feu tricolore -->
+      <div style="margin-bottom:14px">
+        <div class="label">Support status *</div>
+        <div class="traffic">
+          <div class="traffic-btn vert"><div class="traffic-dot"></div> GREEN — Nothing to report</div>
+          <div class="traffic-btn orange" style="border-color:#f97316;background:#fff7ed;color:#ea580c"><div class="traffic-dot"></div> ORANGE</div>
+          <div class="traffic-btn rouge" style="border-color:#ef4444;background:#fef2f2;color:#dc2626"><div class="traffic-dot"></div> RED</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="form-group">
+          <div class="label">Production</div>
+          <select class="input"><option>BeIN Sports</option></select>
+        </div>
+        <div class="form-group">
+          <div class="label">Chaperoning</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <div class="toggle on"></div>
+            <select class="input" style="width:auto;flex:1"><option>N. Broutin</option></select>
+          </div>
+        </div>
+      </div>
+      <!-- Editeur -->
+      <div class="label">Notes</div>
+      <div class="editor-toolbar">
+        <div class="toolbar-btn">B</div>
+        <div class="toolbar-btn" style="font-style:italic">I</div>
+        <div class="toolbar-btn" style="text-decoration:underline">U</div>
+        <div class="toolbar-sep"></div>
+        <div class="toolbar-btn">≡</div>
+        <div class="toolbar-btn">1.</div>
+        <div class="toolbar-sep"></div>
+        <div class="toolbar-btn">🖼</div>
+      </div>
+      <div class="editor-body">
+        <p>OB van cabling installed at 4:00 PM without incident.</p>
+        <p>Feed handover completed at 6:30 PM — signal compliant. Commentator microphone test OK.</p>
+        <p>Stand attendance estimated at 18,000 spectators.</p>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <div class="btn btn-primary">Save</div>
+        <div class="btn btn-secondary">Close without saving</div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Field</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>🟢 GREEN</td><td>Nothing to report — the match is included in the report only if content has been entered</td></tr>
+      <tr><td>🟠 ORANGE</td><td>Point to monitor — always included in the report</td></tr>
+      <tr><td>🔴 RED</td><td>Major incident or point of attention — always included in the report</td></tr>
+      <tr><td>Production</td><td>TV broadcast unit: BeIN / Via Storia / AMP Visual / IXI Live / None</td></tr>
+      <tr><td>Chaperoning</td><td>VOGO technician physically present at the match</td></tr>
+      <tr><td>Notes</td><td>Rich text editor — accepts text, pasted images (Ctrl+V) or uploaded images</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">Notes remain visible even after the match: if a match disappears from the scraper, it is automatically rebuilt from the metadata recorded during the first save.</div>
+
+  <h3>5.3 — Report export</h3>
+  <p><strong>"📄 Export report"</strong> button at the top of the widget → downloads <code>CR_Sxx.docx</code> (Word).</p>
+
+  <table>
+    <thead><tr><th>Content of the exported report</th></tr></thead>
+    <tbody>
+      <tr><td>Title: "SUPPORT REPORT WEEK xx — Year" + Technicians field (editable in Word)</td></tr>
+      <tr><td>A block per noted match: visual traffic light, team logos, time, TV broadcaster</td></tr>
+      <tr><td>Production + chaperoned technician + note content</td></tr>
+      <tr><td>GREEN matches with no content/production/chaperoning are automatically omitted</td></tr>
+      <tr><td>Images from the notes embedded directly in the .docx</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     6. BASE DE CONNAISSANCES
+══════════════════════════════════════════════════════ -->
+<section id="kb">
+  <h2><span class="num">6</span> Knowledge base</h2>
+  <p class="section-intro">Library of resolution articles — to capture best practices and speed up future interventions.</p>
+
+  <!-- MOCKUP KB -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/kb</div>
+    </div>
+    <div class="app">
+      <div class="sidebar" style="width:44px;background:#0f172a"></div>
+      <div class="main-content">
+        <div class="topbar">
+          <div class="topbar-title">Knowledge base</div>
+          <div class="topbar-actions"><div class="btn btn-primary btn-sm">+ New article</div></div>
+        </div>
+        <div class="page-body">
+          <div class="filter-bar">
+            <input class="filter-input" value="🔍  Search..." readonly style="opacity:.6;flex:1;width:auto">
+            <select class="filter-select"><option>Category: All</option></select>
+            <select class="filter-select"><option>Status: Published</option></select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="card" style="border-left:3px solid #185FA5">
+              <div class="card-body" style="display:flex;align-items:flex-start;justify-content:space-between">
+                <div>
+                  <div style="font-size:12px;font-weight:600;color:#0f172a;margin-bottom:4px">Reconfiguring a VLAN on a Cisco switch after an IPTV feed outage</div>
+                  <div style="font-size:10px;color:#64748b">Network · Published · 2 days ago · by N. Broutin</div>
+                  <div style="margin-top:4px;display:flex;gap:4px">
+                    <span class="badge badge-low">VLAN</span>
+                    <span class="badge badge-low">IPTV</span>
+                    <span class="badge badge-low">network</span>
+                  </div>
+                </div>
+                <div class="btn btn-ghost btn-sm">Read →</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body" style="display:flex;align-items:flex-start;justify-content:space-between">
+                <div>
+                  <div style="font-size:12px;font-weight:600;color:#0f172a;margin-bottom:4px">Password reset procedure for the commentator portal</div>
+                  <div style="font-size:10px;color:#64748b">Access · <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:9px">Draft</span> · 5 days ago · by M. Dupont</div>
+                </div>
+                <div class="btn btn-ghost btn-sm">Read →</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-body" style="display:flex;align-items:flex-start;justify-content:space-between">
+                <div>
+                  <div style="font-size:12px;font-weight:600;color:#0f172a;margin-bottom:4px">OB van deployment checklist — match day</div>
+                  <div style="font-size:10px;color:#64748b">Production · Published · 1 week ago · by N. Broutin</div>
+                  <div style="margin-top:4px;display:flex;gap:4px">
+                    <span class="badge badge-low">OB van</span>
+                    <span class="badge badge-low">checklist</span>
+                  </div>
+                </div>
+                <div class="btn btn-ghost btn-sm">Read →</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Create an article</h3>
+  <ul>
+    <li><strong>Directly:</strong> "+ New article" button → rich text editor (same as match notes)</li>
+    <li><strong>From a closed ticket:</strong> automatic dialog after closing (faster — title and comments pre-filled)</li>
+  </ul>
+  <p>Choose the status: <strong>Draft</strong> (invisible to other agents) or <strong>Published</strong> (visible to everyone).</p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     7. MON PROFIL
+══════════════════════════════════════════════════════ -->
+<section id="profile">
+  <h2><span class="num">7</span> My profile</h2>
+  <p class="section-intro">Access via the avatar at the bottom of the sidebar. Two sections: sports preferences and account security.</p>
+
+  <!-- MOCKUP PROFIL -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/profile</div>
+    </div>
+    <div class="app">
+      <div class="sidebar" style="width:44px;background:#0f172a"></div>
+      <div class="main-content">
+        <div class="topbar"><div class="topbar-title">My profile</div></div>
+        <div class="page-body" style="max-width:480px">
+          <!-- Infos user -->
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-body" style="display:flex;align-items:center;gap:14px">
+              <div class="avatar" style="width:52px;height:52px;font-size:18px;background:linear-gradient(135deg,#185FA5,#0f3d6e)">NB</div>
+              <div>
+                <div style="font-size:15px;font-weight:700;color:#0f172a">Nicolas Broutin</div>
+                <div style="font-size:12px;color:#64748b">n.broutin@vogo-group.com</div>
+                <div style="margin-top:4px"><span class="badge badge-open">Administrator</span></div>
+              </div>
+            </div>
+          </div>
+          <!-- Compétitions -->
+          <div class="card" style="margin-bottom:14px">
+            <div class="card-header">
+              <div class="card-title">🏆 Followed competitions</div>
+            </div>
+            <div class="card-body">
+              <div style="font-size:11px;color:#64748b;margin-bottom:10px">Select the leagues you provide support for. These preferences filter the sports widget and the Events page.</div>
+              <div class="checkbox-row checked-row">
+                <div class="checkbox checked"></div>
+                <div class="checkbox-label">TOP 14 — Rugby</div>
+              </div>
+              <div class="checkbox-row checked-row">
+                <div class="checkbox checked"></div>
+                <div class="checkbox-label">Liqui Moly Starligue — Handball</div>
+              </div>
+              <div class="checkbox-row">
+                <div class="checkbox"></div>
+                <div class="checkbox-label">PRO D2 — Rugby</div>
+              </div>
+              <div class="checkbox-row checked-row">
+                <div class="checkbox checked"></div>
+                <div class="checkbox-label">EPCR Champions Cup</div>
+              </div>
+              <div class="checkbox-row">
+                <div class="checkbox"></div>
+                <div class="checkbox-label">EPCR Challenge Cup</div>
+              </div>
+              <div class="checkbox-row">
+                <div class="checkbox"></div>
+                <div class="checkbox-label">ELMS — Endurance</div>
+              </div>
+              <div class="checkbox-row">
+                <div class="checkbox"></div>
+                <div class="checkbox-label">Premium Liiga — Estonian Football</div>
+              </div>
+              <div style="font-size:10px;color:#94a3b8;margin:8px 0">If no selection is made: all competitions are shown.</div>
+              <div class="btn btn-primary btn-sm">Save preferences</div>
+            </div>
+          </div>
+          <!-- Mot de passe -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">🔒 Change password</div></div>
+            <div class="card-body">
+              <div class="form-group">
+                <div class="label">Current password</div>
+                <div class="input" style="color:#94a3b8">••••••••</div>
+              </div>
+              <div class="form-group">
+                <div class="label">New password</div>
+                <div class="input" style="color:#94a3b8">••••••••••••</div>
+              </div>
+              <div style="margin-bottom:10px">
+                <div class="progress" style="margin-bottom:4px"><div class="progress-fill" style="width:80%;background:#16a34a"></div></div>
+                <div style="font-size:10px;color:#16a34a;font-weight:500">Strength: Strong</div>
+              </div>
+              <div class="btn btn-primary btn-sm">Change password</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="warn">After changing your password: automatic logout — you will need to sign in again with the new password.</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     8. ADMINISTRATION
+══════════════════════════════════════════════════════ -->
+<section id="admin">
+  <h2><span class="num">8</span> Administration <span style="font-size:13px;font-weight:400;color:#94a3b8">(admins only)</span></h2>
+  <p class="section-intro">Accessible via "Administration" in the sidebar — visible only with the <code>admin.access</code> permission.</p>
+
+  <!-- MOCKUP ADMIN -->
+  <div class="screen">
+    <div class="screen-bar">
+      <div class="sd r"></div><div class="sd y"></div><div class="sd g"></div>
+      <div class="screen-url">http://helpdesk.local/admin/users</div>
+    </div>
+    <div class="app">
+      <div class="sidebar" style="width:170px">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-text">Helpdesk VOGO</div>
+        </div>
+        <div class="sidebar-nav">
+          <div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.08em;padding:6px 12px 4px">Administration</div>
+          <div class="nav-item active">👤 Team</div>
+          <div class="nav-item">🛡 Roles</div>
+          <div class="nav-item">🏷 Categories</div>
+          <div class="nav-item">🏢 Organisations</div>
+          <div class="nav-item">⚽ Clubs</div>
+          <div class="nav-item">📊 Surveys</div>
+          <div class="nav-item">⚙️ Settings</div>
+        </div>
+      </div>
+      <div class="main-content">
+        <div class="topbar">
+          <div class="topbar-title">Agent accounts</div>
+          <div class="topbar-actions"><div class="btn btn-primary btn-sm">+ New agent</div></div>
+        </div>
+        <div class="page-body">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:24px;height:24px;font-size:9px;background:#185FA5">NB</div><span style="font-weight:600">N. Broutin</span></div></td>
+                <td style="color:#64748b">n.broutin@vogo-group.com</td>
+                <td><span class="badge badge-open">Administrator</span></td>
+                <td><span class="badge badge-closed">Active</span></td>
+                <td><div style="display:flex;gap:4px"><div class="btn btn-secondary btn-sm">Edit</div><div class="btn btn-ghost btn-sm">Reset password</div></div></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:24px;height:24px;font-size:9px;background:#7c3aed">MD</div><span style="font-weight:600">M. Dupont</span></div></td>
+                <td style="color:#64748b">m.dupont@vogo-group.com</td>
+                <td><span class="badge badge-pending">Agent</span></td>
+                <td><span class="badge badge-closed">Active</span></td>
+                <td><div style="display:flex;gap:4px"><div class="btn btn-secondary btn-sm">Edit</div><div class="btn btn-ghost btn-sm">Reset password</div></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Available sub-menus</h3>
+  <table>
+    <thead><tr><th>Section</th><th>Features</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Team</strong></td><td>Create, edit, activate/deactivate agent accounts. Send a password reset email (link valid for 24h).</td></tr>
+      <tr><td><strong>Roles</strong></td><td>Create custom roles and configure the 23 available permissions. A permission change takes effect immediately on all active sessions.</td></tr>
+      <tr><td><strong>Categories</strong></td><td>Manage ticket categories (name, colour). Reorderable by drag and drop.</td></tr>
+      <tr><td><strong>Organisations</strong></td><td>Sports federations and leagues (e.g. LNR, LNH). Parent hierarchy of clubs.</td></tr>
+      <tr><td><strong>Clubs</strong></td><td>Sports clubs attached to an organisation (e.g. PSG Handball, Stade Toulousain).</td></tr>
+      <tr><td><strong>Divisions</strong></td><td>Internal VOGO support divisions (e.g. Production, Technical, Commercial).</td></tr>
+      <tr><td><strong>Ticket types</strong></td><td>Ticket sub-categories (e.g. Incident, Request, Question).</td></tr>
+      <tr><td><strong>Surveys</strong></td><td>CSAT and NPS scores from surveys sent automatically after a ticket is closed.</td></tr>
+      <tr><td><strong>Settings</strong></td><td>Company logo, display name, default priority, automatic closing (N days), survey delay and cooldown.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip">The client hierarchy is: <strong>Organisation</strong> (e.g. LNH) → <strong>Club</strong> (e.g. PSG Handball) → <strong>Contact</strong> (e.g. Jean Martin). This structure allows tickets to be filtered by organisation or club from the ticket list.</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     RACCOURCIS
+══════════════════════════════════════════════════════ -->
+<section>
+  <h2><span class="num" style="background:#475569">⌨</span> Keyboard shortcuts</h2>
+  <table>
+    <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>Enter</kbd></td><td>Send a comment</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>B</kbd></td><td>Bold (in the editors)</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>I</kbd></td><td>Italic</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>`</kbd></td><td>Inline code format</td></tr>
+      <tr><td><kbd>Ctrl</kbd> + <kbd>V</kbd></td><td>Paste an image into the note editor (automatic upload)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</div><!-- /content -->
+
+<!-- ══════════════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════════ -->
+<div style="background:#0f172a;color:#475569;text-align:center;padding:24px;font-size:12px;margin-top:40px">
+  <strong style="color:#94a3b8">Helpdesk VOGO</strong> — User Guide v2 — June 2026 &nbsp;·&nbsp; helpdesk.local
+</div>
+
+</body>
+</html>

@@ -779,73 +779,107 @@
 </section>
 
 <!-- ══════════════════════════════════════════
-     COSTS
+     JIRA — FUTURE INTEGRATION
 ══════════════════════════════════════════ -->
-<section class="section page-break cost-section">
+<section class="section page-break">
   <div class="container">
-    <div class="section-label">Economics</div>
-    <h2>Cost analysis</h2>
-    <p class="section-intro">Hypothetical comparison: if VOGO had to cover its support needs with JIRA Service Management, here's what that would represent — versus the actual cost of Helpdesk VOGO.</p>
+    <div class="section-label">Roadmap</div>
+    <h2>What's next: connecting Helpdesk and JIRA</h2>
+    <p class="section-intro">Helpdesk VOGO and JIRA remain two distinct tools, each on its own turf. A bridge between them is being considered to smooth the handoff between support and developers — without double data entry or losing client context.</p>
 
-    <div class="cost-highlight">
+    <div class="positioning-box">
+      <div class="icon">🔗</div>
       <div>
-        <h3>Cost if support ran through JIRA</h3>
-        <p>Helpdesk VOGO costs ~€180/year in hosting alone. Using JIRA Service Management for support (a paid plan is required beyond 3 agents) would represent an annual spend up to 15 times higher, for a result less suited to VOGO's business.</p>
-      </div>
-      <div>
-        <div class="cost-number"><span>up to</span>2,500<span>€</span></div>
-        <div class="cost-sub">in avoided annual cost<br>vs. paid JIRA Service Management</div>
+        <h3>The idea: escalate to JIRA in one click</h3>
+        <p>
+          When a Helpdesk ticket reveals a genuine development need, the support agent will be able to create a JIRA ticket for the dev team directly — without switching tools or re-typing the history.<br><br>
+          The originating Helpdesk ticket keeps a link to the JIRA ticket it created (and vice versa), so the client gets a consistent response throughout the resolution — even when it involves development work.
+        </p>
       </div>
     </div>
 
-    <div class="cost-table-wrap">
-      <table class="cost-table">
-        <thead>
-          <tr>
-            <th>Solution</th>
-            <th>Usage</th>
-            <th>Agents</th>
-            <th>Cost / month</th>
-            <th>Cost / year</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>JIRA Service Mgmt Free</strong> (hypothetical)</td>
-            <td>VOGO support — limited</td>
-            <td>Max 3 agents</td>
-            <td class="price-zero">€0</td>
-            <td class="price-zero">€0 — but very limited features</td>
-          </tr>
-          <tr>
-            <td><strong>JIRA Service Mgmt Standard</strong> (hypothetical)</td>
-            <td>VOGO support — full features</td>
-            <td>5 agents</td>
-            <td class="price">~€88 excl. VAT</td>
-            <td class="price">~€1,060 excl. VAT</td>
-          </tr>
-          <tr>
-            <td><strong>JIRA Service Mgmt Premium</strong> (hypothetical)</td>
-            <td>VOGO support — advanced features</td>
-            <td>5 agents</td>
-            <td class="price">~€220 excl. VAT</td>
-            <td class="price">~€2,640 excl. VAT</td>
-          </tr>
-          <tr class="highlight-row">
-            <td><strong>Helpdesk VOGO</strong> ✓</td>
-            <td>VOGO support — custom-built</td>
-            <td>Unlimited</td>
-            <td class="price-low">~€15 (hosting)</td>
-            <td class="price-low">~€180/year</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="roadmap-grid">
+      <div class="roadmap-card">
+        <div class="status-dot possible"></div>
+        <div>
+          <h3>"Send to JIRA" button</h3>
+          <p>On a ticket that needs technical intervention, a support agent creates the matching JIRA ticket without leaving the Helpdesk.</p>
+        </div>
+      </div>
+      <div class="roadmap-card">
+        <div class="status-dot possible"></div>
+        <div>
+          <h3>Zero double entry</h3>
+          <p>The Helpdesk ticket's title, description and attachments automatically pre-fill the JIRA ticket sent to developers.</p>
+        </div>
+      </div>
+      <div class="roadmap-card">
+        <div class="status-dot possible"></div>
+        <div>
+          <h3>Traceability preserved</h3>
+          <p>Cross-linking between the Helpdesk ticket and the JIRA ticket — client context stays visible on the support side, dev progress stays visible on the JIRA side.</p>
+        </div>
+      </div>
     </div>
 
     <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
-      <span class="pill green">✓ Unlimited agents at no extra cost</span>
-      <span class="pill green">✓ Zero software licensing</span>
-      <span class="pill blue">ℹ Atlassian JIRA pricing 2026 — excluding setup, training and integrations</span>
+      <span class="pill orange">🛠 Not built yet — evolution path</span>
+      <span class="pill blue">ℹ No impact on JIRA's current setup on the dev side</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     ACCOUNT MANAGERS
+══════════════════════════════════════════ -->
+<section class="section page-break" style="background:var(--gray-50);">
+  <div class="container">
+    <div class="section-label">Client relationship</div>
+    <h2>What Helpdesk VOGO brings to an Account Manager</h2>
+    <p class="section-intro">Beyond technical support, the tool centralizes everything needed to manage the client relationship day-to-day and demonstrate its value.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🗂️</span>
+        <h3>360° client view</h3>
+        <p>Full ticket history, organization, club and contacts on a single screen — to answer with context from the very first exchange.</p>
+        <span class="feature-tag">Client context</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">⭐</span>
+        <h3>Quality proof, backed by numbers</h3>
+        <p>CSAT and NPS scores calculated automatically after every resolved ticket — a concrete talking point for client meetings.</p>
+        <span class="feature-tag">CSAT / NPS</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📅</span>
+        <h3>Support Mission tracking</h3>
+        <p>D+30 view of Support Missions scheduled at client sites — anticipate field deadlines without building a separate planning tool.</p>
+        <span class="feature-tag">Planning</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📄</span>
+        <h3>Ready-to-share deliverables</h3>
+        <p>CSV/PDF exports and Word reports generated straight from the tool — documents presentable to clients with no manual formatting.</p>
+        <span class="feature-tag">Reporting</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🏉</span>
+        <h3>Same calendar as technical support</h3>
+        <p>The shared sports widget keeps account management and support aligned on the same client events — no more conflicting information.</p>
+        <span class="feature-tag">Team alignment</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🔐</span>
+        <h3>Tailored access, no technical risk</h3>
+        <p>A dedicated Account Manager role gives the needed visibility without exposing the technical settings reserved for admins.</p>
+        <span class="feature-tag">Security</span>
+      </div>
     </div>
   </div>
 </section>
