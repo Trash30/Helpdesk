@@ -261,6 +261,7 @@ if (!hasPermission(req.user!, 'tickets.viewAll')) {
 | POST | `/logout` | Non | Supprime le cookie |
 | GET | `/me` | Oui | Profil utilisateur courant |
 | PATCH | `/change-password` | Oui | Changement de mot de passe |
+| PATCH | `/sport-competitions` | Oui | Met à jour les préférences de compétitions sportives |
 | GET | `/validate-reset-token/:token` | Non | Vérifie validité du lien de reset |
 | POST | `/reset-password` | Non | Reset mot de passe via token |
 
@@ -341,6 +342,7 @@ if (!hasPermission(req.user!, 'tickets.viewAll')) {
 ```
 User ──────────────────────────────────────────────────────┐
   │ (role)                                                  │
+  ├── sportCompetitions  String[]  (préférences filtre widget — vide = toutes)
 Role (permissions: String[])                               │
                                                            │
 Ticket                                                     │
@@ -484,6 +486,7 @@ fetchAllMatches()
       { key: 'SUPER_LEAGUE',    fetch: scrapeSuperLeague },
       { key: 'LIGUE1',          fetch: scrapeLigue1 },
       { key: 'ELMS',            fetch: scrapeELMS },
+      { key: 'ESTONIE',         fetch: scrapeEstonie },
     ])
   → Filtre par isInCurrentWeek(match.date)
   → Cache en mémoire (expire fin de journée)
@@ -503,13 +506,14 @@ fetchAllMatches()
 | Super League | HTML Cheerio + fallback statique | Catalans Dragons domicile |
 | Ligue 1 | HTML Cheerio (AS Monaco) | AS Monaco domicile |
 | ELMS | JSON-LD Schema.org | Tous les rounds (slugs dynamiques) |
+| Premium Liiga (ESTONIE) | iCal jalgpall.ee | Tous |
 
 ### 7.3 Interface Match
 
 ```typescript
 interface Match {
   competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' 
-             | 'SUPER_LEAGUE' | 'LIGUE1' | 'ELMS';
+             | 'SUPER_LEAGUE' | 'LIGUE1' | 'ELMS' | 'ESTONIE';
   homeTeam: string;
   awayTeam: string;
   date: string;        // ISO string
