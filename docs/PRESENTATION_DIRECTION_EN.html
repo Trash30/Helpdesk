@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Helpdesk VOGO — Management Presentation</title>
+<style>
+  :root {
+    --primary: #185FA5;
+    --primary-light: #e8f1fb;
+    --primary-dark: #0d3f72;
+    --accent: #EF9F27;
+    --accent-light: #fef3e2;
+    --green: #639922;
+    --green-light: #eef6e3;
+    --red: #dc2626;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-600: #475569;
+    --gray-800: #1e293b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    line-height: 1.6;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, #2a7fd4 100%);
+    color: white;
+    padding: 64px 48px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -80px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; left: 40%;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .hero h1 span { color: #93c5fd; }
+  .hero p {
+    font-size: 19px;
+    opacity: 0.85;
+    max-width: 580px;
+    margin-bottom: 40px;
+  }
+  .hero-meta {
+    display: flex; gap: 32px;
+    font-size: 14px; opacity: 0.7;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 24px;
+  }
+  .hero-meta strong { display: block; opacity: 1; font-size: 15px; color: white; }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+  .section { padding: 64px 0; }
+  .section-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    color: var(--primary);
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 12px;
+  }
+  .section-label::before {
+    content: '';
+    width: 24px; height: 3px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+  h2 {
+    font-size: 32px; font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--gray-800);
+    margin-bottom: 8px;
+  }
+  .section-intro {
+    font-size: 17px; color: var(--gray-600);
+    max-width: 640px; margin-bottom: 40px;
+  }
+
+  /* ── PROBLEM CARDS ── */
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 0;
+  }
+  .problem-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex; gap: 16px;
+    align-items: flex-start;
+  }
+  .problem-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--accent-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .problem-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .problem-card p { font-size: 13px; color: var(--gray-600); }
+
+  /* ── FEATURES GRID ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .feature-card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 24px;
+    transition: box-shadow 0.2s;
+  }
+  .feature-card:hover { box-shadow: 0 4px 20px rgba(24,95,165,0.1); }
+  .feature-icon {
+    font-size: 28px; margin-bottom: 12px;
+    display: block;
+  }
+  .feature-card h3 {
+    font-size: 15px; font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .feature-card p { font-size: 13px; color: var(--gray-600); }
+  .feature-tag {
+    display: inline-block; margin-top: 10px;
+    background: var(--primary-light); color: var(--primary);
+    font-size: 11px; font-weight: 600; padding: 3px 10px;
+    border-radius: 100px;
+  }
+  .feature-tag.new {
+    background: var(--green-light); color: var(--green);
+  }
+
+  /* ── JIRA SECTION ── */
+  .jira-section { background: white; }
+  .positioning-box {
+    background: linear-gradient(135deg, #f0f7ff 0%, #e8f1fb 100%);
+    border: 1px solid #c7ddf5;
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    display: flex; align-items: flex-start; gap: 20px;
+  }
+  .positioning-box .icon {
+    font-size: 32px; flex-shrink: 0;
+  }
+  .positioning-box h3 { font-size: 18px; font-weight: 700; color: var(--primary-dark); margin-bottom: 8px; }
+  .positioning-box p { font-size: 15px; color: var(--gray-600); line-height: 1.7; }
+  .positioning-box strong { color: var(--primary-dark); }
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .compare-card {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+  }
+  .compare-card-header {
+    padding: 20px 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .compare-card-header.jira { background: #0052cc; color: white; }
+  .compare-card-header.vogo { background: var(--primary); color: white; }
+  .compare-card-header img, .compare-card-header .logo-text {
+    font-size: 20px; font-weight: 800;
+  }
+  .compare-card-header h3 { font-size: 18px; font-weight: 700; }
+  .compare-card-header p { font-size: 13px; opacity: 0.8; }
+  .compare-card-body { padding: 24px; background: white; }
+  .compare-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 14px;
+  }
+  .compare-item:last-child { border-bottom: none; }
+  .compare-item .dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; flex-shrink: 0; margin-top: 1px;
+  }
+  .dot.green { background: var(--green-light); color: var(--green); }
+  .dot.red { background: #fef2f2; color: var(--red); }
+  .dot.orange { background: var(--accent-light); color: #b45309; }
+
+  /* ── COST SECTION ── */
+  .cost-section { background: var(--gray-50); }
+  .cost-highlight {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: 20px;
+    padding: 40px 48px;
+    color: white;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px;
+    gap: 32px;
+  }
+  .cost-highlight h3 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+  .cost-highlight p { font-size: 15px; opacity: 0.8; max-width: 460px; }
+  .cost-number {
+    font-size: 60px; font-weight: 900;
+    letter-spacing: -2px; white-space: nowrap;
+    color: #93c5fd;
+  }
+  .cost-number span { font-size: 24px; vertical-align: super; }
+  .cost-sub { font-size: 13px; opacity: 0.7; text-align: right; }
+
+  .cost-table-wrap {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+  }
+  .cost-table { width: 100%; border-collapse: collapse; }
+  .cost-table thead {
+    background: var(--gray-800); color: white;
+  }
+  .cost-table th {
+    padding: 14px 20px;
+    text-align: left; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .cost-table td {
+    padding: 14px 20px; font-size: 14px;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .cost-table tr:last-child td { border-bottom: none; }
+  .cost-table tr:nth-child(even) td { background: var(--gray-50); }
+  .cost-table .highlight-row td { background: var(--green-light) !important; font-weight: 600; }
+  .cost-table .price { font-weight: 700; color: var(--primary); }
+  .cost-table .price-low { font-weight: 700; color: var(--green); }
+  .cost-table .price-zero { font-weight: 700; color: var(--gray-400); }
+
+  /* ── SECURITY SECTION ── */
+  .security-section { background: white; }
+  .security-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .security-card {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .security-card .icon { font-size: 24px; margin-bottom: 10px; display: block; }
+  .security-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .security-card p { font-size: 12px; color: var(--gray-600); line-height: 1.6; }
+
+  /* ── CLAUDE CODE SECTION ── */
+  .claude-section {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: white;
+    padding: 64px 0;
+  }
+  .claude-inner {
+    display: flex; align-items: center; gap: 48px;
+  }
+  .claude-logo {
+    width: 100px; height: 100px; border-radius: 24px;
+    background: linear-gradient(135deg, #f97316, #ec4899, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px; flex-shrink: 0;
+    box-shadow: 0 0 40px rgba(139,92,246,0.4);
+  }
+  .claude-text h2 { color: white; font-size: 28px; margin-bottom: 12px; }
+  .claude-text p { font-size: 16px; opacity: 0.75; line-height: 1.7; max-width: 560px; }
+  .vibe-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(139,92,246,0.3);
+    border: 1px solid rgba(139,92,246,0.5);
+    border-radius: 100px; padding: 4px 14px;
+    font-size: 12px; font-weight: 700; color: #c4b5fd;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .claude-stats {
+    display: flex; gap: 32px; margin-top: 24px;
+  }
+  .claude-stat strong {
+    display: block; font-size: 28px; font-weight: 800;
+    color: #a78bfa;
+  }
+  .claude-stat span { font-size: 13px; opacity: 0.6; }
+
+  /* ── AGENTS GRID ── */
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 40px;
+  }
+  .agent-card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 18px 16px;
+  }
+  .agent-card .agent-emoji { font-size: 26px; display: block; margin-bottom: 10px; }
+  .agent-card .agent-name {
+    font-size: 13px; font-weight: 700; color: #e2e8f0;
+    margin-bottom: 4px; font-family: monospace;
+  }
+  .agent-card .agent-role {
+    font-size: 11px; font-weight: 600; color: #a78bfa;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .agent-card .agent-desc { font-size: 12px; opacity: 0.55; line-height: 1.5; }
+  .agent-card .agent-model {
+    display: inline-block; margin-top: 10px;
+    background: rgba(167,139,250,0.2);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 100px; padding: 2px 10px;
+    font-size: 10px; color: #c4b5fd; font-weight: 600;
+  }
+  .agent-card.lead {
+    grid-column: span 2;
+    background: rgba(139,92,246,0.15);
+    border-color: rgba(139,92,246,0.35);
+  }
+  @media (max-width: 768px) {
+    .agents-grid { grid-template-columns: 1fr 1fr; }
+    .agent-card.lead { grid-column: span 2; }
+  }
+
+  /* ── ROADMAP ── */
+  .roadmap-section { background: var(--gray-50); }
+  .roadmap-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  }
+  .roadmap-card {
+    background: white; border: 1px solid var(--gray-200);
+    border-radius: 12px; padding: 24px;
+    display: flex; align-items: flex-start; gap: 16px;
+  }
+  .status-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+  }
+  .status-dot.done { background: var(--green); }
+  .status-dot.possible { background: var(--accent); }
+  .roadmap-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .roadmap-card p { font-size: 13px; color: var(--gray-600); }
+
+  /* ── CONCLUSION ── */
+  .conclusion {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    padding: 64px 0;
+    color: white;
+    text-align: center;
+  }
+  .conclusion h2 { color: white; font-size: 36px; margin-bottom: 16px; }
+  .conclusion p { font-size: 18px; opacity: 0.8; max-width: 600px; margin: 0 auto 40px; }
+  .conclusion-cards {
+    display: flex; gap: 16px; justify-content: center;
+    flex-wrap: wrap;
+  }
+  .conclusion-card {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 16px; padding: 24px 32px;
+    min-width: 200px;
+  }
+  .conclusion-card .big { font-size: 40px; font-weight: 900; display: block; color: #93c5fd; }
+  .conclusion-card p { font-size: 13px; opacity: 0.7; margin-top: 4px; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--gray-800); color: white;
+    padding: 24px 32px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; opacity: 0.7;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px; background: var(--gray-200);
+    margin: 0;
+  }
+
+  /* ── PILL TAGS ── */
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; }
+  .pill.blue { background: var(--primary-light); color: var(--primary); }
+  .pill.green { background: var(--green-light); color: var(--green); }
+  .pill.orange { background: var(--accent-light); color: #b45309; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 32px; }
+    .features-grid, .security-grid, .compare-grid, .problem-grid { grid-template-columns: 1fr; }
+    .cost-highlight { flex-direction: column; }
+    .claude-inner { flex-direction: column; }
+    .roadmap-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── PRINT / PDF ── */
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body { background: white; }
+
+    /* Page breaks between sections */
+    .page-break { break-before: page; }
+
+    /* No breaks inside a card */
+    .feature-card, .problem-card, .security-card,
+    .roadmap-card, .agent-card, .compare-card,
+    .conclusion-card, .positioning-box,
+    .cost-highlight, .cost-table tr,
+    .hero-meta > div { break-inside: avoid; }
+
+    /* Reduce spacing to better fit each section */
+    .hero           { padding: 32px 40px 40px; }
+    .hero h1        { font-size: 38px; }
+    .hero p         { font-size: 15px; margin-bottom: 24px; }
+    .hero-meta      { padding-top: 16px; gap: 24px; }
+    .section        { padding: 36px 0; }
+    .section-intro  { font-size: 14px; margin-bottom: 24px; }
+    h2              { font-size: 24px; margin-bottom: 6px; }
+
+    /* Grids: reduce gap and card font size */
+    .features-grid  { gap: 10px; }
+    .problem-grid   { gap: 10px; }
+    .security-grid  { gap: 10px; }
+    .roadmap-grid   { gap: 10px; }
+    .agents-grid    { gap: 10px; }
+    .compare-grid   { gap: 16px; }
+
+    .feature-card, .problem-card, .security-card,
+    .roadmap-card   { padding: 14px; }
+    .feature-card h3, .problem-card h3,
+    .security-card h3, .roadmap-card h3 { font-size: 13px; }
+    .feature-card p, .problem-card p,
+    .security-card p, .roadmap-card p,
+    .feature-icon   { font-size: 12px; }
+    .feature-icon   { font-size: 22px; margin-bottom: 8px; }
+
+    .agent-card     { padding: 12px 14px; }
+    .agent-card .agent-emoji { font-size: 20px; margin-bottom: 6px; }
+    .agent-card .agent-name  { font-size: 11px; }
+    .agent-card .agent-role  { font-size: 10px; }
+    .agent-card .agent-desc  { font-size: 10px; }
+
+    .cost-highlight { padding: 24px 32px; }
+    .cost-highlight h3 { font-size: 17px; }
+    .cost-highlight p  { font-size: 13px; }
+    .cost-number    { font-size: 44px; }
+    .cost-table td,
+    .cost-table th  { padding: 10px 14px; font-size: 12px; }
+
+    .positioning-box { padding: 20px 24px; }
+    .positioning-box h3 { font-size: 15px; }
+    .positioning-box p  { font-size: 13px; }
+
+    .compare-card-header { padding: 14px 18px; }
+    .compare-card-header h3 { font-size: 15px; }
+    .compare-card-body  { padding: 16px 18px; }
+    .compare-item       { font-size: 12px; padding: 7px 0; }
+
+    /* Claude section */
+    .claude-section { padding: 36px 0; }
+    .claude-logo    { width: 72px; height: 72px; font-size: 32px; }
+    .claude-text h2 { font-size: 22px; }
+    .claude-text p  { font-size: 13px; }
+    .claude-stats   { gap: 20px; margin-top: 16px; }
+    .claude-stat strong { font-size: 22px; }
+    .claude-stat span   { font-size: 11px; }
+
+    /* Conclusion */
+    .conclusion     { padding: 40px 0; }
+    .conclusion h2  { font-size: 28px; }
+    .conclusion p   { font-size: 15px; margin-bottom: 24px; }
+    .conclusion-cards { gap: 12px; }
+    .conclusion-card  { padding: 18px 24px; min-width: 160px; }
+    .conclusion-card .big { font-size: 30px; }
+
+    /* Footer */
+    footer { padding: 14px 32px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     HERO
+══════════════════════════════════════════ -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-badge">📋 Presentation Document — Internal</div>
+    <h1>Helpdesk <span>VOGO</span></h1>
+    <p>A custom-built support solution, designed for VOGO's specific business needs and fully controlled in-house.</p>
+    <div class="hero-meta">
+      <div>
+        <strong>April 2026</strong>
+        Version 1.0
+      </div>
+      <div>
+        <strong>Status</strong>
+        Production
+      </div>
+      <div>
+        <strong>Development</strong>
+        100% in-house
+      </div>
+      <div>
+        <strong>Third-party licenses</strong>
+        €0
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CONTEXT
+══════════════════════════════════════════ -->
+<section class="section page-break" style="background:white;">
+  <div class="container">
+    <div class="section-label">Context</div>
+    <h2>What problem are we solving?</h2>
+    <p class="section-intro">Support request management at VOGO was scattered across emails, phone calls and informal channels. The result: lost traceability, no metrics, and growing administrative overhead.</p>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="problem-icon">📧</div>
+        <div>
+          <h3>Untracked email requests</h3>
+          <p>No way to know who's handling what, no visibility into pending tickets.</p>
+        </div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">📊</div>
+        <div>
+          <h3>Zero performance indicators</h3>
+          <p>No way to measure volumes, resolution times, or customer satisfaction.</p>
+        </div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">🔄</div>
+        <div>
+          <h3>Duplicates and missed requests</h3>
+          <p>Multiple agents responding to the same request, or requests left unanswered.</p>
+        </div>
+      </div>
+      <div class="problem-card">
+        <div class="problem-icon">📁</div>
+        <div>
+          <h3>Fragmented history</h3>
+          <p>Customer context lost between each exchange, scattered across individual mailboxes.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     FEATURES
+══════════════════════════════════════════ -->
+<section class="section page-break" style="background:var(--gray-50);">
+  <div class="container">
+    <div class="section-label">Solution</div>
+    <h2>What Helpdesk VOGO does</h2>
+    <p class="section-intro">A web application accessible from any workstation on the VOGO network, built for support teams and tailored to the company's specific business needs.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🎫</span>
+        <h3>Ticket management</h3>
+        <p>Creation, assignment, prioritization, tracking through to resolution. Statuses OPEN → IN PROGRESS → PENDING → CLOSED.</p>
+        <span class="feature-tag">Core business</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">👥</span>
+        <h3>Client directory</h3>
+        <p>Structured database: organizations → clubs → contacts. Full history for every client.</p>
+        <span class="feature-tag">VOGO-tailored</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📈</span>
+        <h3>KPI Dashboard</h3>
+        <p>Real-time view: open tickets, in progress, response times, tickets awaiting update. Clickable for direct access.</p>
+        <span class="feature-tag">Indicators</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">⭐</span>
+        <h3>Satisfaction surveys</h3>
+        <p>Automatically sent after resolution. CSAT and NPS calculation. Monthly trends and full history.</p>
+        <span class="feature-tag">CSAT / NPS</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📚</span>
+        <h3>Knowledge base</h3>
+        <p>Internal articles created from resolved tickets. Reusable to speed up future responses.</p>
+        <span class="feature-tag">Knowledge base</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🔐</span>
+        <h3>Roles and permissions</h3>
+        <p>23 configurable permissions. Admin, Agent, or custom roles. Access controlled by team and function.</p>
+        <span class="feature-tag">Security</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🏉</span>
+        <h3>Sports calendar widget</h3>
+        <p>This week's matches in real time: Top 14, Pro D2, Champions Cup, Ligue 1, LNH, Super League, ELMS.</p>
+        <span class="feature-tag new">VOGO-specific</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📝</span>
+        <h3>Match notes</h3>
+        <p>Note-taking linked to sports events. Exportable Word report every week.</p>
+        <span class="feature-tag new">VOGO-specific</span>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📎</span>
+        <h3>Attachments</h3>
+        <p>File uploads on tickets, comments and matches. Automatic PDF purge after the event.</p>
+        <span class="feature-tag">Productivity</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     JIRA — POSITIONING
+══════════════════════════════════════════ -->
+<section class="section page-break jira-section">
+  <div class="container">
+    <div class="section-label">Positioning</div>
+    <h2>Helpdesk VOGO and JIRA: two complementary tools</h2>
+    <p class="section-intro">JIRA is a well-established tool for technical teams. Helpdesk VOGO addresses a different need — operational support — that JIRA isn't designed to cover simply.</p>
+
+    <div class="positioning-box">
+      <div class="icon">💡</div>
+      <div>
+        <h3>Two distinct needs, two complementary tools</h3>
+        <p>
+          <strong>JIRA</strong> is designed to manage sprints, backlogs and technical issues for a development team. A free tier exists (up to 10 users). It's the right tool for that workflow, and there's no question of replacing it.<br><br>
+          <strong>VOGO support teams</strong> have a different need: managing incoming requests from clubs, partners and leagues, measuring satisfaction, and centralizing customer context. JIRA Service Management could theoretically cover this need, but its free tier is capped at 3 agents and its advanced features are reserved for paid plans — with complexity and cost disproportionate to a non-technical support use case.
+        </p>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-card">
+        <div class="compare-card-header jira">
+          <div>
+            <h3>JIRA Service Management</h3>
+            <p>General-purpose tool — geared toward technical teams</p>
+          </div>
+        </div>
+        <div class="compare-card-body">
+          <div class="compare-item">
+            <div class="dot green">✓</div>
+            <div>Great for development teams (sprints, backlog, issues)</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot green">✓</div>
+            <div>Free plan available for up to 10 users (dev usage)</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot red">✗</div>
+            <div>Complex interface, steep learning curve for non-technical users</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot red">✗</div>
+            <div>No concept of clubs / organizations / sports competitions</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot red">✗</div>
+            <div>Sports calendar, match notes, reports: not available</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot orange">~</div>
+            <div>Extending to 5+ support agents: +€85–220/month in licensing</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot orange">~</div>
+            <div>Data hosted by Atlassian (external cloud)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="compare-card">
+        <div class="compare-card-header vogo">
+          <div>
+            <h3>Helpdesk VOGO</h3>
+            <p>Custom-built tool — geared toward operational support</p>
+          </div>
+        </div>
+        <div class="compare-card-body">
+          <div class="compare-item">
+            <div class="dot green">✓</div>
+            <div>Built for VOGO support teams, not developers</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot green">✓</div>
+            <div>Clean interface, up and running in under an hour</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot green">✓</div>
+            <div>Organizations / clubs / partners structure natively built in</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot green">✓</div>
+            <div>Sports calendar, match notes and reports built in</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot green">✓</div>
+            <div>Unlimited agents — zero additional licensing cost</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot green">✓</div>
+            <div>Data stays on VOGO's internal network — no third party</div>
+          </div>
+          <div class="compare-item">
+            <div class="dot green">✓</div>
+            <div>Custom enhancements delivered in days, not weeks of configuration</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     COSTS
+══════════════════════════════════════════ -->
+<section class="section page-break cost-section">
+  <div class="container">
+    <div class="section-label">Economics</div>
+    <h2>Cost analysis</h2>
+    <p class="section-intro">Hypothetical comparison: if VOGO had to cover its support needs with JIRA Service Management, here's what that would represent — versus the actual cost of Helpdesk VOGO.</p>
+
+    <div class="cost-highlight">
+      <div>
+        <h3>Cost if support ran through JIRA</h3>
+        <p>Helpdesk VOGO costs ~€180/year in hosting alone. Using JIRA Service Management for support (a paid plan is required beyond 3 agents) would represent an annual spend up to 15 times higher, for a result less suited to VOGO's business.</p>
+      </div>
+      <div>
+        <div class="cost-number"><span>up to</span>2,500<span>€</span></div>
+        <div class="cost-sub">in avoided annual cost<br>vs. paid JIRA Service Management</div>
+      </div>
+    </div>
+
+    <div class="cost-table-wrap">
+      <table class="cost-table">
+        <thead>
+          <tr>
+            <th>Solution</th>
+            <th>Usage</th>
+            <th>Agents</th>
+            <th>Cost / month</th>
+            <th>Cost / year</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>JIRA Service Mgmt Free</strong> (hypothetical)</td>
+            <td>VOGO support — limited</td>
+            <td>Max 3 agents</td>
+            <td class="price-zero">€0</td>
+            <td class="price-zero">€0 — but very limited features</td>
+          </tr>
+          <tr>
+            <td><strong>JIRA Service Mgmt Standard</strong> (hypothetical)</td>
+            <td>VOGO support — full features</td>
+            <td>5 agents</td>
+            <td class="price">~€88 excl. VAT</td>
+            <td class="price">~€1,060 excl. VAT</td>
+          </tr>
+          <tr>
+            <td><strong>JIRA Service Mgmt Premium</strong> (hypothetical)</td>
+            <td>VOGO support — advanced features</td>
+            <td>5 agents</td>
+            <td class="price">~€220 excl. VAT</td>
+            <td class="price">~€2,640 excl. VAT</td>
+          </tr>
+          <tr class="highlight-row">
+            <td><strong>Helpdesk VOGO</strong> ✓</td>
+            <td>VOGO support — custom-built</td>
+            <td>Unlimited</td>
+            <td class="price-low">~€15 (hosting)</td>
+            <td class="price-low">~€180/year</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
+      <span class="pill green">✓ Unlimited agents at no extra cost</span>
+      <span class="pill green">✓ Zero software licensing</span>
+      <span class="pill blue">ℹ Atlassian JIRA pricing 2026 — excluding setup, training and integrations</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECURITY
+══════════════════════════════════════════ -->
+<section class="section page-break security-section">
+  <div class="container">
+    <div class="section-label">Security</div>
+    <h2>Secure by design</h2>
+    <p class="section-intro">A full security audit was carried out across the entire application. 10 issues were identified and fixed. Here are the key measures in place.</p>
+
+    <div class="security-grid">
+      <div class="security-card">
+        <span class="icon">🔑</span>
+        <h3>Secure JWT authentication</h3>
+        <p>8-hour tokens, httpOnly cookies (inaccessible to malicious JavaScript), anti-brute-force protection (10 attempts/min).</p>
+      </div>
+      <div class="security-card">
+        <span class="icon">🛡️</span>
+        <h3>Granular access control</h3>
+        <p>23 permissions configurable per role. Verified server-side on every request — impossible to bypass.</p>
+      </div>
+      <div class="security-card">
+        <span class="icon">🔒</span>
+        <h3>Secure passwords</h3>
+        <p>Bcrypt hashing, mandatory complexity policy, single-use token reset (24h), never stored in plain text.</p>
+      </div>
+      <div class="security-card">
+        <span class="icon">📋</span>
+        <h3>Full traceability</h3>
+        <p>Every ticket modification is logged (who, when, old/new value). Immutable audit trail.</p>
+      </div>
+      <div class="security-card">
+        <span class="icon">🏠</span>
+        <h3>Data on internal network</h3>
+        <p>Application not exposed to the Internet. Data hosted on VOGO's own servers. No third party has access.</p>
+      </div>
+      <div class="security-card">
+        <span class="icon">✅</span>
+        <h3>Validation on every input</h3>
+        <p>Zod schemas on every endpoint. Protection against injections, XSS, and path traversal.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     CLAUDE CODE
+══════════════════════════════════════════ -->
+<div class="claude-section page-break">
+  <div class="container">
+    <div class="claude-inner">
+      <div class="claude-logo">🤖</div>
+      <div class="claude-text" style="max-width:100%;">
+        <div class="vibe-badge">✨ Vibe Coding</div>
+        <h2>Built with Claude Code (Anthropic AI)</h2>
+        <p>
+          The entirety of this Helpdesk's development was carried out with <strong style="color:#c4b5fd">Claude Code</strong>, Anthropic's AI-powered development tool. This is what's known as <em>vibe coding</em>: a developer steers and validates, while the AI generates, refactors and documents code in real time — with a level of precision equivalent to a team of specialized senior developers.
+          <br><br>
+          This isn't generic code generation by a web chatbot. Claude Code orchestrates a <strong style="color:#c4b5fd">team of specialized AI agents</strong>, each with a defined role, precise tools and a limited scope — exactly like a real project team.
+        </p>
+        <div class="claude-stats">
+          <div class="claude-stat">
+            <strong>100%</strong>
+            <span>of the code built<br>with Claude Code</span>
+          </div>
+          <div class="claude-stat">
+            <strong>9</strong>
+            <span>specialized<br>AI agents</span>
+          </div>
+          <div class="claude-stat">
+            <strong>€0</strong>
+            <span>in external<br>developer cost</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENTS GRID -->
+    <div class="agents-grid">
+
+      <div class="agent-card lead">
+        <span class="agent-emoji">🎯</span>
+        <div class="agent-name">kwantum-techlead</div>
+        <div class="agent-role">Tech Lead — Orchestrator</div>
+        <div class="agent-desc">Directs the whole agent team, breaks features down into tasks, coordinates backend/frontend development, validates architecture choices and manages Git branches.</div>
+        <span class="agent-model">Claude Sonnet 4.6</span>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-emoji">⚙️</span>
+        <div class="agent-name">dev-backend</div>
+        <div class="agent-role">Senior Backend Developer</div>
+        <div class="agent-desc">Implements Express API routes, Prisma models, middlewares and Node.js / TypeScript services.</div>
+        <span class="agent-model">Claude Opus 4.7</span>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-emoji">🖥️</span>
+        <div class="agent-name">dev-frontend</div>
+        <div class="agent-role">Senior Frontend Developer</div>
+        <div class="agent-desc">Implements React 18 pages, TailwindCSS / shadcn/ui components, TanStack Query hooks and Zustand stores.</div>
+        <span class="agent-model">Claude Opus 4.7</span>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-emoji">🕷️</span>
+        <div class="agent-name">dev-web</div>
+        <div class="agent-role">Senior Scraper Developer</div>
+        <div class="agent-desc">Builds the sports scrapers (Cheerio, Axios) and the Node.js data-collection services (TOP14, Pro D2, LNH, Ligue 1, ELMS…).</div>
+        <span class="agent-model">Claude Opus 4.7</span>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-emoji">🔒</span>
+        <div class="agent-name">security</div>
+        <div class="agent-role">Senior Security — Audit</div>
+        <div class="agent-desc">Audits the code on every PR. Detects vulnerabilities (injections, XSS, JWT, permissions). Never modifies code.</div>
+        <span class="agent-model">Claude Sonnet 4.6</span>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-emoji">🧪</span>
+        <div class="agent-name">testeur</div>
+        <div class="agent-role">Senior Tester — QA</div>
+        <div class="agent-desc">Validates every delivered feature: TypeScript checks, linting, manual testing. Never modifies code.</div>
+        <span class="agent-model">Claude Sonnet 4.6</span>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-emoji">🎨</span>
+        <div class="agent-name">ux-expert</div>
+        <div class="agent-role">Senior UX/UI Expert</div>
+        <div class="agent-desc">Analyzes the interface: WCAG accessibility, responsiveness, visual consistency, hierarchy, micro-interactions. Produces precise recommendations.</div>
+        <span class="agent-model">Claude Opus 4.7</span>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-emoji">👩‍💼</span>
+        <div class="agent-name">ux-tester "Marie"</div>
+        <div class="agent-role">Everyday User — UX Testing</div>
+        <div class="agent-desc">Simulates a non-technical user (administrative assistant). Tests the interface with a fresh eye and reports friction points without technical jargon.</div>
+        <span class="agent-model">Claude Sonnet 4.6</span>
+      </div>
+
+      <div class="agent-card">
+        <span class="agent-emoji">🖌️</span>
+        <div class="agent-name">web-designer</div>
+        <div class="agent-role">Senior Web Designer</div>
+        <div class="agent-desc">Analyzes the overall visual design: consistency with the VOGO brand (#185FA5), typography, color palette, spacing, UI components. Evaluates rendering on desktop, tablet and mobile. Produces concrete recommendations (hex colors, Tailwind classes).</div>
+        <span class="agent-model">Claude Opus 4.7</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CONTINUITY
+══════════════════════════════════════════ -->
+<section class="section page-break" style="background:white;">
+  <div class="container">
+    <div class="section-label">Continuity</div>
+    <h2>The solution doesn't depend on a single person</h2>
+    <p class="section-intro">Comprehensive documentation has been written so that any competent Node.js/React developer can take over, maintain and evolve the application within 1 to 2 days of onboarding.</p>
+
+    <div class="roadmap-grid">
+      <div class="roadmap-card">
+        <div class="status-dot done"></div>
+        <div>
+          <h3>Complete technical documentation</h3>
+          <p>Architecture, code conventions, file structure, patterns used — everything is documented.</p>
+        </div>
+      </div>
+      <div class="roadmap-card">
+        <div class="status-dot done"></div>
+        <div>
+          <h3>Exhaustive API reference</h3>
+          <p>Every endpoint documented with method, parameters, request/response examples and error codes.</p>
+        </div>
+      </div>
+      <div class="roadmap-card">
+        <div class="status-dot done"></div>
+        <div>
+          <h3>Step-by-step installation guide</h3>
+          <p>Complete procedure for Linux Ubuntu and Windows. Verification checklist to validate the installation.</p>
+        </div>
+      </div>
+      <div class="roadmap-card">
+        <div class="status-dot done"></div>
+        <div>
+          <h3>Common tasks guide</h3>
+          <p>Adding a field, a permission, a sports competition, deploying an update — every operation is described step by step.</p>
+        </div>
+      </div>
+      <div class="roadmap-card">
+        <div class="status-dot done"></div>
+        <div>
+          <h3>Versioned database migrations</h3>
+          <p>Every schema change lives in versioned Prisma migration files in Git. Fully reproducible.</p>
+        </div>
+      </div>
+      <div class="roadmap-card">
+        <div class="status-dot done"></div>
+        <div>
+          <h3>Source code under Git</h3>
+          <p>Complete history of every change since the first commit. Every technical decision is traceable.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     CONCLUSION
+══════════════════════════════════════════ -->
+<div class="conclusion page-break">
+  <div class="container">
+    <h2>In summary</h2>
+    <p>Helpdesk VOGO is a well-suited, cost-effective, fully controlled solution — complementary to JIRA and built for VOGO's operational realities.</p>
+
+    <div class="conclusion-cards">
+      <div class="conclusion-card">
+        <span class="big">~€180</span>
+        <p>Total annual cost<br>(hosting only)</p>
+      </div>
+      <div class="conclusion-card">
+        <span class="big">0</span>
+        <p>Software license<br>vendor dependency</p>
+      </div>
+      <div class="conclusion-card">
+        <span class="big">∞</span>
+        <p>Possible agents<br>at no extra cost</p>
+      </div>
+      <div class="conclusion-card">
+        <span class="big">100%</span>
+        <p>Data hosted<br>in-house at VOGO</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>Helpdesk VOGO — Presentation document — April 2026</div>
+  <div>Built with Claude Code (Anthropic) · Confidential internal use</div>
+</footer>
+
+<!-- Floating print button -->
+<style>
+  .print-btn {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    background: var(--primary);
+    color: white;
+    border: none; border-radius: 100px;
+    padding: 14px 24px;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(24,95,165,0.4);
+    display: flex; align-items: center; gap: 8px;
+    transition: background 0.2s, transform 0.15s;
+    z-index: 999;
+  }
+  .print-btn:hover { background: var(--primary-dark); transform: translateY(-2px); }
+  @media print { .print-btn { display: none; } }
+</style>
+<button class="print-btn" onclick="window.print()">
+  🖨️ Save as PDF
+</button>
+
+</body>
+</html>
