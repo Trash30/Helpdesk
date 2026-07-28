@@ -28,6 +28,14 @@
     "deleteFileDescription": "This action is irreversible.",
     "confirmDelete": "Delete"
   },
+  "skiCross": {
+    "individual": "Individual",
+    "team": "Team",
+    "men": "Men",
+    "women": "Women",
+    "qualification": "Qualification",
+    "final": "Final"
+  },
   "reportExport": {
     "noNotes": "No note to export this week",
     "exportSuccess": "Report exported successfully",

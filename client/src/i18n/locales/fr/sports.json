@@ -28,6 +28,14 @@
     "deleteFileDescription": "Cette action est irréversible.",
     "confirmDelete": "Supprimer"
   },
+  "skiCross": {
+    "individual": "Individuel",
+    "team": "Équipe",
+    "men": "Hommes",
+    "women": "Femmes",
+    "qualification": "Qualification",
+    "final": "Finale"
+  },
   "reportExport": {
     "noNotes": "Aucune note à exporter cette semaine",
     "exportSuccess": "Rapport exporté avec succès",

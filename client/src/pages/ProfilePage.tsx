@@ -21,6 +21,7 @@ const COMPETITIONS = [
   { key: 'EPCR_CHALLENGE', label: 'EPCR Challenge Cup' },
   { key: 'ELMS',           label: 'ELMS' },
   { key: 'ESTONIE',        label: 'Premium Liiga (Estonie)' },
+  { key: 'SKI_CROSS',      label: 'Ski Cross' },
 ] as const;
 
 export function ProfilePage() {

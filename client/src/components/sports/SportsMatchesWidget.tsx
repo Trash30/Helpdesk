@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE';
+export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS';
 
 export interface Match {
   competition: Competition;
@@ -27,6 +27,10 @@ export interface Match {
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;
+  /** Ski Cross uniquement : SX = individuel, SXT = par équipe */
+  discipline?: 'SX' | 'SXT';
+  /** Ski Cross uniquement : épreuve hommes (M) / femmes (W) */
+  gender?: 'M' | 'W';
 }
 
 interface SportsMatchesResponse {
@@ -74,9 +78,12 @@ export const COMPETITION_META: Record<Competition, { label: string; favicon: str
   LNH:            { label: 'Liqui Moly Starligue', favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg',                                    calendarUrl: 'https://www.lnh.fr/liquimoly-starligue/calendrier' },
   ELMS:           { label: 'ELMS',          favicon: 'https://www.europeanlemansseries.com/favicon.ico',                                            calendarUrl: 'https://www.europeanlemansseries.com/en/season/2026' },
   ESTONIE:        { label: 'Premium Liiga', favicon: 'https://jalgpall.ee/favicon.ico',                                                            calendarUrl: 'https://jalgpall.ee/voistlused/52/premium-liiga' },
+  // `seasonselection` est volontairement laissé vide : le site FIS retombe alors sur
+  // la saison en cours, ce qui évite d'avoir à maintenir l'année ici chaque saison.
+  SKI_CROSS:      { label: 'Ski Cross',     favicon: 'https://www.fis-ski.com/favicon.ico',                                                       calendarUrl: 'https://www.fis-ski.com/DB/alpine-skiing/calendar-results.html?sectorcode=FS&categorycode=WC&disciplinecode=SX,SXT&seasonselection=' },
 };
 
-const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS', 'ESTONIE'];
+const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS', 'ESTONIE', 'SKI_CROSS'];
 
 const DAY_NAMES = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
 
@@ -277,6 +284,224 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
       </div>
 
       {/* Date/heure */}
+      <div className="text-xs text-muted-foreground pl-0.5">
+        {formatMatchDate(match.date, match.time)}
+      </div>
+
+      {/* PDFs attaches */}
+      {attachments.length > 0 && (
+        <div className="w-full space-y-1 sm:space-y-0.5">
+          {attachments.map((att) => (
+            <div key={att.id} className="flex items-center gap-2 sm:gap-1.5 text-sm sm:text-xs text-muted-foreground px-1">
+              <FileText className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
+              <button
+                type="button"
+                className="truncate hover:text-foreground hover:underline transition-colors text-left flex-1 min-w-0 py-1 sm:py-0"
+                onClick={() => window.open(`/api/sports/match-attachments/${att.id}/download`, '_blank')}
+                title={att.originalName}
+              >
+                {att.originalName}
+              </button>
+              <span className="shrink-0 text-muted-foreground/60">({formatFileSize(att.size)})</span>
+              {can('admin.access') && (
+                <button
+                  type="button"
+                  className="shrink-0 inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto hover:text-red-600 transition-colors disabled:opacity-50"
+                  onClick={() => setDeleteTarget(att.id)}
+                  disabled={deleteMutation.isPending}
+                  title={t('widget.delete')}
+                  aria-label={t('widget.deletePdfAria')}
+                >
+                  <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Shared file input — used by both mobile button and desktop dropzone */}
+      {can('tickets.create') && (
+        <input
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+        />
+      )}
+
+      {/* Mobile : bouton visible permanent */}
+      {can('tickets.create') && (
+        <button
+          type="button"
+          className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadMutation.isPending}
+        >
+          <Upload className="h-4 w-4" />
+          {uploadMutation.isPending ? t('widget.uploading') : t('widget.attachPdf')}
+        </button>
+      )}
+
+      {/* Desktop : dropzone drag & drop (hover only) */}
+      {can('tickets.create') && (
+        <div
+          className={`hidden sm:inline-flex w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
+            opacity-0 group-hover:opacity-100 transition-opacity duration-150
+            ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/40 text-muted-foreground/50 hover:border-muted-foreground/60'}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <span>{uploadMutation.isPending ? t('widget.uploading') : t('widget.dropPdf')}</span>
+        </div>
+      )}
+
+      {/* Note editor */}
+      <MatchNoteEditor
+        matchKey={matchKey}
+        match={match}
+        initialContent={existingNote?.content}
+        initialStatus={existingNote?.status}
+        initialProduction={existingNote?.production}
+        initialChaperonnage={existingNote?.chaperonnage}
+        initialChaperonneTechnicienId={existingNote?.chaperonneTechnicienId}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title={t('widget.deleteFileTitle')}
+        description={t('widget.deleteFileDescription')}
+        confirmLabel={t('widget.confirmDelete')}
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget, {
+              onSettled: () => setDeleteTarget(null),
+            });
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+interface SkiCrossMatchRowProps {
+  match: Match;
+  attachments: MatchAttachment[];
+  existingNote?: MatchNoteData;
+}
+
+export function SkiCrossMatchRow({ match, attachments, existingNote }: SkiCrossMatchRowProps) {
+  const { t } = useTranslation('sports');
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { can } = usePermissions();
+  const queryClient = useQueryClient();
+  const matchKey = getMatchKey(match);
+
+  // Badge discipline : bleu pour SX (individuel), orange pour SXT (par équipe).
+  // Aucune épreuve SXT n'est au calendrier cette saison, mais le cas reste géré.
+  const disciplineBadgeClass =
+    match.discipline === 'SXT'
+      ? 'bg-orange-100 text-orange-700 border border-orange-200'
+      : 'bg-blue-100 text-blue-700 border border-blue-200';
+  const disciplineLabel =
+    match.discipline === 'SXT' ? t('skiCross.team') : t('skiCross.individual');
+
+  // Le backend renvoie awayTeam en français en dur ("Qualification"/"Finale") :
+  // on le remappe sur les clés i18n pour rester cohérent en FR comme en EN.
+  const phaseLabel =
+    match.awayTeam === 'Qualification' ? t('skiCross.qualification') : t('skiCross.final');
+  const genderLabel =
+    match.gender === 'M' ? t('skiCross.men') : match.gender === 'W' ? t('skiCross.women') : '';
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('matchKey', matchKey);
+      formData.append('matchDate', match.date);
+      return (await api.post('/sports/match-attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
+      toast.success(t('widget.pdfAdded'));
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.error ?? t('widget.uploadError'));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return (await api.delete(`/sports/match-attachments/${id}`)).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
+      toast.success(t('widget.pdfDeleted'));
+    },
+    onError: () => {
+      toast.error(t('widget.deleteError'));
+    },
+  });
+
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); }, []);
+  const handleDragLeave = useCallback(() => setIsDragOver(false), []);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      if (file.type !== 'application/pdf') { toast.error(t('widget.onlyPdf')); return; }
+      uploadMutation.mutate(file);
+    },
+    [uploadMutation, t],
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.type !== 'application/pdf') { toast.error(t('widget.onlyPdf')); return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error(t('widget.fileTooLarge')); return; }
+      uploadMutation.mutate(file);
+      e.target.value = '';
+    },
+    [uploadMutation, t],
+  );
+
+  return (
+    <div className="group flex flex-col gap-1.5 sm:gap-1 py-3 sm:py-2.5 px-2 sm:px-3">
+      {/* Ligne principale : drapeau + ville + badge discipline */}
+      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        {match.country && (
+          <span className="text-base leading-none shrink-0" title={match.country}>
+            {countryCodeToFlag(match.country)}
+          </span>
+        )}
+        <span className="text-sm font-semibold truncate flex-1 min-w-0">{match.homeTeam}</span>
+        {match.discipline && (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 max-w-[130px] truncate ${disciplineBadgeClass}`} title={disciplineLabel}>
+            {disciplineLabel}
+          </span>
+        )}
+      </div>
+
+      {/* Sous-ligne : phase + genre */}
+      <div className="text-xs text-muted-foreground pl-0.5">
+        {phaseLabel}
+        {genderLabel && ` · ${genderLabel}`}
+      </div>
+
+      {/* Date (pas d'heure publiée par la FIS pour le ski cross) */}
       <div className="text-xs text-muted-foreground pl-0.5">
         {formatMatchDate(match.date, match.time)}
       </div>
@@ -813,6 +1038,13 @@ function MatchesList({ matches }: MatchesListProps) {
               {compMatches.map((match, idx) =>
                 match.competition === 'ELMS' ? (
                   <ElmsMatchRow
+                    key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
+                    match={match}
+                    attachments={attachmentsByKey.get(getMatchKey(match)) || []}
+                    existingNote={getNoteForMatch(match)}
+                  />
+                ) : match.competition === 'SKI_CROSS' ? (
+                  <SkiCrossMatchRow
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
