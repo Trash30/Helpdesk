@@ -4,13 +4,15 @@ import * as cheerio from 'cheerio';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
   time: string;       // "HH:mm" or "" if unknown
   venue?: string;
   country?: string;        // code ISO 2 lettres, ex: "FR", "ES"
+  discipline?: 'SX' | 'SXT';  // ski cross: individuel (SX) ou par équipe (SXT)
+  gender?: 'M' | 'W';         // ski cross: épreuve hommes / femmes
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;  // URL logo diffuseur TV
@@ -948,6 +950,132 @@ async function scrapeEstonie(): Promise<Match[]> {
   }
 }
 
+// ─── Ski Cross (Coupe du Monde FIS) — iCal data.fis-ski.com ──────────────────
+
+/**
+ * Codes pays FIS (3 lettres, type CIO) → ISO 3166-1 alpha-2.
+ * Couvre les nations habituelles du circuit Coupe du Monde de ski.
+ * Un code absent de cette table laisse `country` undefined (le drapeau n'est
+ * simplement pas affiché côté client).
+ */
+const IOC3_TO_ISO2: Record<string, string> = {
+  FRA: 'FR', SUI: 'CH', ITA: 'IT', AUT: 'AT', BIH: 'BA',
+  SRB: 'RS', SWE: 'SE', CAN: 'CA', USA: 'US', GER: 'DE',
+  NOR: 'NO', SLO: 'SI', CZE: 'CZ', POL: 'PL', FIN: 'FI',
+  ESP: 'ES', AND: 'AD', NZL: 'NZ', JPN: 'JP', CHN: 'CN',
+  KOR: 'KR', GBR: 'GB', NED: 'NL', BEL: 'BE', AUS: 'AU',
+  RUS: 'RU', UKR: 'UA', BUL: 'BG', CRO: 'HR', SVK: 'SK',
+};
+
+/**
+ * Calcule le code saison FIS courant.
+ * Une saison FIS est nommée d'après son année de fin : la saison 2026-2027
+ * (décembre 2026 → mars 2027) porte le code "2027". On bascule sur la saison
+ * suivante à partir de juillet, bien avant les premières épreuves de décembre.
+ *
+ * WARNING: ce calcul repose sur la convention actuelle de la FIS (bascule à
+ * mi-année). Si la FIS change ses dates de saison ou son nommage, ce seuil
+ * devra être ajusté — vérifier alors le paramètre `seasoncode` d'une URL de
+ * résultats sur https://www.fis-ski.com/DB/general/results.html
+ */
+function getFisSeasonCode(ref: Date = new Date()): string {
+  const year = ref.getFullYear();
+  // getMonth(): 0=janvier … 6=juillet
+  return String(ref.getMonth() >= 6 ? year + 1 : year);
+}
+
+/**
+ * Scrapes the FIS Ski Cross World Cup calendar from the official iCal feed
+ * (disciplines SX = individuel, SXT = par équipe).
+ * The feed is parsed manually (no external iCal library), like scrapeEstonie().
+ *
+ * Particularités du flux FIS :
+ *  - DTSTART;VALUE=DATE:YYYYMMDD → date pure, sans heure (épreuve "toute la
+ *    journée", les horaires ski dépendent de la météo) → `time` reste vide.
+ *  - SUMMARY : "{Ville} ({PAYS_3}) - Freestyle World Cup".
+ *  - DESCRIPTION : contient "Gender: Men|Women" et "Event: {libellé}". Le
+ *    libellé est le seul marqueur fiable pour distinguer SX de SXT (la FIS ne
+ *    renvoie pas le code discipline brut) → présence du mot "Team" = SXT.
+ *  - CATEGORIES : "…-QUA" pour une qualification, "…-WC" pour une finale.
+ */
+async function scrapeSkiCross(): Promise<Match[]> {
+  const seasonCode = getFisSeasonCode();
+  const url =
+    'https://data.fis-ski.com/services/public/icalendar-feed-fis-events.html' +
+    `?seasoncode=${seasonCode}&sectorcode=FS&categorycode=WC&disciplinecode=SX,SXT`;
+
+  try {
+    const client = createClient();
+    const resp = await client.get(url, { responseType: 'arraybuffer' });
+    // Force UTF-8 decoding to preserve accented venue names (ex: "Gällivare")
+    const ical = Buffer.from(resp.data as ArrayBuffer).toString('utf-8');
+
+    const matches: Match[] = [];
+    const eventBlocks = ical.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
+
+    for (const block of eventBlocks) {
+      // Date pure : DTSTART;VALUE=DATE:20261208
+      const dtMatch = block.match(/DTSTART;VALUE=DATE:(\d{4})(\d{2})(\d{2})/);
+      if (!dtMatch) continue;
+      const year = parseInt(dtMatch[1], 10);
+      const month = parseInt(dtMatch[2], 10); // 1-12
+      const day = parseInt(dtMatch[3], 10);
+      // Minuit local : l'épreuve n'a pas d'horaire publié
+      const date = new Date(year, month - 1, day);
+      if (isNaN(date.getTime())) continue;
+
+      const isoDate = date.toISOString();
+      if (!isInCurrentWeek(isoDate)) continue;
+
+      // "Val Thorens (FRA) - Freestyle World Cup" → ville + code pays 3 lettres
+      const summaryMatch = block.match(/SUMMARY:(.+)/);
+      if (!summaryMatch) continue;
+      const summary = summaryMatch[1].trim();
+      const venueMatch = summary.match(/^(.*?)\s*\(([A-Z]{3})\)/);
+      if (!venueMatch) continue;
+      const city = venueMatch[1].trim();
+      const country = IOC3_TO_ISO2[venueMatch[2]];
+
+      // La DESCRIPTION est sur une seule ligne : on l'isole avant d'en extraire
+      // les champs, sinon "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE" parasiterait la
+      // recherche de "Event:".
+      const descMatch = block.match(/DESCRIPTION:(.+)/);
+      const description = descMatch ? descMatch[1] : '';
+
+      // Les champs sont séparés par des séquences d'échappement iCal ("\n",
+      // parfois "\" seul dans ce flux) → on s'arrête au prochain backslash.
+      const eventMatch = description.match(/Event:\s*([^\\]*)/);
+      const eventLabel = eventMatch ? eventMatch[1].trim() : '';
+      const discipline: 'SX' | 'SXT' = /team/i.test(eventLabel) ? 'SXT' : 'SX';
+
+      const genderMatch = description.match(/Gender:\s*(Men|Women)/i);
+      const gender: 'M' | 'W' | undefined = genderMatch
+        ? (genderMatch[1].toLowerCase() === 'women' ? 'W' : 'M')
+        : undefined;
+
+      const isQualification = /CATEGORIES:[^\r\n]*QUA/.test(block);
+
+      matches.push({
+        competition: 'SKI_CROSS',
+        homeTeam: city,
+        awayTeam: isQualification ? 'Qualification' : 'Finale',
+        date: isoDate,
+        time: '',
+        venue: city,
+        country,
+        discipline,
+        gender,
+      });
+    }
+
+    log(`SKI_CROSS: season ${seasonCode}, ${eventBlocks.length} events → ${matches.length} in current week`);
+    return matches;
+  } catch (err) {
+    logError('SKI_CROSS scraping failed:', err instanceof Error ? err.message : err);
+    return [];
+  }
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: string }> {
@@ -986,6 +1114,10 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     {
       key: 'ESTONIE',
       fetch: scrapeEstonie,
+    },
+    {
+      key: 'SKI_CROSS',
+      fetch: scrapeSkiCross,
     },
   ];
 
