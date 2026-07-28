@@ -40,6 +40,8 @@ const matchNoteBodySchema = z.object({
   competition: z.string().min(1, 'competition est requis'),
   homeTeam: z.string().min(1, 'homeTeam est requis'),
   awayTeam: z.string().min(1, 'awayTeam est requis'),
+  discipline: z.string().optional(),
+  gender: z.enum(['M', 'W']).optional(),
   matchTime: z.string().default(''),
   venue: z.string().optional(),
   homeTeamLogo: z.string().optional(),
@@ -285,7 +287,7 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
     return;
   }
 
-  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status, production, chaperonnage, chaperonneTechnicienId } = parsed.data;
+  const { content, matchDate, competition, homeTeam, awayTeam, discipline, gender, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status, production, chaperonnage, chaperonneTechnicienId } = parsed.data;
 
   const sanitizedContent = sanitizeHtml(content, ALLOWED_TIPTAP_HTML);
 
@@ -307,6 +309,8 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
       competition,
       homeTeam,
       awayTeam,
+      discipline: discipline || null,
+      gender: gender || null,
       matchTime,
       venue: venue || null,
       homeTeamLogo: homeTeamLogo || null,

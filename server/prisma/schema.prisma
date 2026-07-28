@@ -333,6 +333,8 @@ model MatchNote {
   competition  String   // ex: "TOP14", "LIGUE1", etc.
   homeTeam     String
   awayTeam     String
+  discipline   String?  // ex: SX, SXT, SBX, BXT, PGS, PSL, GS, PRT, MO, AE (compétitions FIS uniquement)
+  gender       String?  // "M" ou "W" (compétitions FIS uniquement)
   matchTime    String   // "HH:mm"
   venue        String?
   homeTeamLogo String?
