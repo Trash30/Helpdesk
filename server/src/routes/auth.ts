@@ -230,11 +230,11 @@ router.post('/logout', (_req: Request, res: Response) => {
 
 // ─── PATCH /api/auth/sport-competitions ──────────────────────────────────────
 
-const VALID_COMPETITIONS = ['TOP14', 'PRO_D2', 'LNH', 'EPCR', 'EPCR_CHALLENGE', 'ELMS', 'ESTONIE'] as const;
+const VALID_COMPETITIONS = ['TOP14', 'PRO_D2', 'LNH', 'EPCR', 'EPCR_CHALLENGE', 'ELMS', 'ESTONIE', 'SKI_CROSS'] as const;
 
 router.patch('/sport-competitions', authMiddleware, async (req: Request, res: Response): Promise<void> => {
   const schema = z.object({
-    sportCompetitions: z.array(z.enum(VALID_COMPETITIONS)).max(7),
+    sportCompetitions: z.array(z.enum(VALID_COMPETITIONS)).max(8),
   });
 
   const parse = schema.safeParse(req.body);
