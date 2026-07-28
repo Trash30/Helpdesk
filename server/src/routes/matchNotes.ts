@@ -40,7 +40,7 @@ const matchNoteBodySchema = z.object({
   competition: z.string().min(1, 'competition est requis'),
   homeTeam: z.string().min(1, 'homeTeam est requis'),
   awayTeam: z.string().min(1, 'awayTeam est requis'),
-  discipline: z.string().optional(),
+  discipline: z.enum(['SX', 'SXT', 'SBX', 'BXT', 'PGS', 'PSL', 'GS', 'PRT', 'MO', 'AE']).optional(),
   gender: z.enum(['M', 'W']).optional(),
   matchTime: z.string().default(''),
   venue: z.string().optional(),
