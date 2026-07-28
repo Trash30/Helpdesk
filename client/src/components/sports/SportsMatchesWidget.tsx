@@ -68,6 +68,10 @@ export interface MatchNoteData {
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;
+  /** Compétitions FIS uniquement (Ski Cross, Snowboard, Freestyle EC) */
+  discipline?: string;
+  /** Compétitions FIS uniquement : épreuve hommes (M) / femmes (W) */
+  gender?: 'M' | 'W';
   author: { id: string; firstName: string; lastName: string };
 }
 
@@ -1419,6 +1423,8 @@ function MatchesList({ matches }: MatchesListProps) {
       homeTeamLogo: note.homeTeamLogo,
       awayTeamLogo: note.awayTeamLogo,
       broadcasterLogo: note.broadcasterLogo,
+      discipline: note.discipline as Match['discipline'],
+      gender: note.gender,
     }));
 
   const allMatches = [...matches, ...ghostMatches];

@@ -45,6 +45,10 @@ interface MatchData {
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;
+  /** Compétitions FIS uniquement (Ski Cross, Snowboard, Freestyle EC) */
+  discipline?: string;
+  /** Compétitions FIS uniquement : épreuve hommes (M) / femmes (W) */
+  gender?: 'M' | 'W';
 }
 
 type NoteStatus = 'VERT' | 'ORANGE' | 'ROUGE';
@@ -225,6 +229,8 @@ export function MatchNoteEditor({
           competition: match.competition,
           homeTeam: match.homeTeam,
           awayTeam: match.awayTeam,
+          discipline: match.discipline,
+          gender: match.gender,
           matchTime: match.time,
           venue: match.venue,
           homeTeamLogo: match.homeTeamLogo,
