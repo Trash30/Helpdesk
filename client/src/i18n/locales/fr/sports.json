@@ -36,6 +36,14 @@
     "qualification": "Qualification",
     "final": "Finale"
   },
+  "snowboard": {
+    "sbx": "Snowboard Cross",
+    "bxt": "Snowboard Cross par équipe",
+    "pgs": "Slalom Géant Parallèle",
+    "psl": "Slalom Parallèle",
+    "gs": "Slalom Géant",
+    "prt": "Parallèle par équipe"
+  },
   "reportExport": {
     "noNotes": "Aucune note à exporter cette semaine",
     "exportSuccess": "Rapport exporté avec succès",

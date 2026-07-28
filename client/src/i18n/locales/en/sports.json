@@ -36,6 +36,14 @@
     "qualification": "Qualification",
     "final": "Final"
   },
+  "snowboard": {
+    "sbx": "Snowboard Cross",
+    "bxt": "Snowboard Cross Team",
+    "pgs": "Parallel Giant Slalom",
+    "psl": "Parallel Slalom",
+    "gs": "Giant Slalom",
+    "prt": "Parallel Team"
+  },
   "reportExport": {
     "noNotes": "No note to export this week",
     "exportSuccess": "Report exported successfully",

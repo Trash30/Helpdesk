@@ -22,6 +22,7 @@ const COMPETITIONS = [
   { key: 'ELMS',           label: 'ELMS' },
   { key: 'ESTONIE',        label: 'Premium Liiga (Estonie)' },
   { key: 'SKI_CROSS',      label: 'Ski Cross' },
+  { key: 'SNOWBOARD',      label: 'Snowboard' },
 ] as const;
 
 export function ProfilePage() {
