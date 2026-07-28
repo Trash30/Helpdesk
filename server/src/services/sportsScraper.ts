@@ -4,7 +4,7 @@ import * as cheerio from 'cheerio';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
@@ -16,7 +16,9 @@ export interface Match {
   //  - snowboard  : SBX (border cross), BXT (border cross équipe),
   //                 PGS (slalom géant parallèle), PSL (slalom parallèle),
   //                 GS (slalom géant), PRT (parallèle par équipe)
-  discipline?: 'SX' | 'SXT' | 'SBX' | 'BXT' | 'PGS' | 'PSL' | 'GS' | 'PRT';
+  //  - freestyle  : MO (bosses, y compris bosses en parallèle),
+  //                 AE (ski acrobatique / sauts)
+  discipline?: 'SX' | 'SXT' | 'SBX' | 'BXT' | 'PGS' | 'PSL' | 'GS' | 'PRT' | 'MO' | 'AE';
   gender?: 'M' | 'W';         // épreuves FIS : hommes / femmes
   homeTeamLogo?: string;
   awayTeamLogo?: string;
@@ -959,7 +961,8 @@ async function scrapeEstonie(): Promise<Match[]> {
 
 /**
  * Codes pays FIS (3 lettres, type CIO) → ISO 3166-1 alpha-2.
- * Couvre les nations habituelles des circuits Coupe du Monde ski et snowboard.
+ * Couvre les nations habituelles des circuits FIS ski et snowboard (Coupe du
+ * Monde et Coupe d'Europe).
  * Un code absent de cette table laisse `country` undefined (le drapeau n'est
  * simplement pas affiché côté client).
  */
@@ -1145,6 +1148,39 @@ async function scrapeSnowboard(): Promise<Match[]> {
   });
 }
 
+/**
+ * Coupe d'Europe FIS de Ski Freestyle (secteur FS, categorycode=EC).
+ * Même format de flux que les Coupes du Monde ci-dessus : seul le paramètre
+ * `categorycode` change (EC au lieu de WC).
+ *
+ * Libellés "Event:" observés dans le flux réel : "Aerials", "Moguls" et
+ * "Dual Moguls" — cette dernière est une variante des bosses, pas une
+ * discipline FIS distincte : elle est donc classée MO.
+ *
+ * NOTE: le champ CATEGORIES de ce flux vaut toujours "FIS-calendar-FS-EC"
+ * (pas de suffixe QUA comme en Coupe du Monde) : toutes les épreuves seront
+ * donc étiquetées "Finale", ce qui correspond à la réalité de ces épreuves à
+ * manche unique.
+ */
+function classifyFreestyleECDiscipline(eventLabel: string): Match['discipline'] {
+  const label = eventLabel.toLowerCase();
+  if (label.includes('aerials')) return 'AE';
+  if (label.includes('moguls')) return 'MO'; // couvre "Moguls" et "Dual Moguls"
+  return undefined;
+}
+
+async function scrapeFreestyleEC(): Promise<Match[]> {
+  const seasonCode = getFisSeasonCode();
+  return scrapeFisIcalFeed({
+    url:
+      'https://data.fis-ski.com/services/public/icalendar-feed-fis-events.html' +
+      `?seasoncode=${seasonCode}&sectorcode=FS&categorycode=EC&disciplinecode=MO,AE`,
+    competition: 'FREESTYLE_EC',
+    seasonCode,
+    classifyDiscipline: classifyFreestyleECDiscipline,
+  });
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: string }> {
@@ -1191,6 +1227,10 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     {
       key: 'SNOWBOARD',
       fetch: scrapeSnowboard,
+    },
+    {
+      key: 'FREESTYLE_EC',
+      fetch: scrapeFreestyleEC,
     },
   ];
 
