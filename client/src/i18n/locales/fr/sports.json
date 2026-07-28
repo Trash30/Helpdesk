@@ -44,6 +44,10 @@
     "gs": "Slalom Géant",
     "prt": "Parallèle par équipe"
   },
+  "freestyleEc": {
+    "moguls": "Bosses",
+    "aerials": "Ski Acrobatique"
+  },
   "reportExport": {
     "noNotes": "Aucune note à exporter cette semaine",
     "exportSuccess": "Rapport exporté avec succès",

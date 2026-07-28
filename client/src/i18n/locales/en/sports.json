@@ -44,6 +44,10 @@
     "gs": "Giant Slalom",
     "prt": "Parallel Team"
   },
+  "freestyleEc": {
+    "moguls": "Moguls",
+    "aerials": "Aerials"
+  },
   "reportExport": {
     "noNotes": "No note to export this week",
     "exportSuccess": "Report exported successfully",

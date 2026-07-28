@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD';
+export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
 
 export interface Match {
   competition: Competition;
@@ -30,9 +30,10 @@ export interface Match {
   /**
    * Disciplines FIS. Ski Cross : SX = individuel, SXT = par équipe.
    * Snowboard : SBX, BXT, PGS, PSL, GS, PRT.
+   * Freestyle Coupe d'Europe : MO = bosses, AE = ski acrobatique.
    */
-  discipline?: 'SX' | 'SXT' | 'SBX' | 'BXT' | 'PGS' | 'PSL' | 'GS' | 'PRT';
-  /** Ski Cross / Snowboard uniquement : épreuve hommes (M) / femmes (W) */
+  discipline?: 'SX' | 'SXT' | 'SBX' | 'BXT' | 'PGS' | 'PSL' | 'GS' | 'PRT' | 'MO' | 'AE';
+  /** Ski Cross / Snowboard / Freestyle uniquement : épreuve hommes (M) / femmes (W) */
   gender?: 'M' | 'W';
 }
 
@@ -85,9 +86,10 @@ export const COMPETITION_META: Record<Competition, { label: string; favicon: str
   // la saison en cours, ce qui évite d'avoir à maintenir l'année ici chaque saison.
   SKI_CROSS:      { label: 'Ski Cross',     favicon: 'https://www.fis-ski.com/favicon.ico',                                                       calendarUrl: 'https://www.fis-ski.com/DB/alpine-skiing/calendar-results.html?sectorcode=FS&categorycode=WC&disciplinecode=SX,SXT&seasonselection=' },
   SNOWBOARD:      { label: 'Snowboard',     favicon: 'https://www.fis-ski.com/favicon.ico',                                                       calendarUrl: 'https://www.fis-ski.com/DB/snowboard/calendar-results.html?sectorcode=SB&categorycode=WC&disciplinecode=SBX,BXT,PGS,PSL,GS,PRT&seasonselection=' },
+  FREESTYLE_EC:   { label: 'Freestyle (Coupe d\'Europe)', favicon: 'https://www.fis-ski.com/favicon.ico',                                         calendarUrl: 'https://www.fis-ski.com/DB/alpine-skiing/calendar-results.html?sectorcode=FS&categorycode=EC&disciplinecode=MO,AE&seasonselection=' },
 };
 
-const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS', 'ESTONIE', 'SKI_CROSS', 'SNOWBOARD'];
+const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS', 'ESTONIE', 'SKI_CROSS', 'SNOWBOARD', 'FREESTYLE_EC'];
 
 /**
  * Disciplines Snowboard Coupe du Monde FIS.
@@ -101,6 +103,16 @@ const SNOWBOARD_DISCIPLINE_META: Record<string, { labelKey: string; badgeClass: 
   PSL: { labelKey: 'snowboard.psl', badgeClass: 'bg-teal-100 text-teal-700 border border-teal-200' },
   GS:  { labelKey: 'snowboard.gs',  badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200' },
   PRT: { labelKey: 'snowboard.prt', badgeClass: 'bg-pink-100 text-pink-700 border border-pink-200' },
+};
+
+/**
+ * Disciplines Freestyle Coupe d'Europe FIS.
+ * Une seule section dans le widget regroupe les deux disciplines (Bosses / Ski Acrobatique),
+ * distinguées par le badge de chaque ligne. Libellé complet, comme pour le snowboard.
+ */
+const FREESTYLE_EC_DISCIPLINE_META: Record<string, { labelKey: string; badgeClass: string }> = {
+  MO: { labelKey: 'freestyleEc.moguls', badgeClass: 'bg-blue-100 text-blue-700 border border-blue-200' },
+  AE: { labelKey: 'freestyleEc.aerials', badgeClass: 'bg-purple-100 text-purple-700 border border-purple-200' },
 };
 
 const DAY_NAMES = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
@@ -843,6 +855,223 @@ export function SnowboardMatchRow({ match, attachments, existingNote }: Snowboar
   );
 }
 
+interface FreestyleECMatchRowProps {
+  match: Match;
+  attachments: MatchAttachment[];
+  existingNote?: MatchNoteData;
+}
+
+export function FreestyleECMatchRow({ match, attachments, existingNote }: FreestyleECMatchRowProps) {
+  const { t } = useTranslation('sports');
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { can } = usePermissions();
+  const queryClient = useQueryClient();
+  const matchKey = getMatchKey(match);
+
+  // Discipline inconnue ou absente → pas de badge (seuls MO et AE concernent cette compétition).
+  const disciplineMeta = match.discipline ? FREESTYLE_EC_DISCIPLINE_META[match.discipline] : undefined;
+  const disciplineLabel = disciplineMeta ? t(disciplineMeta.labelKey) : '';
+
+  // Le backend renvoie awayTeam en français en dur ("Qualification"/"Finale") :
+  // on le remappe sur les clés i18n déjà créées pour le ski cross (elles sont génériques).
+  // Sur la Coupe d'Europe le flux ne distingue pas les qualifications : ce sera toujours "Finale".
+  const phaseLabel =
+    match.awayTeam === 'Qualification' ? t('skiCross.qualification') : t('skiCross.final');
+  const genderLabel =
+    match.gender === 'M' ? t('skiCross.men') : match.gender === 'W' ? t('skiCross.women') : '';
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('matchKey', matchKey);
+      formData.append('matchDate', match.date);
+      return (await api.post('/sports/match-attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
+      toast.success(t('widget.pdfAdded'));
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.error ?? t('widget.uploadError'));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return (await api.delete(`/sports/match-attachments/${id}`)).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['match-attachments'] });
+      toast.success(t('widget.pdfDeleted'));
+    },
+    onError: () => {
+      toast.error(t('widget.deleteError'));
+    },
+  });
+
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); }, []);
+  const handleDragLeave = useCallback(() => setIsDragOver(false), []);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      if (file.type !== 'application/pdf') { toast.error(t('widget.onlyPdf')); return; }
+      uploadMutation.mutate(file);
+    },
+    [uploadMutation, t],
+  );
+
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.type !== 'application/pdf') { toast.error(t('widget.onlyPdf')); return; }
+      if (file.size > 10 * 1024 * 1024) { toast.error(t('widget.fileTooLarge')); return; }
+      uploadMutation.mutate(file);
+      e.target.value = '';
+    },
+    [uploadMutation, t],
+  );
+
+  return (
+    <div className="group flex flex-col gap-1.5 sm:gap-1 py-3 sm:py-2.5 px-2 sm:px-3">
+      {/* Ligne principale : drapeau + ville + badge discipline */}
+      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        {match.country && (
+          <span className="text-base leading-none shrink-0" title={match.country}>
+            {countryCodeToFlag(match.country)}
+          </span>
+        )}
+        <span className="text-sm font-semibold truncate flex-1 min-w-0">{match.homeTeam}</span>
+        {disciplineMeta && (
+          <span
+            className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 max-w-[160px] whitespace-normal break-words leading-snug text-center ${disciplineMeta.badgeClass}`}
+            title={disciplineLabel}
+          >
+            {disciplineLabel}
+          </span>
+        )}
+      </div>
+
+      {/* Sous-ligne : phase + genre */}
+      <div className="text-xs text-muted-foreground pl-0.5">
+        {phaseLabel}
+        {genderLabel && ` · ${genderLabel}`}
+      </div>
+
+      {/* Date (pas d'heure publiée par la FIS pour la Coupe d'Europe freestyle) */}
+      <div className="text-xs text-muted-foreground pl-0.5">
+        {formatMatchDate(match.date, match.time)}
+      </div>
+
+      {/* PDFs attaches */}
+      {attachments.length > 0 && (
+        <div className="w-full space-y-1 sm:space-y-0.5">
+          {attachments.map((att) => (
+            <div key={att.id} className="flex items-center gap-2 sm:gap-1.5 text-sm sm:text-xs text-muted-foreground px-1">
+              <FileText className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
+              <button
+                type="button"
+                className="truncate hover:text-foreground hover:underline transition-colors text-left flex-1 min-w-0 py-1 sm:py-0"
+                onClick={() => window.open(`/api/sports/match-attachments/${att.id}/download`, '_blank')}
+                title={att.originalName}
+              >
+                {att.originalName}
+              </button>
+              <span className="shrink-0 text-muted-foreground/60">({formatFileSize(att.size)})</span>
+              {can('admin.access') && (
+                <button
+                  type="button"
+                  className="shrink-0 inline-flex items-center justify-center h-11 w-11 sm:h-auto sm:w-auto hover:text-red-600 transition-colors disabled:opacity-50"
+                  onClick={() => setDeleteTarget(att.id)}
+                  disabled={deleteMutation.isPending}
+                  title={t('widget.delete')}
+                  aria-label={t('widget.deletePdfAria')}
+                >
+                  <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Shared file input — used by both mobile button and desktop dropzone */}
+      {can('tickets.create') && (
+        <input
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+        />
+      )}
+
+      {/* Mobile : bouton visible permanent */}
+      {can('tickets.create') && (
+        <button
+          type="button"
+          className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadMutation.isPending}
+        >
+          <Upload className="h-4 w-4" />
+          {uploadMutation.isPending ? t('widget.uploading') : t('widget.attachPdf')}
+        </button>
+      )}
+
+      {/* Desktop : dropzone drag & drop (hover only) */}
+      {can('tickets.create') && (
+        <div
+          className={`hidden sm:inline-flex w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
+            opacity-0 group-hover:opacity-100 transition-opacity duration-150
+            ${uploadMutation.isPending ? 'opacity-50 pointer-events-none' : ''}
+            ${isDragOver ? 'border-blue-500 bg-blue-50 text-blue-600 !opacity-100' : 'border-muted-foreground/40 text-muted-foreground/50 hover:border-muted-foreground/60'}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <span>{uploadMutation.isPending ? t('widget.uploading') : t('widget.dropPdf')}</span>
+        </div>
+      )}
+
+      {/* Note editor */}
+      <MatchNoteEditor
+        matchKey={matchKey}
+        match={match}
+        initialContent={existingNote?.content}
+        initialStatus={existingNote?.status}
+        initialProduction={existingNote?.production}
+        initialChaperonnage={existingNote?.chaperonnage}
+        initialChaperonneTechnicienId={existingNote?.chaperonneTechnicienId}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title={t('widget.deleteFileTitle')}
+        description={t('widget.deleteFileDescription')}
+        confirmLabel={t('widget.confirmDelete')}
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget, {
+              onSettled: () => setDeleteTarget(null),
+            });
+          }
+        }}
+      />
+    </div>
+  );
+}
+
 interface MatchRowProps {
   match: Match;
   attachments: MatchAttachment[];
@@ -1286,6 +1515,13 @@ function MatchesList({ matches }: MatchesListProps) {
                   />
                 ) : match.competition === 'SNOWBOARD' ? (
                   <SnowboardMatchRow
+                    key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
+                    match={match}
+                    attachments={attachmentsByKey.get(getMatchKey(match)) || []}
+                    existingNote={getNoteForMatch(match)}
+                  />
+                ) : match.competition === 'FREESTYLE_EC' ? (
+                  <FreestyleECMatchRow
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}
                     attachments={attachmentsByKey.get(getMatchKey(match)) || []}
