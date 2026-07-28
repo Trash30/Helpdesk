@@ -4,15 +4,20 @@ import * as cheerio from 'cheerio';
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
   time: string;       // "HH:mm" or "" if unknown
   venue?: string;
   country?: string;        // code ISO 2 lettres, ex: "FR", "ES"
-  discipline?: 'SX' | 'SXT';  // ski cross: individuel (SX) ou par équipe (SXT)
-  gender?: 'M' | 'W';         // ski cross: épreuve hommes / femmes
+  // Disciplines FIS :
+  //  - ski cross  : SX (individuel), SXT (par équipe)
+  //  - snowboard  : SBX (border cross), BXT (border cross équipe),
+  //                 PGS (slalom géant parallèle), PSL (slalom parallèle),
+  //                 GS (slalom géant), PRT (parallèle par équipe)
+  discipline?: 'SX' | 'SXT' | 'SBX' | 'BXT' | 'PGS' | 'PSL' | 'GS' | 'PRT';
+  gender?: 'M' | 'W';         // épreuves FIS : hommes / femmes
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;  // URL logo diffuseur TV
@@ -950,11 +955,11 @@ async function scrapeEstonie(): Promise<Match[]> {
   }
 }
 
-// ─── Ski Cross (Coupe du Monde FIS) — iCal data.fis-ski.com ──────────────────
+// ─── FIS (Coupe du Monde) — flux iCal data.fis-ski.com ───────────────────────
 
 /**
  * Codes pays FIS (3 lettres, type CIO) → ISO 3166-1 alpha-2.
- * Couvre les nations habituelles du circuit Coupe du Monde de ski.
+ * Couvre les nations habituelles des circuits Coupe du Monde ski et snowboard.
  * Un code absent de cette table laisse `country` undefined (le drapeau n'est
  * simplement pas affiché côté client).
  */
@@ -965,6 +970,7 @@ const IOC3_TO_ISO2: Record<string, string> = {
   ESP: 'ES', AND: 'AD', NZL: 'NZ', JPN: 'JP', CHN: 'CN',
   KOR: 'KR', GBR: 'GB', NED: 'NL', BEL: 'BE', AUS: 'AU',
   RUS: 'RU', UKR: 'UA', BUL: 'BG', CRO: 'HR', SVK: 'SK',
+  TUR: 'TR',
 };
 
 /**
@@ -984,29 +990,40 @@ function getFisSeasonCode(ref: Date = new Date()): string {
   return String(ref.getMonth() >= 6 ? year + 1 : year);
 }
 
+interface FisIcalScrapeOptions {
+  /** URL complète du flux iCal (seasoncode/sectorcode/disciplinecode inclus). */
+  url: string;
+  /** Compétition portée par les `Match` produits. */
+  competition: Match['competition'];
+  /** Code saison FIS, uniquement utilisé pour enrichir les logs. */
+  seasonCode: string;
+  /**
+   * Déduit la discipline à partir du libellé "Event:" du flux.
+   * Retourner `undefined` si le libellé n'est pas reconnu (aucun badge ne sera
+   * alors affiché côté client).
+   */
+  classifyDiscipline: (eventLabel: string) => Match['discipline'];
+}
+
 /**
- * Scrapes the FIS Ski Cross World Cup calendar from the official iCal feed
- * (disciplines SX = individuel, SXT = par équipe).
- * The feed is parsed manually (no external iCal library), like scrapeEstonie().
+ * Scrape générique d'un flux iCal Coupe du Monde FIS (data.fis-ski.com).
+ * Le flux est parsé manuellement (pas de librairie iCal externe), comme
+ * scrapeEstonie(). Le format est identique d'un secteur à l'autre (ski
+ * freestyle, snowboard…), seuls l'URL et le mapping des disciplines changent.
  *
  * Particularités du flux FIS :
  *  - DTSTART;VALUE=DATE:YYYYMMDD → date pure, sans heure (épreuve "toute la
- *    journée", les horaires ski dépendent de la météo) → `time` reste vide.
- *  - SUMMARY : "{Ville} ({PAYS_3}) - Freestyle World Cup".
+ *    journée", les horaires dépendent de la météo) → `time` reste vide.
+ *  - SUMMARY : "{Ville} ({PAYS_3}) - {Secteur} World Cup".
  *  - DESCRIPTION : contient "Gender: Men|Women" et "Event: {libellé}". Le
- *    libellé est le seul marqueur fiable pour distinguer SX de SXT (la FIS ne
- *    renvoie pas le code discipline brut) → présence du mot "Team" = SXT.
+ *    libellé est le seul marqueur fiable pour identifier la discipline (la FIS
+ *    ne renvoie pas le code discipline brut) → d'où `classifyDiscipline`.
  *  - CATEGORIES : "…-QUA" pour une qualification, "…-WC" pour une finale.
  */
-async function scrapeSkiCross(): Promise<Match[]> {
-  const seasonCode = getFisSeasonCode();
-  const url =
-    'https://data.fis-ski.com/services/public/icalendar-feed-fis-events.html' +
-    `?seasoncode=${seasonCode}&sectorcode=FS&categorycode=WC&disciplinecode=SX,SXT`;
-
+async function scrapeFisIcalFeed(opts: FisIcalScrapeOptions): Promise<Match[]> {
   try {
     const client = createClient();
-    const resp = await client.get(url, { responseType: 'arraybuffer' });
+    const resp = await client.get(opts.url, { responseType: 'arraybuffer' });
     // Force UTF-8 decoding to preserve accented venue names (ex: "Gällivare")
     const ical = Buffer.from(resp.data as ArrayBuffer).toString('utf-8');
 
@@ -1046,7 +1063,7 @@ async function scrapeSkiCross(): Promise<Match[]> {
       // parfois "\" seul dans ce flux) → on s'arrête au prochain backslash.
       const eventMatch = description.match(/Event:\s*([^\\]*)/);
       const eventLabel = eventMatch ? eventMatch[1].trim() : '';
-      const discipline: 'SX' | 'SXT' = /team/i.test(eventLabel) ? 'SXT' : 'SX';
+      const discipline = opts.classifyDiscipline(eventLabel);
 
       const genderMatch = description.match(/Gender:\s*(Men|Women)/i);
       const gender: 'M' | 'W' | undefined = genderMatch
@@ -1056,7 +1073,7 @@ async function scrapeSkiCross(): Promise<Match[]> {
       const isQualification = /CATEGORIES:[^\r\n]*QUA/.test(block);
 
       matches.push({
-        competition: 'SKI_CROSS',
+        competition: opts.competition,
         homeTeam: city,
         awayTeam: isQualification ? 'Qualification' : 'Finale',
         date: isoDate,
@@ -1068,12 +1085,64 @@ async function scrapeSkiCross(): Promise<Match[]> {
       });
     }
 
-    log(`SKI_CROSS: season ${seasonCode}, ${eventBlocks.length} events → ${matches.length} in current week`);
+    log(`${opts.competition}: season ${opts.seasonCode}, ${eventBlocks.length} events → ${matches.length} in current week`);
     return matches;
   } catch (err) {
-    logError('SKI_CROSS scraping failed:', err instanceof Error ? err.message : err);
+    logError(`${opts.competition} scraping failed:`, err instanceof Error ? err.message : err);
     return [];
   }
+}
+
+/**
+ * Coupe du Monde FIS de Ski Cross (secteur FS = freestyle).
+ * Disciplines : SX = individuel, SXT = par équipe. La FIS ne publiant pas le
+ * code brut, la présence du mot "Team" dans le libellé suffit à trancher.
+ */
+async function scrapeSkiCross(): Promise<Match[]> {
+  const seasonCode = getFisSeasonCode();
+  return scrapeFisIcalFeed({
+    url:
+      'https://data.fis-ski.com/services/public/icalendar-feed-fis-events.html' +
+      `?seasoncode=${seasonCode}&sectorcode=FS&categorycode=WC&disciplinecode=SX,SXT`,
+    competition: 'SKI_CROSS',
+    seasonCode,
+    classifyDiscipline: (eventLabel) => (/team/i.test(eventLabel) ? 'SXT' : 'SX'),
+  });
+}
+
+/**
+ * Coupe du Monde FIS de Snowboard (secteur SB), même format de flux que le
+ * Ski Cross. Libellés "Event:" observés dans le flux réel :
+ *   "Snowboard Cross [Team|Qualification]", "Parallel Team [Qualification]",
+ *   "Parallel Giant Slalom [Qualification]", "Parallel Slalom [Qualification]".
+ *
+ * WARNING: l'ordre des tests ci-dessous est significatif — "Parallel Giant
+ * Slalom" contient "giant slalom", et "Snowboard Cross Team" contient
+ * "snowboard cross" : les libellés les plus spécifiques doivent être testés en
+ * premier.
+ */
+function classifySnowboardDiscipline(eventLabel: string): Match['discipline'] {
+  const label = eventLabel.toLowerCase();
+  if (label.includes('snowboard cross')) {
+    return label.includes('team') ? 'BXT' : 'SBX';
+  }
+  if (label.includes('parallel team')) return 'PRT';
+  if (label.includes('parallel giant slalom')) return 'PGS';
+  if (label.includes('parallel slalom')) return 'PSL';
+  if (label.includes('giant slalom')) return 'GS';
+  return undefined;
+}
+
+async function scrapeSnowboard(): Promise<Match[]> {
+  const seasonCode = getFisSeasonCode();
+  return scrapeFisIcalFeed({
+    url:
+      'https://data.fis-ski.com/services/public/icalendar-feed-fis-events.html' +
+      `?seasoncode=${seasonCode}&sectorcode=SB&categorycode=WC&disciplinecode=SBX,BXT,PGS,PSL,GS,PRT`,
+    competition: 'SNOWBOARD',
+    seasonCode,
+    classifyDiscipline: classifySnowboardDiscipline,
+  });
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────
@@ -1118,6 +1187,10 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     {
       key: 'SKI_CROSS',
       fetch: scrapeSkiCross,
+    },
+    {
+      key: 'SNOWBOARD',
+      fetch: scrapeSnowboard,
     },
   ];
 
