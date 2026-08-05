@@ -363,13 +363,15 @@ async function scrapeLNH(): Promise<Match[]> {
   try {
     // WARNING: seasons_id and key are season-specific and WILL expire.
     // Update these at the start of each new LNH season by inspecting
-    // network requests on https://www.lnh.fr/liquimoly-starligue/calendrier
+    // network requests on https://www.lnh.fr/daikin-starligue/calendrier
+    // (season 2026-2027: competition renamed from "Liqui Moly StarLigue" to
+    // "Daikin StarLigue", seasons_id 39 -> 40, key changed accordingly — see #25)
     const params = new URLSearchParams({
-      seasons_id: '39',
+      seasons_id: '40',
       days_id: 'all',
       teams_id: 'all',
       univers: 'd1-26623',
-      key: '608423208',
+      key: '594259290',
       current_month: 'all',
       type: 'all',
       type_id: 'all',
@@ -383,7 +385,7 @@ async function scrapeLNH(): Promise<Match[]> {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'X-Requested-With': 'XMLHttpRequest',
-        'Referer': `${LNH_BASE}/liquimoly-starligue/calendrier`,
+        'Referer': `${LNH_BASE}/daikin-starligue/calendrier`,
       },
     });
 
@@ -451,63 +453,6 @@ async function scrapeLNH(): Promise<Match[]> {
     logError('LNH scraping failed:', err instanceof Error ? err.message : err);
     return [];
   }
-}
-
-function parseFrenchDatetime(raw: string): { date: string; time: string } {
-  if (!raw) return { date: '', time: '' };
-
-  // Try ISO format first
-  const isoDate = new Date(raw);
-  if (!isNaN(isoDate.getTime()) && raw.includes('-')) {
-    return {
-      date: isoDate.toISOString(),
-      time: `${String(isoDate.getHours()).padStart(2, '0')}:${String(isoDate.getMinutes()).padStart(2, '0')}`,
-    };
-  }
-
-  // Try dd/mm/yyyy or dd-mm-yyyy or dd.mm.yyyy
-  const numericMatch = raw.match(/(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})/);
-  if (numericMatch) {
-    const day = parseInt(numericMatch[1], 10);
-    const month = parseInt(numericMatch[2], 10) - 1;
-    let year = parseInt(numericMatch[3], 10);
-    if (year < 100) year += 2000;
-
-    const timeMatch = raw.match(/(\d{1,2})[h:](\d{2})/);
-    const hours = timeMatch ? parseInt(timeMatch[1], 10) : 0;
-    const minutes = timeMatch ? parseInt(timeMatch[2], 10) : 0;
-
-    const d = new Date(year, month, day, hours, minutes);
-    return {
-      date: d.toISOString(),
-      time: timeMatch ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}` : '',
-    };
-  }
-
-  // Try French text: "samedi 12 janvier 2025" or "12 janv. 2025"
-  const frenchMatch = raw.toLowerCase().match(
-    /(\d{1,2})\s+([a-zéûô]+)\.?\s+(\d{4})/
-  );
-  if (frenchMatch) {
-    const day = parseInt(frenchMatch[1], 10);
-    const monthStr = frenchMatch[2].replace('.', '');
-    const year = parseInt(frenchMatch[3], 10);
-    const month = FRENCH_MONTHS[monthStr];
-
-    if (month !== undefined) {
-      const timeMatch = raw.match(/(\d{1,2})[h:](\d{2})/);
-      const hours = timeMatch ? parseInt(timeMatch[1], 10) : 0;
-      const minutes = timeMatch ? parseInt(timeMatch[2], 10) : 0;
-
-      const d = new Date(year, month, day, hours, minutes);
-      return {
-        date: d.toISOString(),
-        time: timeMatch ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}` : '',
-      };
-    }
-  }
-
-  return { date: '', time: '' };
 }
 
 // ─── EPCR Scraper (Nuxt SSR payload) ────────────────────────────────────────
@@ -613,10 +558,15 @@ async function scrapeEPCRCompetition(
  * Scrapes AS Monaco's official fixtures page (SSR) and returns Ligue 1 home
  * matches only (venue = Stade Louis-II).
  *
- * Page structure (verified via WebFetch):
- *   Month containers: [id^="group-"] e.g. id="group-202604"
- *   Each match: <li> containing French date, competition, venue, time, teams
- *   Home matches: text contains "Louis" (Stade Louis-II)
+ * Page structure (verified live, 2026-08 — see #25, the previous selector
+ * `a[href*="/pros/calendrier/"]` no longer exists and silently dropped every match):
+ *   Each match: div[data-component="MatchPresentationCard"]
+ *     data-competition="L1"        → Ligue 1 filter (empty for friendlies/other comps)
+ *     time[datetime]                → "2026-08-06 20:00:00.000+02:00" (exact kickoff)
+ *     .matchPresCardTeamName (x2)   → team names, in home → away order
+ *     .matchPresCardMeta p          → contains the venue text (e.g. "Stade Louis-II")
+ *   NOTE: data-away="true" is present on Monaco's HOME matches (inverted naming) —
+ *   don't rely on it, use the venue text / team order instead.
  */
 async function scrapeMonacoLigue1(): Promise<Match[]> {
   const client = createClient();
@@ -631,55 +581,44 @@ async function scrapeMonacoLigue1(): Promise<Match[]> {
     });
     const $ = cheerio.load(resp.data as string);
 
-    $('li').each((_, el) => {
-      const liEl = $(el);
-      const liText = liEl.text().replace(/\s+/g, ' ').trim();
+    $('[data-component="MatchPresentationCard"]').each((_, el) => {
+      const card = $(el);
+
+      // Ligue 1 only
+      if (card.attr('data-competition') !== 'L1') return;
 
       // Home matches only (Stade Louis-II)
-      if (!liText.includes('Louis')) return;
-      // Ligue 1 only
-      if (!liText.includes('Ligue 1')) return;
+      const metaText = card.find('.matchPresCardMeta p').first().text();
+      if (!metaText.includes('Louis')) return;
 
-      // Extract date: "05 avril 2026" or "5 avril 2026"
-      const { date, time: parsedTime } = parseFrenchDatetime(liText);
-      if (!date) return;
+      // Exact kickoff datetime, e.g. "2026-08-06 20:00:00.000+02:00"
+      const dtAttr = card.find('time').attr('datetime');
+      if (!dtAttr) return;
+      const parsedDate = new Date(dtAttr.replace(' ', 'T'));
+      if (isNaN(parsedDate.getTime())) return;
+      const date = parsedDate.toISOString();
+      const timeMatch = dtAttr.match(/(\d{2}):(\d{2}):\d{2}/);
+      const time = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : '';
 
-      // Extract time: "20:45" pattern (HH:MM)
-      const timeMatch = liText.match(/\b(\d{2}):(\d{2})\b/);
-      const time = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : parsedTime;
+      const teamNames = card
+        .find('.matchPresCardTeamName')
+        .map((_i, t) => $(t).text().trim())
+        .get();
+      const homeTeam = teamNames[0];
+      const awayTeam = teamNames[1];
+      if (!homeTeam || !awayTeam) return;
 
-      // Logos — imgs inside the <li>, relative paths prefixed with ASM base URL
+      // Logos — relative paths prefixed with ASM base URL
       const ASM_BASE = 'https://www.asmonaco.com';
       const toAsmAbsolute = (src?: string) =>
         src ? (src.startsWith('/') ? `${ASM_BASE}${src}` : src) : undefined;
-      const imgs = liEl.find('img');
-      const getImgSrc = (i: number) =>
-        toAsmAbsolute(imgs.eq(i).attr('data-src') || imgs.eq(i).attr('src'));
-      const homeTeamLogo = getImgSrc(0);
-      const awayTeamLogo = getImgSrc(1);
-
-      // Extract opponent name from the match page URL slug — reliable, no regex fragility.
-      // e.g. href="/fr/pros/calendrier/as-monaco-o-marseille" → "O. Marseille"
-      //      href="/fr/pros/calendrier/as-monaco-aj-auxerre"  → "Aj Auxerre"
-      const matchHref = liEl.find('a[href*="/pros/calendrier/"]').first().attr('href') ?? '';
-      const slug = matchHref.split('/').pop() ?? '';
-      const opponentSlug = slug
-        .replace(/^as-monaco-/, '')
-        .replace(/-as-monaco$/, '');
-
-      // Convert slug to display name: "o-marseille" → "O Marseille"
-      const awayTeam = opponentSlug
-        .split('-')
-        .filter(Boolean)
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-        .join(' ')
-        .trim();
-
-      if (!awayTeam || awayTeam.length < 2) return;
+      const logos = card.find('.matchPresCardTeamLogo img');
+      const homeTeamLogo = toAsmAbsolute(logos.eq(0).attr('data-src') || logos.eq(0).attr('src'));
+      const awayTeamLogo = toAsmAbsolute(logos.eq(1).attr('data-src') || logos.eq(1).attr('src'));
 
       matches.push({
         competition: 'LIGUE1',
-        homeTeam: 'AS Monaco',
+        homeTeam,
         awayTeam,
         date,
         time,
