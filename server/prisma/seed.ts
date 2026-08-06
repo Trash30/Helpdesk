@@ -11,6 +11,7 @@ const ADMIN_PERMISSIONS = [
   'surveys.view', 'surveys.configure',
   'admin.access', 'admin.users', 'admin.roles', 'admin.categories',
   'admin.clientRoles', 'admin.settings',
+  'bmc.view', 'bmc.manage', 'bmc.delete',
 ];
 
 const AGENT_PERMISSIONS = [
@@ -18,6 +19,7 @@ const AGENT_PERMISSIONS = [
   'tickets.assign', 'tickets.viewAll',
   'clients.view', 'clients.create', 'clients.edit',
   'comments.create', 'comments.delete',
+  'bmc.view', 'bmc.manage',
 ];
 
 async function main() {
