@@ -1,26 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { ADMIN_PERMISSIONS, AGENT_PERMISSIONS } from '../src/config/permissions';
 
 const prisma = new PrismaClient();
-
-const ADMIN_PERMISSIONS = [
-  'tickets.view', 'tickets.create', 'tickets.edit', 'tickets.close',
-  'tickets.delete', 'tickets.assign', 'tickets.viewAll',
-  'clients.view', 'clients.create', 'clients.edit', 'clients.delete',
-  'comments.create', 'comments.delete', 'comments.deleteAny',
-  'surveys.view', 'surveys.configure',
-  'admin.access', 'admin.users', 'admin.roles', 'admin.categories',
-  'admin.clientRoles', 'admin.settings',
-  'bmc.view', 'bmc.manage', 'bmc.delete',
-];
-
-const AGENT_PERMISSIONS = [
-  'tickets.view', 'tickets.create', 'tickets.edit', 'tickets.close',
-  'tickets.assign', 'tickets.viewAll',
-  'clients.view', 'clients.create', 'clients.edit',
-  'comments.create', 'comments.delete',
-  'bmc.view', 'bmc.manage',
-];
 
 async function main() {
   console.log('🌱 Seeding database...');
