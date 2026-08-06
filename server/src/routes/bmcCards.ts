@@ -41,7 +41,10 @@ router.get(
   '/bmc-cards',
   requirePermission('bmc.view'),
   async (_req: Request, res: Response) => {
-    const cards = await prisma.bmcCard.findMany({ orderBy: { name: 'asc' } });
+    const cards = await prisma.bmcCard.findMany({
+      orderBy: { name: 'asc' },
+      include: { createdBy: { select: { id: true, firstName: true, lastName: true } } },
+    });
     res.json({ data: cards });
   }
 );
@@ -59,7 +62,10 @@ router.post(
     }
 
     try {
-      const card = await prisma.bmcCard.create({ data: parse.data });
+      const card = await prisma.bmcCard.create({
+        data: { ...parse.data, createdById: req.user!.id },
+        include: { createdBy: { select: { id: true, firstName: true, lastName: true } } },
+      });
       res.status(201).json({ data: card });
     } catch (error) {
       if (isUniqueConstraintError(error)) {
@@ -94,6 +100,7 @@ router.put(
       const card = await prisma.bmcCard.update({
         where: { id: req.params.id },
         data: parse.data,
+        include: { createdBy: { select: { id: true, firstName: true, lastName: true } } },
       });
       res.json({ data: card });
     } catch (error) {

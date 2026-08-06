@@ -20,6 +20,7 @@ interface BmcCard {
   name: string;
   ip: string;
   division: Division;
+  createdBy: { id: string; firstName: string; lastName: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -127,6 +128,9 @@ function BmcCardTile({ card, canManage, canDelete, onEdit, onDelete }: BmcCardTi
         <p className="font-mono text-xs text-muted-foreground truncate flex items-center gap-1">
           {card.ip}
           <ExternalLink className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+        </p>
+        <p className="text-[11px] text-muted-foreground/70 truncate">
+          Ajoutée par {card.createdBy.firstName} {card.createdBy.lastName}
         </p>
       </div>
     </div>
