@@ -8,11 +8,17 @@ const router = Router();
 
 router.use(authMiddleware);
 
+// Cartes BMC = interfaces de gestion physique (iDRAC/iLO) de serveurs internes :
+// on n'accepte que des IP privées RFC1918, jamais une adresse publique (même esprit
+// que PRIVATE_IP_RE dans app.ts pour le CORS).
+const PRIVATE_IPV4_RE =
+  /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/;
+
 const bmcCardSchema = z.object({
   name: z.string().trim().min(1, 'Le nom est requis'),
-  ip: z.string().regex(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/, 'Adresse IPv4 invalide').refine(
-    ip => ip.split('.').every(octet => Number(octet) >= 0 && Number(octet) <= 255),
-    'Adresse IPv4 invalide'
+  ip: z.string().refine(
+    ip => PRIVATE_IPV4_RE.test(ip) && ip.split('.').every(octet => Number(octet) <= 255),
+    'Adresse IPv4 privée invalide (10.x, 172.16-31.x ou 192.168.x attendu)'
   ),
   division: z.enum(['TOP14', 'PRO_D2']),
 });

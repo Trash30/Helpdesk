@@ -42,10 +42,14 @@ const DIVISION_META: Record<Division, { label: string; color: string }> = {
 
 const EMPTY_FORM: BmcCardForm = { name: '', ip: '', division: 'TOP14' };
 
-const IPV4_SHAPE = /^(\d{1,3}\.){3}\d{1,3}$/;
+// Cartes BMC = interfaces de gestion physique (iDRAC/iLO) de serveurs internes :
+// on n'accepte que des IP privées RFC1918, jamais une adresse publique (même règle
+// appliquée côté backend dans bmcCards.ts).
+const PRIVATE_IPV4_SHAPE =
+  /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/;
 
 function isValidIpv4(value: string): boolean {
-  if (!IPV4_SHAPE.test(value)) return false;
+  if (!PRIVATE_IPV4_SHAPE.test(value)) return false;
   return value.split('.').every((octet) => {
     const n = Number(octet);
     return Number.isInteger(n) && n >= 0 && n <= 255;
@@ -209,7 +213,7 @@ export function BmcCardsPage() {
 
     if (!name) nextErrors.name = 'Le nom du serveur est obligatoire.';
     if (!ip) nextErrors.ip = "L'adresse IP est obligatoire.";
-    else if (!isValidIpv4(ip)) nextErrors.ip = 'Adresse IPv4 invalide (ex. 192.168.10.42).';
+    else if (!isValidIpv4(ip)) nextErrors.ip = 'Adresse IPv4 privée invalide (10.x, 172.16-31.x ou 192.168.x attendu).';
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
