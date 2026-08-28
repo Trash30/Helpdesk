@@ -166,7 +166,11 @@ function parseLNRDate(rawDate: string, rawTime: string): string {
   }
 
   const timeMatch = rawTime.match(/(\d{1,2})h(\d{2})/);
-  const hours = timeMatch ? parseInt(timeMatch[1], 10) : 0;
+  // Une fois le match joué, la page LNR/LNH n'affiche plus l'heure (remplacée par le score).
+  // Défaut à midi (et non minuit) pour que la conversion en UTC ne fasse jamais basculer
+  // la date calendaire sur la veille (France = UTC+1/+2, jamais > 12h d'écart) : sinon le
+  // matchKey/fingerprint du match change d'un jour et il apparaît en doublon (scrapé + ghost).
+  const hours = timeMatch ? parseInt(timeMatch[1], 10) : 12;
   const minutes = timeMatch ? parseInt(timeMatch[2], 10) : 0;
 
   return new Date(year, month, day, hours, minutes).toISOString();
