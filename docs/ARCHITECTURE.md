@@ -151,7 +151,8 @@ client/src/
 ### 3.4 State management
 
 - **Serveur** : TanStack Query v5 — cache, invalidation, pagination. `staleTime: 30s` global, `1h` pour les matchs sportifs.
-- **UI locale** : `useState` / `useReducer` React — pas de store global (Zustand non utilisé).
+- **Global léger** : Zustand — `authStore` (utilisateur courant + permissions) et `brandingStore` (logo, nom, couleurs configurables).
+- **UI locale** : `useState` / `useReducer` React.
 - **Context** : `ClientPanelContext` — contrôle l'affichage du `ClientSlideOver` depuis n'importe quelle page.
 
 ### 3.5 Client HTTP
