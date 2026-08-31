@@ -137,9 +137,10 @@ Ouvrir http://localhost:5173 dans le navigateur.
 ├── server/          # Backend Express + Prisma
 │   ├── src/
 │   │   ├── routes/
-│   │   ├── controllers/
+│   │   ├── services/
 │   │   ├── middleware/
 │   │   ├── jobs/
+│   │   ├── lib/
 │   │   ├── utils/
 │   │   └── config/
 │   └── prisma/
