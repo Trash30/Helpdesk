@@ -1,7 +1,7 @@
 # Architecture Fonctionnelle — Helpdesk VOGO
 
 > Document destiné aux architectes et équipes de développement.  
-> Version : mai 2026 — Branche `feat/client-organisation-tickettype`
+> Version : août 2026 — Branche `main`
 
 ---
 
@@ -104,6 +104,8 @@ client/src/
 | `/kb` | `KbListPage` | `kb.read` |
 | `/kb/new` | `KbArticlePage` | `kb.write` |
 | `/kb/:id` | `KbArticlePage` | `kb.read` |
+| `/evenements/commercial` | `CommercialEventsPage` | `events.create` |
+| `/bmc-cards` | `BmcCardsPage` | `bmc.view` |
 
 #### Routes admin
 | Path | Composant | Permission requise |
@@ -174,11 +176,11 @@ server/src/
 ├── index.ts              # Démarrage serveur + jobs cron
 ├── app.ts                # Express app — middlewares + routes
 ├── config/
-│   └── permissions.ts    # Définition des 23 permissions et groupes
+│   └── permissions.ts    # Définition des 28 permissions et groupes
 ├── middleware/
 │   ├── auth.ts           # authMiddleware — vérifie JWT cookie
 │   └── permissions.ts    # requirePermission() + hasPermission()
-├── routes/               # 19 fichiers de routes
+├── routes/               # 21 fichiers de routes
 ├── services/
 │   └── sportsScraper.ts  # Scraping 8 compétitions sportives
 ├── jobs/
@@ -200,7 +202,7 @@ server/src/
 |-----------|------|
 | `trust proxy 1` | Confiance au proxy Nginx — IP client correcte pour rate-limiter |
 | `helmet` | Headers sécurité (CSP, HSTS…) + CORP cross-origin pour les assets |
-| `cors` | Dev : `*` / Prod : allowlist via `ALLOWED_ORIGINS` |
+| `cors` | Dev : `*` / Prod : IP privées RFC 1918 autorisées d'office + origines de `ALLOWED_ORIGINS` |
 | `morgan` | Logs HTTP (`dev` / `combined` selon NODE_ENV) |
 | `cookieParser` | Parse le cookie `helpdesk_token` |
 | `express.json` | Body JSON — limite 10 Mo |
@@ -230,7 +232,7 @@ server/src/
 
 Le système est basé sur des **rôles** portant une liste de **permissions** (string[]).
 
-#### 23 permissions définies
+#### 28 permissions définies
 
 | Domaine | Permissions |
 |---------|-------------|
@@ -240,6 +242,8 @@ Le système est basé sur des **rôles** portant une liste de **permissions** (s
 | **Enquêtes** | `surveys.view`, `surveys.configure` |
 | **Admin** | `admin.access`, `admin.users`, `admin.roles`, `admin.categories`, `admin.clientRoles`, `admin.settings` |
 | **Base de connaissance** | `kb.read`, `kb.write` |
+| **Missions Support** | `events.create` |
+| **Cartes BMC** | `bmc.view`, `bmc.manage`, `bmc.delete` |
 
 #### Principe d'application
 ```typescript
@@ -311,12 +315,35 @@ if (!hasPermission(req.user!, 'tickets.viewAll')) {
 | Méthode | Path | Auth | Description |
 |---------|------|------|-------------|
 | GET | `/matches` | Oui | Matchs de la semaine (cache 1h, 8 compétitions) |
-| POST | `/match-attachments` | `tickets.create` | Upload pièce jointe match (PDF/image) |
-| POST | `/match-attachments/query` | Authentifié | Liste des pièces jointes par matchKey |
+| POST | `/refresh` | `tickets.create` | Vide le cache et re-scrape (cooldown 30s) |
+| POST | `/match-attachments` | `tickets.create` | Upload pièce jointe match (PDF, 10 Mo) |
+| POST | `/match-attachments/query` | Authentifié | Pièces jointes de plusieurs matchs (`matchKeys[]`) |
 | GET | `/match-attachments/:id/download` | Authentifié | Téléchargement sécurisé |
 | DELETE | `/match-attachments/:id` | `admin.access` | Suppression |
-| GET | `/match-notes/by-key` | Authentifié | Note de match par matchKey |
-| POST | `/match-notes` | Authentifié | Créer/mettre à jour une note de match |
+| GET | `/match-notes` | Authentifié | Toutes les notes de match |
+| GET | `/match-notes/team-members` | Authentifié | Agents éligibles technicien chaperon |
+| GET | `/match-notes/report/week` | Authentifié | Notes de la semaine ISO courante |
+| POST | `/match-notes/upload-image` | `tickets.create` | Upload image collée dans l'éditeur TipTap |
+| PUT | `/match-notes/:matchKey` | `tickets.create` | Créer/mettre à jour une note (upsert) |
+| DELETE | `/match-notes/:matchKey` | Authentifié | Supprimer une note |
+
+#### Missions Support — `/api/commercial-events`
+| Méthode | Path | Auth | Description |
+|---------|------|------|-------------|
+| GET | `/commercial-events` | `events.create` | Missions de l'utilisateur courant (`?horizon=30`) |
+| GET | `/commercial-events/today` | Authentifié | Missions du jour (tous créateurs) |
+| GET | `/commercial-events/upcoming` | Authentifié | Missions J+30 (tous créateurs — widget dashboard) |
+| POST | `/commercial-events` | `events.create` | Créer une mission |
+| PUT | `/commercial-events/:id` | Créateur ou `admin.access` | Modifier |
+| DELETE | `/commercial-events/:id` | Créateur ou `admin.access` | Supprimer |
+
+#### Cartes BMC — `/api/bmc-cards`
+| Méthode | Path | Auth | Description |
+|---------|------|------|-------------|
+| GET | `/bmc-cards` | `bmc.view` | Liste des cartes BMC serveurs LNR |
+| POST | `/bmc-cards` | `bmc.manage` | Créer (IP privée RFC 1918 obligatoire, division TOP14/PRO_D2) |
+| PUT | `/bmc-cards/:id` | `bmc.manage` | Modifier |
+| DELETE | `/bmc-cards/:id` | `bmc.delete` | Supprimer définitivement |
 
 #### Administration — `/api/admin`
 | Ressource | Routes disponibles |
@@ -427,7 +454,23 @@ KbArticle
   └── KbAttachment[]
 ```
 
-### 5.6 Référentiel (tables de configuration)
+### 5.6 Missions Support & infrastructure
+
+```
+CommercialEvent  (missions Support terrain)
+  ├── clientName, competition (texte libre), location, notes
+  ├── startDate / endDate         DateTime
+  ├── techContact{FirstName,LastName,Email,Phone}
+  └── createdById ──────► User    (créateur — seul lui ou un admin peut éditer/supprimer)
+
+BmcCard  (interfaces d'administration matérielle des serveurs LNR)
+  ├── name
+  ├── ip          String  @@unique  (IPv4 privée RFC 1918 uniquement — validé par Zod)
+  ├── division    BmcDivision  (TOP14 | PRO_D2)
+  └── createdById ──────► User
+```
+
+### 5.7 Référentiel (tables de configuration)
 
 | Table | Description |
 |-------|-------------|
@@ -482,9 +525,8 @@ fetchAllMatches()
       { key: 'PRO_D2',          fetch: scrapePROD2 },
       { key: 'EPCR',            fetch: scrapeEPCR },
       { key: 'EPCR_CHALLENGE',  fetch: scrapeEPCRChallenge },
-      { key: 'LNH',             fetch: scrapeLNH },
-      { key: 'SUPER_LEAGUE',    fetch: scrapeSuperLeague },
-      { key: 'LIGUE1',          fetch: scrapeLigue1 },
+      { key: 'LNH',             fetch: scrapeLNH },       // Daikin Starligue
+      { key: 'LIGUE1',          fetch: scrapeLigue1 },    // AS Monaco à domicile
       { key: 'ELMS',            fetch: scrapeELMS },
       { key: 'ESTONIE',         fetch: scrapeEstonie },
     ])
@@ -502,8 +544,7 @@ fetchAllMatches()
 | Pro D2 | HTML Cheerio (LNR) | Tous |
 | Champions Cup (EPCR) | Nuxt SSR payload JSON | Clubs français en home team |
 | Challenge Cup (EPCR) | Nuxt SSR payload JSON | Clubs français en home team |
-| Starligue (LNH) | POST AJAX (seasons_id + key) | Tous |
-| Super League | HTML Cheerio + fallback statique | Catalans Dragons domicile |
+| Daikin Starligue (LNH) | POST AJAX (seasons_id + key) | Tous |
 | Ligue 1 | HTML Cheerio (AS Monaco) | AS Monaco domicile |
 | ELMS | JSON-LD Schema.org | Tous les rounds (slugs dynamiques) |
 | Premium Liiga (ESTONIE) | iCal jalgpall.ee | Tous |
@@ -512,8 +553,8 @@ fetchAllMatches()
 
 ```typescript
 interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' 
-             | 'SUPER_LEAGUE' | 'LIGUE1' | 'ELMS' | 'ESTONIE';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE'
+             | 'LIGUE1' | 'ELMS' | 'ESTONIE';
   homeTeam: string;
   awayTeam: string;
   date: string;        // ISO string
@@ -583,10 +624,11 @@ apps: [
 | Session invalidation | `token.iat < role.roleUpdatedAt` → 401 |
 | Rate limiting | 10 req/min sur toutes les routes auth |
 | Headers | Helmet (CSP, HSTS, X-Frame-Options…) |
-| CORS | Allowlist en production (`ALLOWED_ORIGINS`) |
+| CORS | Prod : IP privées RFC 1918 d'office + `ALLOWED_ORIGINS` (hostnames) |
 | Validation | Zod sur tous les body et query strings |
 | Upload | Multer — types MIME filtrés, limite 10 Mo |
 | Soft delete | Tickets supprimés logiquement (champ `deletedAt`) |
+| Cartes BMC | IP restreinte aux plages privées RFC 1918 (rejet des IP publiques), contrainte d'unicité sur l'IP |
 | Données sensibles | Password exclus des réponses API (select explicite) |
 | Logs | Pas de tokens ni mots de passe dans les logs |
 | Proxy | `trust proxy 1` — IP client réelle pour rate-limiter |

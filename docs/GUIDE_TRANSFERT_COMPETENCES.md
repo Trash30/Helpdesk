@@ -109,17 +109,22 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 server/src/
 ├── index.ts              # Point d'entrée — démarre Express
 ├── app.ts                # Configuration Express (middlewares, routes)
-├── routes/               # Un fichier par ressource
-│   ├── auth.ts           # Authentification
+├── routes/               # Un fichier par ressource (21 fichiers)
+│   ├── auth.ts           # Authentification + préférences compétitions
 │   ├── tickets.ts        # Gestion des tickets
 │   ├── clients.ts        # Gestion des clients
 │   ├── comments.ts       # Commentaires
-│   ├── attachments.ts    # Pièces jointes
+│   ├── attachments.ts    # Pièces jointes tickets
 │   ├── categories.ts     # Catégories tickets
+│   ├── clientRoles.ts / organisations.ts / clubs.ts / poles.ts / ticketTypes.ts  # Référentiels
 │   ├── users.ts          # Agents
 │   ├── roles.ts          # Rôles et permissions
 │   ├── dashboard.ts      # Statistiques
-│   ├── sports.ts         # Matchs + notes + pièces jointes matchs
+│   ├── sports.ts         # Matchs de la semaine + refresh
+│   ├── matchNotes.ts     # Notes de match + images + rapport hebdo
+│   ├── matchAttachments.ts  # PDF joints aux matchs (purge H+6)
+│   ├── commercialEvents.ts  # Missions Support terrain
+│   ├── bmcCards.ts       # Cartes BMC des serveurs LNR
 │   ├── kb.ts             # Base de connaissances
 │   ├── surveys.ts        # Enquêtes satisfaction
 │   └── settings.ts       # Paramètres système
@@ -185,15 +190,38 @@ npx prisma migrate dev --name add-phone2-to-client
 
 ### 5.2 Ajouter une nouvelle permission
 
+Tout se passe dans `server/src/config/permissions.ts` — **source de vérité unique** (le seed `server/prisma/seed.ts` s'appuie dessus).
+
 ```typescript
-// server/src/config/permissions.ts
-export const PERMISSION_GROUPS = {
+// 1. Ajouter la/les clés dans PERMISSIONS
+export const PERMISSIONS = {
   // ...
-  REPORTING: ['reporting.view', 'reporting.export'],  // Nouveau groupe
+  REPORTING: { VIEW: 'reporting.view', EXPORT: 'reporting.export' },
+} as const;
+
+// 2. Étendre PERMISSIONS_LIST
+export const PERMISSIONS_LIST: string[] = [
+  // ...
+  ...Object.values(PERMISSIONS.REPORTING),
+];
+
+// 3. Ajouter le groupe affiché dans l'éditeur de rôles (PERMISSION_GROUPS)
+{
+  key: 'reporting',
+  label: 'Reporting',
+  icon: 'BarChart2',            // nom d'icône lucide-react
+  permissions: [
+    { key: 'reporting.view',   label: 'Voir les rapports',      description: '...' },
+    { key: 'reporting.export', label: 'Exporter les rapports',  description: '...' },
+  ],
 }
+
+// 4. (optionnel) Ajouter aux rôles par défaut : ADMIN_PERMISSIONS / AGENT_PERMISSIONS
 ```
 
-Puis assigner la permission aux rôles via l'interface d'administration.
+Puis `requirePermission('reporting.view')` sur les routes concernées, et assigner la permission aux rôles via l'interface d'administration.
+
+> État actuel : **28 permissions**, 8 groupes (Tickets, Clients, Commentaires, Enquêtes, Admin, Base de connaissance, Missions Support, Cartes BMC).
 
 ### 5.3 Ajouter une compétition sportive
 
@@ -240,11 +268,15 @@ NOUVELLE_COMPETITION: { label: 'Nom affiché', favicon: 'https://...', calendarU
 const COMPETITION_ORDER: Competition[] = [..., 'NOUVELLE_COMPETITION'];
 ```
 
-**3. Route API** (`server/src/routes/auth.ts`) — ajouter la valeur à `VALID_COMPETITIONS` :
+**3. Route API** (`server/src/routes/auth.ts`) — ajouter la valeur à `VALID_COMPETITIONS` **et** augmenter le `.max()` du schéma Zod :
 
 ```typescript
 const VALID_COMPETITIONS = ['TOP14', ..., 'NOUVELLE_COMPETITION'] as const;
+// ...
+sportCompetitions: z.array(z.enum(VALID_COMPETITIONS)).max(7),  // ← passer à 8
 ```
+
+> `VALID_COMPETITIONS` ne contient que les compétitions **sélectionnables en préférence utilisateur** (7 actuellement). `LIGUE1` est scrapée et affichée dans le widget mais n'est pas une préférence — elle n'est donc pas dans cette liste.
 
 **4. Profil utilisateur** (`client/src/pages/ProfilePage.tsx`) — ajouter dans la liste `COMPETITIONS` :
 
@@ -261,16 +293,22 @@ const COMPETITIONS = [
 
 ### 5.4 Mettre à jour les clés LNH (annuellement)
 
-Les paramètres `seasons_id` et `key` du scraper LNH expirent chaque saison.
+Les paramètres `seasons_id` et `key` du scraper LNH expirent chaque saison. L'URL du calendrier
+dépend aussi du **naming sponsor**, qui change périodiquement : `/liquimoly-starligue/` →
+`/daikin-starligue/` (août 2026). Vérifier le slug courant sur lnh.fr.
 
 ```
 1. Ouvrir lnh.fr dans un navigateur
 2. Ouvrir l'onglet Réseau (F12 → Network)
 3. Filtrer sur "XHR" / "Fetch"
-4. Naviguer sur la page des matchs
-5. Repérer la requête vers l'API LNH (contient seasons_id et key)
-6. Mettre à jour server/src/services/sportsScraper.ts fonction scrapeLNH()
-7. Redémarrer le serveur (pm2 restart helpdesk-server)
+4. Naviguer sur la page des matchs (ex. https://www.lnh.fr/daikin-starligue/calendrier)
+5. Repérer la requête POST /ajaxpost1 (contient seasons_id et key)
+6. Mettre à jour server/src/services/sportsScraper.ts fonction scrapeLNH() :
+   - seasons_id, key
+   - LNH_BASE + slug dans l'URL et le header Referer si le naming sponsor a changé
+7. Répercuter le label affiché ('Daikin Starligue') dans SportsMatchesWidget.tsx
+   (COMPETITION_META) et ProfilePage.tsx (COMPETITIONS) — la clé reste 'LNH'
+8. Redémarrer le serveur (sudo pm2 restart helpdesk-server)
 ```
 
 ### 5.5 Déployer une mise à jour
@@ -281,7 +319,7 @@ Le serveur de test est configuré comme repo git — récupérer les changements
 
 ```bash
 cd /opt/helpdesk
-git pull origin feat/client-organisation-tickettype
+git pull origin main
 
 cd server && npm ci && npx prisma migrate deploy && npm run build
 cd ../client && npm run build
@@ -393,6 +431,23 @@ sudo pm2 restart helpdesk-server
 Désormais l'IP peut changer (DHCP) — le nom `helpdesk.local` continue de fonctionner sans aucune modification de configuration.
 
 > **Compatibilité :** Windows 10+, macOS et Ubuntu supportent mDNS nativement. Sur d'autres Linux, installer `avahi-daemon` + `libnss-mdns` côté client.
+
+---
+
+### 5.8 Missions Support & Cartes BMC
+
+Deux modules récents, tous deux 100 % CRUD REST + page React dédiée.
+
+**Missions Support** (`/evenements/commercial`, ex-« événements commerciaux ») :
+- Modèle `CommercialEvent`, routes `server/src/routes/commercialEvents.ts`, page `client/src/pages/commercial/CommercialEventsPage.tsx`.
+- Permission `events.create` pour créer / lister ses missions ; édition et suppression réservées au **créateur** ou à un `admin.access`.
+- `/commercial-events/today` et `/upcoming` sont ouverts à tout utilisateur authentifié (widget dashboard + page « Événements du jour »).
+
+**Cartes BMC** (`/bmc-cards`) :
+- Modèle `BmcCard` (`@@unique` sur `ip`), routes `server/src/routes/bmcCards.ts`, page `client/src/pages/BmcCardsPage.tsx`.
+- Permissions `bmc.view` / `bmc.manage` / `bmc.delete`.
+- **Règle de sécurité** : `ip` doit être une IPv4 privée RFC 1918 (regex `PRIVATE_IPV4_RE` dans `bmcCards.ts`, même esprit que `PRIVATE_IP_RE` du CORS). `division` ∈ `{ TOP14, PRO_D2 }`.
+- Pas de migration à prévoir hors ajout de champ — suivre la procédure §5.1.
 
 ---
 
@@ -567,14 +622,17 @@ refactor(auth): simplifier middleware validation token
 
 | Ressource | Emplacement |
 |-----------|-------------|
+| Index de la documentation | `docs/README.md` |
 | Architecture fonctionnelle | `docs/ARCHITECTURE.md` |
 | Documentation API | `docs/API_REFERENCE.md` |
 | Documentation sécurité | `docs/SECURITE.md` |
 | Troubleshooting déploiement | `docs/TROUBLESHOOTING_DEPLOIEMENT.md` |
+| Guide utilisateur agent (FR/EN) | `docs/GUIDE_UTILISATEUR_AGENT.md` / `_EN.md` |
+| Calendrier de charge 2026-2027 | `docs/CALENDRIER_CHARGE_2026_2027.html` |
+| Calendrier ETP 2026-2027 | `docs/CALENDRIER_ETP_2026_2027.html` |
 | Schéma base de données | `server/prisma/schema.prisma` |
 | Configuration déploiement | `ecosystem.config.js` |
-| Guide installation Linux | `GUIDE-DEPLOIEMENT-UBUNTU.html` |
-| Guide installation Windows | `GUIDE-DEPLOIEMENT-WINDOWS.html` |
+| Script de synchronisation Windows → serveur | `sync-to-server.ps1` |
 | Données de test | `server/prisma/seed.ts` |
 
 ---

@@ -1,5 +1,7 @@
 # Référence API — Helpdesk VOGO
 
+**Dernière mise à jour :** août 2026 (ajout Missions Support + Cartes BMC, renommage Daikin Starligue)
+
 **Base URL :** `http://<serveur>:3001`  
 **Authentification :** Cookie `helpdesk_token` (httpOnly) **ou** header `Authorization: Bearer <token>`  
 **Format :** JSON (`Content-Type: application/json`)
@@ -329,12 +331,136 @@ Crée un brouillon KB pré-rempli depuis un ticket et ses commentaires.
 
 ---
 
+## Missions Support
+
+Suivi des missions Support terrain (ex-« événements commerciaux »). Toutes les routes exigent l'authentification. Permission `events.create` pour la liste et la création ; l'édition et la suppression sont réservées au **créateur** ou à un utilisateur `admin.access`.
+
+### GET /api/commercial-events
+Liste des missions **créées par l'utilisateur courant**.
+
+**Query params**
+| Paramètre | Type | Description |
+|-----------|------|-------------|
+| `horizon` | string | `30` → limite aux missions dont `startDate` est dans les 30 prochains jours |
+
+**Réponse 200**
+```json
+{ "data": [
+  {
+    "id": "uuid",
+    "clientName": "LNR",
+    "startDate": "2026-09-12T08:00:00.000Z",
+    "endDate": "2026-09-12T20:00:00.000Z",
+    "location": "Stade Chaban-Delmas, Bordeaux",
+    "competition": "TOP 14",
+    "techContactFirstName": "Jean",
+    "techContactLastName": "Dupont",
+    "techContactEmail": "jean.dupont@lnr.fr",
+    "techContactPhone": "0600000000",
+    "notes": "Prévoir 2 caméras tribune.",
+    "createdBy": { "id": "uuid", "firstName": "Nicolas", "lastName": "Broutin" }
+  }
+] }
+```
+
+### GET /api/commercial-events/today
+Missions dont `startDate` tombe aujourd'hui. Accessible à **tout utilisateur authentifié** (alimente la page « Événements du jour »). Réponse allégée (pas d'email ni de notes).
+
+### GET /api/commercial-events/upcoming
+Missions dont `startDate` est dans les 30 prochains jours, **tous créateurs confondus**. Accessible à tout utilisateur authentifié (widget dashboard agents/admins).
+
+### POST /api/commercial-events
+Crée une mission. Permission requise : `events.create`. `createdById` est forcé à l'utilisateur courant.
+
+**Body** (tous les champs sont requis)
+```json
+{
+  "clientName": "LNR",
+  "startDate": "2026-09-12T08:00:00.000Z",
+  "endDate": "2026-09-12T20:00:00.000Z",
+  "location": "Stade Chaban-Delmas, Bordeaux",
+  "techContactFirstName": "Jean",
+  "techContactLastName": "Dupont",
+  "techContactEmail": "jean.dupont@lnr.fr",
+  "techContactPhone": "0600000000",
+  "competition": "TOP 14",
+  "notes": "Prévoir 2 caméras tribune."
+}
+```
+
+| Code | Message |
+|------|---------|
+| 400 | Champ manquant ou invalide (détail dans `error`) |
+
+### PUT /api/commercial-events/:id
+Met à jour une mission. Autorisé au créateur (avec `events.create`) **ou** à un `admin.access`. Même schéma de body que POST.
+
+| Code | Message |
+|------|---------|
+| 403 | Permission refusée (ni créateur ni admin) |
+| 404 | Événement introuvable |
+
+### DELETE /api/commercial-events/:id
+Supprime une mission. Autorisé au créateur **ou** à un `admin.access`.
+
+---
+
+## Cartes BMC (serveurs LNR)
+
+Répertoire des interfaces d'administration matérielle (iDRAC/iLO) des serveurs internes LNR. Toutes les routes exigent l'authentification.
+
+### GET /api/bmc-cards
+Liste complète, triée par `name`. Permission requise : `bmc.view`.
+
+**Réponse 200**
+```json
+{ "data": [
+  {
+    "id": "uuid",
+    "name": "srv-prod-01 iDRAC",
+    "ip": "192.168.10.25",
+    "division": "TOP14",
+    "createdBy": { "id": "uuid", "firstName": "Nicolas", "lastName": "Broutin" }
+  }
+] }
+```
+
+### POST /api/bmc-cards
+Crée une carte. Permission requise : `bmc.manage`.
+
+**Body**
+```json
+{ "name": "srv-prod-01 iDRAC", "ip": "192.168.10.25", "division": "TOP14" }
+```
+
+- `ip` **doit** être une IPv4 privée RFC 1918 (`10.x`, `172.16-31.x`, `192.168.x`). Toute adresse publique est rejetée.
+- `division` : `TOP14` ou `PRO_D2` uniquement.
+
+| Code | Message |
+|------|---------|
+| 400 | `Adresse IPv4 privée invalide (...)` / `Cette adresse IP est déjà utilisée par une autre carte` |
+
+### PUT /api/bmc-cards/:id
+Met à jour une carte. Permission requise : `bmc.manage`. Même body et mêmes règles que POST.
+
+| Code | Message |
+|------|---------|
+| 400 | IP invalide ou déjà utilisée |
+| 404 | Carte BMC introuvable |
+
+### DELETE /api/bmc-cards/:id
+Supprime définitivement une carte. Permission requise : `bmc.delete`.
+
+---
+
 ## Sports
 
 ### GET /api/sports/matches
 Retourne tous les matchs de la semaine (cache 1h par compétition).
 
 **Compétitions :** TOP14, PRO_D2, EPCR, EPCR_CHALLENGE, LNH, LIGUE1, ELMS, ESTONIE
+
+> `LNH` = Daikin Starligue (naming sponsor du handball français — anciennement « Liqui Moly Starligue »). Le label affiché est géré côté frontend, la clé de compétition reste `LNH`.
 
 **Réponse 200**
 ```json
@@ -354,6 +480,12 @@ Retourne tous les matchs de la semaine (cache 1h par compétition).
 ```
 
 > `broadcasterLogo` est l'URL du logo du diffuseur TV (chaîne qui retransmet le match). Champ optionnel — absent si le match n'a pas de diffuseur identifié.
+
+### GET /api/sports/match-notes
+Retourne **toutes** les notes de match (avec auteur et technicien chaperon), triées par `matchDate`. Route authentifiée — utilisée au chargement du widget pour rapprocher notes et matchs scrapés.
+
+### GET /api/sports/match-notes/team-members
+Liste des agents pouvant être désignés comme technicien chaperon d'un match. Route authentifiée.
 
 ### PUT /api/sports/match-notes/:matchKey
 Crée ou met à jour la note d'un match (upsert). Permission requise : `tickets.create`
@@ -423,8 +555,22 @@ Vide le cache scraper et relance la collecte de tous les matchs de la semaine. P
 { "error": "Refresh disponible dans 18 secondes" }
 ```
 
+### DELETE /api/sports/match-notes/:matchKey
+Supprime la note d'un match. Route authentifiée.
+
 ### POST /api/sports/match-attachments
-Upload PDF pour un match (max 10 Mo). Dédoublonnage par matchKey + nom de fichier.
+Upload PDF pour un match (max 10 Mo, champ `file`). Permission requise : `tickets.create`. Dédoublonnage par matchKey + nom de fichier.
+
+### POST /api/sports/match-attachments/query
+Liste les pièces jointes de plusieurs matchs. Body `{ "matchKeys": ["...", "..."] }` (array, max 200 — évite les limites de longueur d'URL). Route authentifiée.
+
+### GET /api/sports/match-attachments/:id/download
+Téléchargement sécurisé (protection path-traversal). Route authentifiée.
+
+### DELETE /api/sports/match-attachments/:id
+Suppression d'une pièce jointe. Permission requise : `admin.access`.
+
+> Les pièces jointes de match sont **temporaires** : un job cron les purge automatiquement 6 h après le coup d'envoi.
 
 ---
 

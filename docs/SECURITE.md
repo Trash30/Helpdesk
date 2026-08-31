@@ -1,7 +1,7 @@
 # Documentation Sécurité — Helpdesk VOGO
 
-**Version :** 1.0  
-**Date :** Avril 2026  
+**Version :** 1.1  
+**Date :** Août 2026  
 **Auteur :** Équipe technique VOGO
 
 ---
@@ -122,6 +122,12 @@ L'application utilise un contrôle d'accès basé sur les rôles (**RBAC — Rol
 | Administration | `admin.settings` | Modifier les paramètres système |
 | Base de connaissances | `kb.read` | Lire les articles |
 | Base de connaissances | `kb.write` | Créer/modifier des articles |
+| Missions Support | `events.create` | Enregistrer et consulter ses propres missions Support |
+| Cartes BMC | `bmc.view` | Consulter les cartes BMC des serveurs LNR |
+| Cartes BMC | `bmc.manage` | Créer et modifier des cartes BMC |
+| Cartes BMC | `bmc.delete` | Supprimer définitivement une carte BMC |
+
+> Total : **28 permissions** réparties en 8 groupes.
 
 ### 4.2 Rôles système
 
@@ -129,8 +135,8 @@ Deux rôles système non supprimables :
 
 | Rôle | Permissions |
 |------|------------|
-| **Admin** | Toutes les permissions (23) |
-| **Agent** | tickets.* (sauf delete/viewAll), clients.view/create/edit, comments.create/delete |
+| **Admin** | Toutes les permissions (28) |
+| **Agent** | tickets.* (sauf delete), clients.view/create/edit, comments.create/delete, bmc.view, bmc.manage |
 
 Des rôles personnalisés peuvent être créés et configurés librement.
 
@@ -184,12 +190,18 @@ Le middleware **Helmet.js** est activé et configure automatiquement les en-têt
 
 ## 7. Protection CORS
 
-Le middleware CORS est configuré via la variable d'environnement `ALLOWED_ORIGINS` (liste séparée par des virgules). En production, seules les origines listées dans cette variable sont autorisées. En développement (`NODE_ENV !== 'production'`), toutes les origines sont acceptées pour faciliter le travail local.
+En développement (`NODE_ENV !== 'production'`), toutes les origines sont acceptées pour faciliter le travail local.
+
+En production, une origine est autorisée si **l'une** de ces conditions est vraie :
+- elle correspond à une IP privée / loopback (`localhost`, `127.0.0.1`, `10.x`, `172.16–31.x`, `192.168.x`, avec port optionnel) — regex `PRIVATE_IP_RE` dans `app.ts` ;
+- elle figure dans `ALLOWED_ORIGINS` (liste CSV, optionnelle — utile pour un hostname comme `http://helpdesk.local`).
 
 ```
-# .env (production)
-ALLOWED_ORIGINS=http://192.168.102.90:5173
+# .env (production) — optionnel, uniquement pour les origines non-IP privées
+ALLOWED_ORIGINS=http://helpdesk.local
 ```
+
+Conséquence pratique : un changement d'IP locale du serveur ne nécessite **aucune** mise à jour de configuration CORS.
 
 `credentials: true` est activé pour permettre l'envoi du cookie `helpdesk_token`.
 
@@ -224,9 +236,25 @@ Timeout de 5 secondes pour éviter les attaques de type Slowloris.
 
 ---
 
-## 10. Audit et traçabilité
+## 10. Cartes BMC — restriction réseau
 
-### 10.1 Logs d'activité tickets
+Les cartes BMC désignent les interfaces d'administration matérielle (iDRAC / iLO) des serveurs internes LNR. Ces adresses ne doivent **jamais** pointer vers une ressource publique.
+
+| Contrôle | Implémentation |
+|----------|----------------|
+| Plage d'adresses | `ip` validé par Zod contre une regex RFC 1918 stricte — seules `10.x`, `172.16–31.x`, `192.168.x` sont acceptées (chaque octet ≤ 255). Toute IP publique, loopback ou non conforme → `HTTP 400`. |
+| Type de division | `division` restreint à l'enum Prisma `BmcDivision` — `TOP14` ou `PRO_D2` uniquement. |
+| Unicité | Contrainte `@@unique` sur `ip` — une même adresse ne peut pas être enregistrée deux fois (`HTTP 400` sur violation `P2002`). |
+| Accès | Toutes les routes derrière `authMiddleware` + permissions granulaires `bmc.view` / `bmc.manage` / `bmc.delete`. |
+| Traçabilité | `createdById` enregistre l'auteur de la création de chaque carte. |
+
+> Même logique que le blocage RFC 1918 du proxy image (§9), appliquée en sens inverse : ici on **impose** une IP privée au lieu de l'interdire.
+
+---
+
+## 11. Audit et traçabilité
+
+### 11.1 Logs d'activité tickets
 
 Chaque modification d'un ticket génère un enregistrement `ActivityLog` en base de données contenant :
 - L'utilisateur auteur de la modification
@@ -237,17 +265,17 @@ Chaque modification d'un ticket génère un enregistrement `ActivityLog` en base
 
 Ces logs sont immuables et servent de piste d'audit.
 
-### 10.2 Logs serveur
+### 11.2 Logs serveur
 
 Morgan est configuré pour journaliser toutes les requêtes HTTP avec horodatage, méthode, route, statut et durée. Les logs sont écrits dans `/opt/helpdesk/logs/` sur le serveur.
 
-### 10.3 Suppressions douces
+### 11.3 Suppressions douces
 
 Les tickets et articles KB ne sont jamais vraiment supprimés — un champ `deletedAt` est renseigné. L'historique est toujours consultable en base de données par un administrateur.
 
 ---
 
-## 11. Sécurité du déploiement
+## 12. Sécurité du déploiement
 
 | Aspect | Mesure |
 |--------|--------|
@@ -259,7 +287,7 @@ Les tickets et articles KB ne sont jamais vraiment supprimés — un champ `dele
 
 ---
 
-## 12. Récapitulatif des vecteurs d'attaque et contre-mesures
+## 13. Récapitulatif des vecteurs d'attaque et contre-mesures
 
 | Vecteur | Risque | Contre-mesure |
 |---------|--------|---------------|
@@ -271,6 +299,7 @@ Les tickets et articles KB ne sont jamais vraiment supprimés — un champ `dele
 | Injection SQL | Lecture/modification BDD | Prisma ORM (requêtes préparées) |
 | Privilege escalation | Accès non autorisé | RBAC vérifié côté serveur à chaque requête |
 | SSRF | Appels internes via proxy | Blocage IP privées + résolution DNS pre-request + maxRedirects:0 |
+| Pivot via carte BMC | Enregistrement d'une IP publique/externe comme cible d'admin | `ip` restreinte aux plages privées RFC 1918 (validation Zod), enum division, unicité |
 | DNS rebinding | Contournement blocage IP via DNS | Résolution DNS pré-requête + vérification IP résolue |
 | Origine non autorisée | Requêtes cross-origin avec credentials | CORS allowlist via ALLOWED_ORIGINS en production |
 | Enumération token | Reset password brute force | Token haché SHA-256, one-time, 24h |
