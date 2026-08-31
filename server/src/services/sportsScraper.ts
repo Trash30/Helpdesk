@@ -339,7 +339,7 @@ async function scrapeLNR(
 // ─── LNH Scraper (ajaxpost1 endpoint) ───────────────────────────────────────
 
 /**
- * Scrapes LNH Starligue via the internal AJAX endpoint discovered in DevTools.
+ * Scrapes LNH Daikin Starligue via the internal AJAX endpoint discovered in DevTools.
  * POST /ajaxpost1 with days_id=all returns the full season HTML calendar.
  * Parsed with cheerio using verified selectors.
  *
@@ -358,7 +358,7 @@ async function scrapeLNH(): Promise<Match[]> {
   try {
     // WARNING: seasons_id and key are season-specific and WILL expire.
     // Update these at the start of each new LNH season by inspecting
-    // network requests on https://www.lnh.fr/liquimoly-starligue/calendrier
+    // network requests on https://www.lnh.fr/daikin-starligue/calendrier
     const params = new URLSearchParams({
       seasons_id: '39',
       days_id: 'all',
@@ -378,7 +378,7 @@ async function scrapeLNH(): Promise<Match[]> {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'X-Requested-With': 'XMLHttpRequest',
-        'Referer': `${LNH_BASE}/liquimoly-starligue/calendrier`,
+        'Referer': `${LNH_BASE}/daikin-starligue/calendrier`,
       },
     });
 
@@ -395,7 +395,7 @@ async function scrapeLNH(): Promise<Match[]> {
         .split('\n')
         .map(s => s.trim())
         .filter(Boolean)
-        .join(' ');                   // e.g. "Liqui Moly StarLigue - J22 ven. 03 avril 20h00"
+        .join(' ');                   // e.g. "Daikin StarLigue - J22 ven. 03 avril 20h00"
 
       // Extract "DD mois HHhMM" — skip the "Jxx" round and day-of-week abbreviation
       // Handles both abbreviated ("ven. 03 avril 20h00") and full day names
