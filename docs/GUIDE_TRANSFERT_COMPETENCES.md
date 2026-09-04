@@ -238,6 +238,11 @@ async function scrapeNouvelleCompetition(): Promise<Match[]> {
   const resp = await createClient().get('https://...');
   const $ = cheerio.load(resp.data);
   // parser les matchs depuis le DOM
+  // Si le site source affiche l'heure en horaire français (cas de tous les sites
+  // FR type LNR/LNH/EPCR) : passer par parisWallTimeToUTC(year, month, day, hours, minutes)
+  // plutôt que new Date(year, month, day, hours, minutes).toISOString() — ce dernier
+  // interprète l'heure dans le fuseau du serveur Node (pas forcément Europe/Paris),
+  // ce qui peut décaler le match d'un jour une fois reconverti côté navigateur.
   return matches.filter(m => isInCurrentWeek(m.date));
 }
 
@@ -291,24 +296,50 @@ const COMPETITIONS = [
 
 > **Note diffuseur :** `broadcasterLogo` est automatiquement affiché dans le widget et persisté en base lors du premier save d'une note. Il apparaît ensuite dans le CR DOCX exporté sous la date du match (ligne `Diffuseur : [logo]`).
 
-### 5.4 Mettre à jour les clés LNH (annuellement)
+### 5.4 Mettre à jour les clés LNH (annuellement, à faire début septembre)
 
-Les paramètres `seasons_id` et `key` du scraper LNH expirent chaque saison. L'URL du calendrier
-dépend aussi du **naming sponsor**, qui change périodiquement : `/liquimoly-starligue/` →
-`/daikin-starligue/` (août 2026). Vérifier le slug courant sur lnh.fr.
+Les paramètres `seasons_id` et `key` du scraper LNH expirent chaque saison (nouvelle saison =
+nouvelle valeur des deux). L'URL du calendrier dépend aussi du **naming sponsor**, qui change
+périodiquement : `/liquimoly-starligue/` → `/daikin-starligue/` (août 2026). Vérifier le slug
+courant sur lnh.fr.
 
+⚠️ **Piège vécu (rentrée 2026/2027, incident du 2026-09-04)** : contrairement à un `seasons_id`
+totalement invalide, une valeur **de la saison précédente** continue de répondre normalement —
+le scraper ne loggue aucune erreur (`0 matches scraped` ne se déclenche pas) car il reçoit un
+calendrier complet et valide, juste celui de la mauvaise saison. Résultat observé côté utilisateur :
+les matchs affichés semblaient décalés d'un jour ("affiché pour demain") alors qu'en réalité
+c'était tout le calendrier scrapé qui était faux. **Ne pas se fier à l'absence d'erreur dans les
+logs pour valider que la mise à jour annuelle a été faite** — vérifier activement chaque année,
+même si tout semble fonctionner.
+
+**Méthode rapide (sans DevTools)** : `seasons_id` et `key` de la saison en cours sont visibles
+directement dans le HTML de la page, pas besoin d'ouvrir l'onglet Réseau :
+```
+curl -s https://www.lnh.fr/daikin-starligue/calendrier | grep -o '<select name="seasons_id">.\{0,80\}' 
+curl -s https://www.lnh.fr/daikin-starligue/calendrier | grep -o 'name="key" value="[0-9]*"'
+```
+- Dans le `<select name="seasons_id">`, prendre la `<option value="XX" selected>` (ex. `value="40"` pour "2026 / 2027")
+- Le `key` est dans `<input type="hidden" name="key" value="...">`
+
+**Méthode alternative (DevTools, si la méthode curl ne suffit pas)** :
 ```
 1. Ouvrir lnh.fr dans un navigateur
 2. Ouvrir l'onglet Réseau (F12 → Network)
 3. Filtrer sur "XHR" / "Fetch"
 4. Naviguer sur la page des matchs (ex. https://www.lnh.fr/daikin-starligue/calendrier)
 5. Repérer la requête POST /ajaxpost1 (contient seasons_id et key)
+```
+
+**Puis, dans les deux cas :**
+```
 6. Mettre à jour server/src/services/sportsScraper.ts fonction scrapeLNH() :
    - seasons_id, key
    - LNH_BASE + slug dans l'URL et le header Referer si le naming sponsor a changé
 7. Répercuter le label affiché ('Daikin Starligue') dans SportsMatchesWidget.tsx
    (COMPETITION_META) et ProfilePage.tsx (COMPETITIONS) — la clé reste 'LNH'
-8. Redémarrer le serveur (sudo pm2 restart helpdesk-server)
+8. Vérifier que le calendrier retourné correspond bien à aujourd'hui (comparer avec lnh.fr),
+   pas seulement qu'il n'est pas vide
+9. Redémarrer le serveur (sudo pm2 restart helpdesk-server)
 ```
 
 ### 5.5 Déployer une mise à jour
