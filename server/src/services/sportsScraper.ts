@@ -415,12 +415,13 @@ async function scrapeLNH(): Promise<Match[]> {
     // WARNING: seasons_id and key are season-specific and WILL expire.
     // Update these at the start of each new LNH season by inspecting
     // network requests on https://www.lnh.fr/daikin-starligue/calendrier
+    // Saison 2026/2027 (mise a jour le 2026-09-04, valeurs lues sur la page live).
     const params = new URLSearchParams({
-      seasons_id: '39',
+      seasons_id: '40',
       days_id: 'all',
       teams_id: 'all',
       univers: 'd1-26623',
-      key: '608423208',
+      key: '972492778',
       current_month: 'all',
       type: 'all',
       type_id: 'all',
