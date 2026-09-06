@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
 import { hasPermission, requirePermission } from '../middleware/permissions';
 import { matchNoteImageUpload, getUploadsPath } from '../utils/upload';
+import { fetchAllMatches } from '../services/sportsScraper';
 import axios from 'axios';
 import { promises as dns } from 'dns';
 import sanitizeHtml from 'sanitize-html';
@@ -262,13 +263,84 @@ router.get('/report/week', async (_req: Request, res: Response) => {
     orderBy: [{ competition: 'asc' }, { matchDate: 'asc' }, { matchTime: 'asc' }],
   });
 
+  // ─── Dédoublonnage (lecture seule, aucune écriture en base) ───────────────
+  // Le `matchKey` unique contient la date du match. Quand un correctif de
+  // scraper modifie la date calculée d'un match (fuseau horaire, changement de
+  // saison), la note créée avant le correctif garde son ancien matchKey et
+  // devient orpheline : le même match réel peut alors avoir deux lignes
+  // MatchNote dans la même semaine. Le widget n'affiche que la note du
+  // matchKey courant, mais le rapport hebdo les affichait toutes les deux.
+  // On regroupe donc par competition + équipes (sans la date) et on ne garde
+  // que la note correspondant à un match actuellement remonté par le scraper.
+  // Compromis assumé : deux vrais matchs entre les mêmes équipes dans la même
+  // semaine (coupe) seraient fusionnés — cas rare et non résoluble ici.
+  type ReportNote = (typeof notes)[number];
+
+  const groupKeyOf = (note: ReportNote): string =>
+    `${note.competition}_${note.homeTeam.trim().toLowerCase()}_${note.awayTeam.trim().toLowerCase()}`;
+
+  const groups = new Map<string, ReportNote[]>();
+  for (const note of notes) {
+    const key = groupKeyOf(note);
+    const existing = groups.get(key);
+    if (existing) {
+      existing.push(note);
+    } else {
+      groups.set(key, [note]);
+    }
+  }
+
+  const hasDuplicates = [...groups.values()].some((group) => group.length > 1);
+
+  // matchKeys des matchs actuellement actifs, au format exact du frontend
+  // (`getMatchKey` — SportsMatchesWidget.tsx) : le champ `date` du type Match
+  // est renvoyé tel quel au client par GET /api/sports/matches, la comparaison
+  // de chaînes est donc fiable.
+  const activeMatchKeys = new Set<string>();
+  if (hasDuplicates) {
+    try {
+      const { data: matches } = await fetchAllMatches();
+      for (const match of matches) {
+        activeMatchKeys.add(
+          `${match.competition}_${match.homeTeam}_${match.awayTeam}_${match.date}`
+        );
+      }
+    } catch (error) {
+      // Scraper indisponible : on retombe sur le départage par updatedAt
+      console.error('Error fetching matches for report deduplication:', error);
+    }
+  }
+
+  const mostRecent = (candidates: ReportNote[]): ReportNote =>
+    candidates.reduce((kept, current) =>
+      current.updatedAt.getTime() > kept.updatedAt.getTime() ? current : kept
+    );
+
+  const dedupedNotes: ReportNote[] = [];
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      dedupedNotes.push(group[0]);
+      continue;
+    }
+    const active = group.filter((note) => activeMatchKeys.has(note.matchKey));
+    dedupedNotes.push(mostRecent(active.length > 0 ? active : group));
+  }
+
+  // Restauration du tri d'origine : competition asc, matchDate asc, matchTime asc
+  dedupedNotes.sort(
+    (a, b) =>
+      a.competition.localeCompare(b.competition) ||
+      a.matchDate.getTime() - b.matchDate.getTime() ||
+      a.matchTime.localeCompare(b.matchTime)
+  );
+
   res.json({
     data: {
       weekNumber,
       year: now.getFullYear(),
       startOfWeek: startOfWeek.toISOString(),
       endOfWeek: endOfWeek.toISOString(),
-      notes,
+      notes: dedupedNotes,
     },
   });
 });
