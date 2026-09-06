@@ -523,6 +523,7 @@ curl -b cookies.txt http://localhost:3001/api/tickets
 | Note de match disparue le lendemain | Scraper LNR — voir ci-dessous | Ghost match reconstruit automatiquement |
 | Note absente sur match scrapé | Heure ISO différente entre scraper et DB | Lookup fuzzy par fingerprint date-only |
 | Matchs en doublon dans le widget | Ghost + scrapé même match heure différente | Déduplication par fingerprint date-only |
+| Match en double dans le rapport hebdo exporté (widget OK) | Note orpheline — `matchKey` d'avant un correctif de date scraper | Dédoublonnage serveur par équipes/compétition — voir ci-dessous |
 
 ### Bug connu — notes Pro D2 / Top 14 disparaissent le lendemain
 
@@ -545,6 +546,20 @@ curl -b cookies.txt http://localhost:3001/api/tickets
 Cela résout aussi les faux doublons (ghost + scrapé affichés simultanément) : le ghost est exclu si le fingerprint existe déjà dans les résultats du scraper.
 
 **Fichier concerné :** `SportsMatchesWidget.tsx` — maps `notesByKey` + `notesByFingerprint`, helper `getNoteForMatch`.
+
+### Bug connu — match en double dans le rapport hebdo exporté (corrigé septembre 2026)
+
+**Symptôme :** un match apparaît deux fois dans le rapport Word (.docx) généré via le bouton "Générer le rapport" (`MatchReportExport.tsx`), alors que le widget sports ne l'affiche qu'une seule fois pour la même semaine.
+
+**Cause :** `MatchNote.matchKey` (unique en base) a le format `"{competition}_{homeTeam}_{awayTeam}_{date}"` — il inclut la date. Quand un correctif de scraper change la date calculée d'un match (fuseau horaire — voir [[known_issues]] "dates dépendantes du fuseau serveur", ou changement de saison — voir §5.4 "seasons_id/key LNH"), toute note créée **avant** le correctif garde son ancien `matchKey` et devient orpheline en base : elle n'est plus jamais résolue par le widget (qui ne cherche que le `matchKey` courant), mais reste une ligne `MatchNote` à part entière. Si la nouvelle date (post-correctif) retombe dans la même semaine ISO, le rapport hebdo — qui filtre uniquement par plage de `matchDate`, sans notion de "note courante vs orpheline" — renvoie les deux lignes pour le même match réel.
+
+Contrairement au bug de doublon widget ci-dessus (résolu par fingerprint date-only côté client), ce cas ne se voit **que dans l'export**, car le widget ne consulte jamais les notes orphelines — seule la route de rapport, qui lit toutes les notes de la semaine sans filtrer par correspondance à un match actif, était affectée.
+
+**Solution implémentée (septembre 2026) :** `GET /sports/match-notes/report/week` (`server/src/routes/matchNotes.ts`) regroupe les notes de la semaine par `competition + homeTeam + awayTeam` (normalisés, **sans la date**) avant de construire le rapport. Pour un groupe contenant plusieurs notes, seule celle dont le `matchKey` correspond à un match actuellement renvoyé par `fetchAllMatches()` (scraper live, via le cache existant) est conservée ; en repli (aucune correspondance, ex. match déjà passé et sorti de la fenêtre du scraper), on garde la note la plus récemment modifiée (`updatedAt`). Filtrage en lecture seule : les lignes orphelines ne sont ni corrigées ni supprimées en base, elles s'accumulent silencieusement — un nettoyage ponctuel reste à envisager si leur nombre devient gênant.
+
+**Limite assumée :** si deux vrais matchs différents opposent les mêmes équipes dans la même compétition la même semaine (rare, ex. matchs aller-retour de coupe), ils seraient à tort fusionnés en un seul dans le rapport. Cas non résolu, jugé acceptable au vu de sa rareté face au bug corrigé.
+
+**Fichier concerné :** `server/src/routes/matchNotes.ts` — handler `GET /report/week`.
 
 ---
 
