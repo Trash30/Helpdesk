@@ -276,10 +276,15 @@ router.get('/report/week', async (_req: Request, res: Response) => {
   // que la note correspondant à un match actuellement remonté par le scraper.
   // Compromis assumé : deux vrais matchs entre les mêmes équipes dans la même
   // semaine (coupe) seraient fusionnés — cas rare et non résoluble ici.
+  // Cas FIS (Ski Cross / Snowboard / Freestyle) : `homeTeam` vaut la ville et
+  // `awayTeam` la phase ("Qualification" / "Finale"), donc deux épreuves
+  // distinctes du même site (disciplines ou genres différents) partageraient la
+  // même clé. On ajoute `discipline` et `gender` à la clé — vides (donc
+  // neutres) pour toutes les compétitions non-FIS où ils valent null.
   type ReportNote = (typeof notes)[number];
 
   const groupKeyOf = (note: ReportNote): string =>
-    `${note.competition}_${note.homeTeam.trim().toLowerCase()}_${note.awayTeam.trim().toLowerCase()}`;
+    `${note.competition}_${note.homeTeam.trim().toLowerCase()}_${note.awayTeam.trim().toLowerCase()}_${(note.discipline ?? '').trim().toLowerCase()}_${(note.gender ?? '').trim().toLowerCase()}`;
 
   const groups = new Map<string, ReportNote[]>();
   for (const note of notes) {
