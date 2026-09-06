@@ -9,6 +9,9 @@ import {
   MatchNoteData,
   getMatchKey,
   ElmsMatchRow,
+  SkiCrossMatchRow,
+  SnowboardMatchRow,
+  FreestyleECMatchRow,
   MatchRow,
   COMPETITION_META,
 } from '@/components/sports/SportsMatchesWidget';
@@ -140,6 +143,27 @@ export function TodayEventsPage() {
                     const key = getMatchKey(m);
                     return m.competition === 'ELMS' ? (
                       <ElmsMatchRow
+                        key={`${key}-${idx}`}
+                        match={m}
+                        attachments={attachmentsByKey.get(key) ?? []}
+                        existingNote={notesByKey.get(key)}
+                      />
+                    ) : m.competition === 'SKI_CROSS' ? (
+                      <SkiCrossMatchRow
+                        key={`${key}-${idx}`}
+                        match={m}
+                        attachments={attachmentsByKey.get(key) ?? []}
+                        existingNote={notesByKey.get(key)}
+                      />
+                    ) : m.competition === 'SNOWBOARD' ? (
+                      <SnowboardMatchRow
+                        key={`${key}-${idx}`}
+                        match={m}
+                        attachments={attachmentsByKey.get(key) ?? []}
+                        existingNote={notesByKey.get(key)}
+                      />
+                    ) : m.competition === 'FREESTYLE_EC' ? (
+                      <FreestyleECMatchRow
                         key={`${key}-${idx}`}
                         match={m}
                         attachments={attachmentsByKey.get(key) ?? []}

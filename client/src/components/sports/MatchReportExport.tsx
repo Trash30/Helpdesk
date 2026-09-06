@@ -26,6 +26,10 @@ interface MatchNoteReport {
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;
+  /** Compétitions FIS uniquement (Ski Cross, Snowboard, Freestyle EC) */
+  discipline?: string;
+  /** Compétitions FIS uniquement : épreuve hommes (M) / femmes (W) */
+  gender?: 'M' | 'W';
   author: { id: string; firstName: string; lastName: string };
 }
 
@@ -280,6 +284,21 @@ function getCompetitionLabel(competition: string): string {
   return meta?.label || competition;
 }
 
+/**
+ * Mappe un code discipline FIS vers sa clé i18n (namespace `sports`).
+ * Retourne `undefined` pour les compétitions non-FIS (pas de discipline),
+ * ce qui laisse le rendu historique "homeTeam vs awayTeam" inchangé.
+ */
+function getDisciplineLabelKey(discipline: string): string | undefined {
+  const map: Record<string, string> = {
+    SX: 'skiCross.individual', SXT: 'skiCross.team',
+    SBX: 'snowboard.sbx', BXT: 'snowboard.bxt', PGS: 'snowboard.pgs',
+    PSL: 'snowboard.psl', GS: 'snowboard.gs', PRT: 'snowboard.prt',
+    MO: 'freestyleEc.moguls', AE: 'freestyleEc.aerials',
+  };
+  return map[discipline];
+}
+
 function formatNoteDate(dateStr: string, time: string): string {
   const d = new Date(dateStr);
   const day = DAY_NAMES_FULL[d.getDay()];
@@ -443,18 +462,27 @@ export function MatchReportExport() {
           );
 
           // Heading du match : homeTeam vs awayTeam
+          // Cas FIS (Ski Cross / Snowboard / Freestyle EC) : le "awayTeam" du scraper
+          // est en réalité une phase ("Qualification", "Finale"...) → on affiche
+          // "Lieu — Discipline" à la place.
+          const disciplineKey = note.discipline ? getDisciplineLabelKey(note.discipline) : undefined;
           const headingChildren: (TextRun | ImageRun)[] = [];
           if (homeImg) {
             headingChildren.push(makeImageRun(homeImg, 20));
             headingChildren.push(new TextRun({ text: ' ' }));
           }
           headingChildren.push(new TextRun({ text: note.homeTeam, bold: true, size: 26 }));
-          headingChildren.push(new TextRun({ text: '  vs  ', bold: false, size: 26, color: '888888' }));
-          if (awayImg) {
-            headingChildren.push(makeImageRun(awayImg, 20));
-            headingChildren.push(new TextRun({ text: ' ' }));
+          if (disciplineKey) {
+            headingChildren.push(new TextRun({ text: ' — ', bold: false, size: 26, color: '888888' }));
+            headingChildren.push(new TextRun({ text: t(disciplineKey), bold: true, size: 26 }));
+          } else {
+            headingChildren.push(new TextRun({ text: '  vs  ', bold: false, size: 26, color: '888888' }));
+            if (awayImg) {
+              headingChildren.push(makeImageRun(awayImg, 20));
+              headingChildren.push(new TextRun({ text: ' ' }));
+            }
+            headingChildren.push(new TextRun({ text: note.awayTeam, bold: true, size: 26 }));
           }
-          headingChildren.push(new TextRun({ text: note.awayTeam, bold: true, size: 26 }));
 
           sections.push(
             new Paragraph({

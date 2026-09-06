@@ -41,6 +41,8 @@ const matchNoteBodySchema = z.object({
   competition: z.string().min(1, 'competition est requis'),
   homeTeam: z.string().min(1, 'homeTeam est requis'),
   awayTeam: z.string().min(1, 'awayTeam est requis'),
+  discipline: z.enum(['SX', 'SXT', 'SBX', 'BXT', 'PGS', 'PSL', 'GS', 'PRT', 'MO', 'AE']).optional(),
+  gender: z.enum(['M', 'W']).optional(),
   matchTime: z.string().default(''),
   venue: z.string().nullable().optional(),
   homeTeamLogo: z.string().nullable().optional(),
@@ -274,10 +276,15 @@ router.get('/report/week', async (_req: Request, res: Response) => {
   // que la note correspondant à un match actuellement remonté par le scraper.
   // Compromis assumé : deux vrais matchs entre les mêmes équipes dans la même
   // semaine (coupe) seraient fusionnés — cas rare et non résoluble ici.
+  // Cas FIS (Ski Cross / Snowboard / Freestyle) : `homeTeam` vaut la ville et
+  // `awayTeam` la phase ("Qualification" / "Finale"), donc deux épreuves
+  // distinctes du même site (disciplines ou genres différents) partageraient la
+  // même clé. On ajoute `discipline` et `gender` à la clé — vides (donc
+  // neutres) pour toutes les compétitions non-FIS où ils valent null.
   type ReportNote = (typeof notes)[number];
 
   const groupKeyOf = (note: ReportNote): string =>
-    `${note.competition}_${note.homeTeam.trim().toLowerCase()}_${note.awayTeam.trim().toLowerCase()}`;
+    `${note.competition}_${note.homeTeam.trim().toLowerCase()}_${note.awayTeam.trim().toLowerCase()}_${(note.discipline ?? '').trim().toLowerCase()}_${(note.gender ?? '').trim().toLowerCase()}`;
 
   const groups = new Map<string, ReportNote[]>();
   for (const note of notes) {
@@ -357,7 +364,7 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
     return;
   }
 
-  const { content, matchDate, competition, homeTeam, awayTeam, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status, production, chaperonnage, chaperonneTechnicienId } = parsed.data;
+  const { content, matchDate, competition, homeTeam, awayTeam, discipline, gender, matchTime, venue, homeTeamLogo, awayTeamLogo, broadcasterLogo, status, production, chaperonnage, chaperonneTechnicienId } = parsed.data;
 
   const sanitizedContent = sanitizeHtml(content, ALLOWED_TIPTAP_HTML);
 
@@ -379,6 +386,8 @@ router.put('/:matchKey', requirePermission('tickets.create'), async (req: Reques
       competition,
       homeTeam,
       awayTeam,
+      discipline: discipline || null,
+      gender: gender || null,
       matchTime,
       venue: venue || null,
       homeTeamLogo: homeTeamLogo || null,

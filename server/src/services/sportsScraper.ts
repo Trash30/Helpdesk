@@ -60,13 +60,22 @@ function getParisNowAsLocal(): Date {
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
   time: string;       // "HH:mm" or "" if unknown
   venue?: string;
   country?: string;        // code ISO 2 lettres, ex: "FR", "ES"
+  // Disciplines FIS :
+  //  - ski cross  : SX (individuel), SXT (par équipe)
+  //  - snowboard  : SBX (border cross), BXT (border cross équipe),
+  //                 PGS (slalom géant parallèle), PSL (slalom parallèle),
+  //                 GS (slalom géant), PRT (parallèle par équipe)
+  //  - freestyle  : MO (bosses, y compris bosses en parallèle),
+  //                 AE (ski acrobatique / sauts)
+  discipline?: 'SX' | 'SXT' | 'SBX' | 'BXT' | 'PGS' | 'PSL' | 'GS' | 'PRT' | 'MO' | 'AE';
+  gender?: 'M' | 'W';         // épreuves FIS : hommes / femmes
   homeTeamLogo?: string;
   awayTeamLogo?: string;
   broadcasterLogo?: string;  // URL logo diffuseur TV
@@ -415,6 +424,8 @@ async function scrapeLNH(): Promise<Match[]> {
     // WARNING: seasons_id and key are season-specific and WILL expire.
     // Update these at the start of each new LNH season by inspecting
     // network requests on https://www.lnh.fr/daikin-starligue/calendrier
+    // (season 2026-2027: competition renamed from "Liqui Moly StarLigue" to
+    // "Daikin StarLigue", seasons_id 39 -> 40, key changed accordingly — see #25)
     // Saison 2026/2027 (mise a jour le 2026-09-04, valeurs lues sur la page live).
     const params = new URLSearchParams({
       seasons_id: '40',
@@ -503,63 +514,6 @@ async function scrapeLNH(): Promise<Match[]> {
     logError('LNH scraping failed:', err instanceof Error ? err.message : err);
     return [];
   }
-}
-
-function parseFrenchDatetime(raw: string): { date: string; time: string } {
-  if (!raw) return { date: '', time: '' };
-
-  // Try ISO format first
-  const isoDate = new Date(raw);
-  if (!isNaN(isoDate.getTime()) && raw.includes('-')) {
-    return {
-      date: isoDate.toISOString(),
-      time: `${String(isoDate.getHours()).padStart(2, '0')}:${String(isoDate.getMinutes()).padStart(2, '0')}`,
-    };
-  }
-
-  // Try dd/mm/yyyy or dd-mm-yyyy or dd.mm.yyyy
-  const numericMatch = raw.match(/(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})/);
-  if (numericMatch) {
-    const day = parseInt(numericMatch[1], 10);
-    const month = parseInt(numericMatch[2], 10) - 1;
-    let year = parseInt(numericMatch[3], 10);
-    if (year < 100) year += 2000;
-
-    const timeMatch = raw.match(/(\d{1,2})[h:](\d{2})/);
-    const hours = timeMatch ? parseInt(timeMatch[1], 10) : 0;
-    const minutes = timeMatch ? parseInt(timeMatch[2], 10) : 0;
-
-    const d = parisWallTimeToUTC(year, month, day, hours, minutes);
-    return {
-      date: d.toISOString(),
-      time: timeMatch ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}` : '',
-    };
-  }
-
-  // Try French text: "samedi 12 janvier 2025" or "12 janv. 2025"
-  const frenchMatch = raw.toLowerCase().match(
-    /(\d{1,2})\s+([a-zéûô]+)\.?\s+(\d{4})/
-  );
-  if (frenchMatch) {
-    const day = parseInt(frenchMatch[1], 10);
-    const monthStr = frenchMatch[2].replace('.', '');
-    const year = parseInt(frenchMatch[3], 10);
-    const month = FRENCH_MONTHS[monthStr];
-
-    if (month !== undefined) {
-      const timeMatch = raw.match(/(\d{1,2})[h:](\d{2})/);
-      const hours = timeMatch ? parseInt(timeMatch[1], 10) : 0;
-      const minutes = timeMatch ? parseInt(timeMatch[2], 10) : 0;
-
-      const d = parisWallTimeToUTC(year, month, day, hours, minutes);
-      return {
-        date: d.toISOString(),
-        time: timeMatch ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}` : '',
-      };
-    }
-  }
-
-  return { date: '', time: '' };
 }
 
 // ─── EPCR Scraper (Nuxt SSR payload) ────────────────────────────────────────
@@ -665,10 +619,15 @@ async function scrapeEPCRCompetition(
  * Scrapes AS Monaco's official fixtures page (SSR) and returns Ligue 1 home
  * matches only (venue = Stade Louis-II).
  *
- * Page structure (verified via WebFetch):
- *   Month containers: [id^="group-"] e.g. id="group-202604"
- *   Each match: <li> containing French date, competition, venue, time, teams
- *   Home matches: text contains "Louis" (Stade Louis-II)
+ * Page structure (verified live, 2026-08 — see #25, the previous selector
+ * `a[href*="/pros/calendrier/"]` no longer exists and silently dropped every match):
+ *   Each match: div[data-component="MatchPresentationCard"]
+ *     data-competition="L1"        → Ligue 1 filter (empty for friendlies/other comps)
+ *     time[datetime]                → "2026-08-06 20:00:00.000+02:00" (exact kickoff)
+ *     .matchPresCardTeamName (x2)   → team names, in home → away order
+ *     .matchPresCardMeta p          → contains the venue text (e.g. "Stade Louis-II")
+ *   NOTE: data-away="true" is present on Monaco's HOME matches (inverted naming) —
+ *   don't rely on it, use the venue text / team order instead.
  */
 async function scrapeMonacoLigue1(): Promise<Match[]> {
   const client = createClient();
@@ -683,55 +642,44 @@ async function scrapeMonacoLigue1(): Promise<Match[]> {
     });
     const $ = cheerio.load(resp.data as string);
 
-    $('li').each((_, el) => {
-      const liEl = $(el);
-      const liText = liEl.text().replace(/\s+/g, ' ').trim();
+    $('[data-component="MatchPresentationCard"]').each((_, el) => {
+      const card = $(el);
+
+      // Ligue 1 only
+      if (card.attr('data-competition') !== 'L1') return;
 
       // Home matches only (Stade Louis-II)
-      if (!liText.includes('Louis')) return;
-      // Ligue 1 only
-      if (!liText.includes('Ligue 1')) return;
+      const metaText = card.find('.matchPresCardMeta p').first().text();
+      if (!metaText.includes('Louis')) return;
 
-      // Extract date: "05 avril 2026" or "5 avril 2026"
-      const { date, time: parsedTime } = parseFrenchDatetime(liText);
-      if (!date) return;
+      // Exact kickoff datetime, e.g. "2026-08-06 20:00:00.000+02:00"
+      const dtAttr = card.find('time').attr('datetime');
+      if (!dtAttr) return;
+      const parsedDate = new Date(dtAttr.replace(' ', 'T'));
+      if (isNaN(parsedDate.getTime())) return;
+      const date = parsedDate.toISOString();
+      const timeMatch = dtAttr.match(/(\d{2}):(\d{2}):\d{2}/);
+      const time = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : '';
 
-      // Extract time: "20:45" pattern (HH:MM)
-      const timeMatch = liText.match(/\b(\d{2}):(\d{2})\b/);
-      const time = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : parsedTime;
+      const teamNames = card
+        .find('.matchPresCardTeamName')
+        .map((_i, t) => $(t).text().trim())
+        .get();
+      const homeTeam = teamNames[0];
+      const awayTeam = teamNames[1];
+      if (!homeTeam || !awayTeam) return;
 
-      // Logos — imgs inside the <li>, relative paths prefixed with ASM base URL
+      // Logos — relative paths prefixed with ASM base URL
       const ASM_BASE = 'https://www.asmonaco.com';
       const toAsmAbsolute = (src?: string) =>
         src ? (src.startsWith('/') ? `${ASM_BASE}${src}` : src) : undefined;
-      const imgs = liEl.find('img');
-      const getImgSrc = (i: number) =>
-        toAsmAbsolute(imgs.eq(i).attr('data-src') || imgs.eq(i).attr('src'));
-      const homeTeamLogo = getImgSrc(0);
-      const awayTeamLogo = getImgSrc(1);
-
-      // Extract opponent name from the match page URL slug — reliable, no regex fragility.
-      // e.g. href="/fr/pros/calendrier/as-monaco-o-marseille" → "O. Marseille"
-      //      href="/fr/pros/calendrier/as-monaco-aj-auxerre"  → "Aj Auxerre"
-      const matchHref = liEl.find('a[href*="/pros/calendrier/"]').first().attr('href') ?? '';
-      const slug = matchHref.split('/').pop() ?? '';
-      const opponentSlug = slug
-        .replace(/^as-monaco-/, '')
-        .replace(/-as-monaco$/, '');
-
-      // Convert slug to display name: "o-marseille" → "O Marseille"
-      const awayTeam = opponentSlug
-        .split('-')
-        .filter(Boolean)
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-        .join(' ')
-        .trim();
-
-      if (!awayTeam || awayTeam.length < 2) return;
+      const logos = card.find('.matchPresCardTeamLogo img');
+      const homeTeamLogo = toAsmAbsolute(logos.eq(0).attr('data-src') || logos.eq(0).attr('src'));
+      const awayTeamLogo = toAsmAbsolute(logos.eq(1).attr('data-src') || logos.eq(1).attr('src'));
 
       matches.push({
         competition: 'LIGUE1',
-        homeTeam: 'AS Monaco',
+        homeTeam,
         awayTeam,
         date,
         time,
@@ -1009,6 +957,230 @@ async function scrapeEstonie(): Promise<Match[]> {
   }
 }
 
+// ─── FIS (Coupe du Monde) — flux iCal data.fis-ski.com ───────────────────────
+
+/**
+ * Codes pays FIS (3 lettres, type CIO) → ISO 3166-1 alpha-2.
+ * Couvre les nations habituelles des circuits FIS ski et snowboard (Coupe du
+ * Monde et Coupe d'Europe).
+ * Un code absent de cette table laisse `country` undefined (le drapeau n'est
+ * simplement pas affiché côté client).
+ */
+const IOC3_TO_ISO2: Record<string, string> = {
+  FRA: 'FR', SUI: 'CH', ITA: 'IT', AUT: 'AT', BIH: 'BA',
+  SRB: 'RS', SWE: 'SE', CAN: 'CA', USA: 'US', GER: 'DE',
+  NOR: 'NO', SLO: 'SI', CZE: 'CZ', POL: 'PL', FIN: 'FI',
+  ESP: 'ES', AND: 'AD', NZL: 'NZ', JPN: 'JP', CHN: 'CN',
+  KOR: 'KR', GBR: 'GB', NED: 'NL', BEL: 'BE', AUS: 'AU',
+  RUS: 'RU', UKR: 'UA', BUL: 'BG', CRO: 'HR', SVK: 'SK',
+  TUR: 'TR',
+};
+
+/**
+ * Calcule le code saison FIS courant.
+ * Une saison FIS est nommée d'après son année de fin : la saison 2026-2027
+ * (décembre 2026 → mars 2027) porte le code "2027". On bascule sur la saison
+ * suivante à partir de juillet, bien avant les premières épreuves de décembre.
+ *
+ * WARNING: ce calcul repose sur la convention actuelle de la FIS (bascule à
+ * mi-année). Si la FIS change ses dates de saison ou son nommage, ce seuil
+ * devra être ajusté — vérifier alors le paramètre `seasoncode` d'une URL de
+ * résultats sur https://www.fis-ski.com/DB/general/results.html
+ */
+function getFisSeasonCode(ref: Date = new Date()): string {
+  const year = ref.getFullYear();
+  // getMonth(): 0=janvier … 6=juillet
+  return String(ref.getMonth() >= 6 ? year + 1 : year);
+}
+
+interface FisIcalScrapeOptions {
+  /** URL complète du flux iCal (seasoncode/sectorcode/disciplinecode inclus). */
+  url: string;
+  /** Compétition portée par les `Match` produits. */
+  competition: Match['competition'];
+  /** Code saison FIS, uniquement utilisé pour enrichir les logs. */
+  seasonCode: string;
+  /**
+   * Déduit la discipline à partir du libellé "Event:" du flux.
+   * Retourner `undefined` si le libellé n'est pas reconnu (aucun badge ne sera
+   * alors affiché côté client).
+   */
+  classifyDiscipline: (eventLabel: string) => Match['discipline'];
+}
+
+/**
+ * Scrape générique d'un flux iCal Coupe du Monde FIS (data.fis-ski.com).
+ * Le flux est parsé manuellement (pas de librairie iCal externe), comme
+ * scrapeEstonie(). Le format est identique d'un secteur à l'autre (ski
+ * freestyle, snowboard…), seuls l'URL et le mapping des disciplines changent.
+ *
+ * Particularités du flux FIS :
+ *  - DTSTART;VALUE=DATE:YYYYMMDD → date pure, sans heure (épreuve "toute la
+ *    journée", les horaires dépendent de la météo) → `time` reste vide.
+ *  - SUMMARY : "{Ville} ({PAYS_3}) - {Secteur} World Cup".
+ *  - DESCRIPTION : contient "Gender: Men|Women" et "Event: {libellé}". Le
+ *    libellé est le seul marqueur fiable pour identifier la discipline (la FIS
+ *    ne renvoie pas le code discipline brut) → d'où `classifyDiscipline`.
+ *  - CATEGORIES : "…-QUA" pour une qualification, "…-WC" pour une finale.
+ */
+async function scrapeFisIcalFeed(opts: FisIcalScrapeOptions): Promise<Match[]> {
+  try {
+    const client = createClient();
+    const resp = await client.get(opts.url, { responseType: 'arraybuffer' });
+    // Force UTF-8 decoding to preserve accented venue names (ex: "Gällivare")
+    const ical = Buffer.from(resp.data as ArrayBuffer).toString('utf-8');
+
+    const matches: Match[] = [];
+    const eventBlocks = ical.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
+
+    for (const block of eventBlocks) {
+      // Date pure : DTSTART;VALUE=DATE:20261208
+      const dtMatch = block.match(/DTSTART;VALUE=DATE:(\d{4})(\d{2})(\d{2})/);
+      if (!dtMatch) continue;
+      const year = parseInt(dtMatch[1], 10);
+      const month = parseInt(dtMatch[2], 10); // 1-12
+      const day = parseInt(dtMatch[3], 10);
+      // Minuit local : l'épreuve n'a pas d'horaire publié
+      const date = new Date(year, month - 1, day);
+      if (isNaN(date.getTime())) continue;
+
+      const isoDate = date.toISOString();
+      if (!isInCurrentWeek(isoDate)) continue;
+
+      // "Val Thorens (FRA) - Freestyle World Cup" → ville + code pays 3 lettres
+      const summaryMatch = block.match(/SUMMARY:(.+)/);
+      if (!summaryMatch) continue;
+      const summary = summaryMatch[1].trim();
+      const venueMatch = summary.match(/^(.*?)\s*\(([A-Z]{3})\)/);
+      if (!venueMatch) continue;
+      const city = venueMatch[1].trim();
+      const country = IOC3_TO_ISO2[venueMatch[2]];
+
+      // La DESCRIPTION est sur une seule ligne : on l'isole avant d'en extraire
+      // les champs, sinon "X-MICROSOFT-CDO-ALLDAYEVENT:TRUE" parasiterait la
+      // recherche de "Event:".
+      const descMatch = block.match(/DESCRIPTION:(.+)/);
+      const description = descMatch ? descMatch[1] : '';
+
+      // Les champs sont séparés par des séquences d'échappement iCal ("\n",
+      // parfois "\" seul dans ce flux) → on s'arrête au prochain backslash.
+      const eventMatch = description.match(/Event:\s*([^\\]*)/);
+      const eventLabel = eventMatch ? eventMatch[1].trim() : '';
+      const discipline = opts.classifyDiscipline(eventLabel);
+
+      const genderMatch = description.match(/Gender:\s*(Men|Women)/i);
+      const gender: 'M' | 'W' | undefined = genderMatch
+        ? (genderMatch[1].toLowerCase() === 'women' ? 'W' : 'M')
+        : undefined;
+
+      const isQualification = /CATEGORIES:[^\r\n]*QUA/.test(block);
+
+      matches.push({
+        competition: opts.competition,
+        homeTeam: city,
+        awayTeam: isQualification ? 'Qualification' : 'Finale',
+        date: isoDate,
+        time: '',
+        venue: city,
+        country,
+        discipline,
+        gender,
+      });
+    }
+
+    log(`${opts.competition}: season ${opts.seasonCode}, ${eventBlocks.length} events → ${matches.length} in current week`);
+    return matches;
+  } catch (err) {
+    logError(`${opts.competition} scraping failed:`, err instanceof Error ? err.message : err);
+    return [];
+  }
+}
+
+/**
+ * Coupe du Monde FIS de Ski Cross (secteur FS = freestyle).
+ * Disciplines : SX = individuel, SXT = par équipe. La FIS ne publiant pas le
+ * code brut, la présence du mot "Team" dans le libellé suffit à trancher.
+ */
+async function scrapeSkiCross(): Promise<Match[]> {
+  const seasonCode = getFisSeasonCode();
+  return scrapeFisIcalFeed({
+    url:
+      'https://data.fis-ski.com/services/public/icalendar-feed-fis-events.html' +
+      `?seasoncode=${seasonCode}&sectorcode=FS&categorycode=WC&disciplinecode=SX,SXT`,
+    competition: 'SKI_CROSS',
+    seasonCode,
+    classifyDiscipline: (eventLabel) => (/team/i.test(eventLabel) ? 'SXT' : 'SX'),
+  });
+}
+
+/**
+ * Coupe du Monde FIS de Snowboard (secteur SB), même format de flux que le
+ * Ski Cross. Libellés "Event:" observés dans le flux réel :
+ *   "Snowboard Cross [Team|Qualification]", "Parallel Team [Qualification]",
+ *   "Parallel Giant Slalom [Qualification]", "Parallel Slalom [Qualification]".
+ *
+ * WARNING: l'ordre des tests ci-dessous est significatif — "Parallel Giant
+ * Slalom" contient "giant slalom", et "Snowboard Cross Team" contient
+ * "snowboard cross" : les libellés les plus spécifiques doivent être testés en
+ * premier.
+ */
+function classifySnowboardDiscipline(eventLabel: string): Match['discipline'] {
+  const label = eventLabel.toLowerCase();
+  if (label.includes('snowboard cross')) {
+    return label.includes('team') ? 'BXT' : 'SBX';
+  }
+  if (label.includes('parallel team')) return 'PRT';
+  if (label.includes('parallel giant slalom')) return 'PGS';
+  if (label.includes('parallel slalom')) return 'PSL';
+  if (label.includes('giant slalom')) return 'GS';
+  return undefined;
+}
+
+async function scrapeSnowboard(): Promise<Match[]> {
+  const seasonCode = getFisSeasonCode();
+  return scrapeFisIcalFeed({
+    url:
+      'https://data.fis-ski.com/services/public/icalendar-feed-fis-events.html' +
+      `?seasoncode=${seasonCode}&sectorcode=SB&categorycode=WC&disciplinecode=SBX,BXT,PGS,PSL,GS,PRT`,
+    competition: 'SNOWBOARD',
+    seasonCode,
+    classifyDiscipline: classifySnowboardDiscipline,
+  });
+}
+
+/**
+ * Coupe d'Europe FIS de Ski Freestyle (secteur FS, categorycode=EC).
+ * Même format de flux que les Coupes du Monde ci-dessus : seul le paramètre
+ * `categorycode` change (EC au lieu de WC).
+ *
+ * Libellés "Event:" observés dans le flux réel : "Aerials", "Moguls" et
+ * "Dual Moguls" — cette dernière est une variante des bosses, pas une
+ * discipline FIS distincte : elle est donc classée MO.
+ *
+ * NOTE: le champ CATEGORIES de ce flux vaut toujours "FIS-calendar-FS-EC"
+ * (pas de suffixe QUA comme en Coupe du Monde) : toutes les épreuves seront
+ * donc étiquetées "Finale", ce qui correspond à la réalité de ces épreuves à
+ * manche unique.
+ */
+function classifyFreestyleECDiscipline(eventLabel: string): Match['discipline'] {
+  const label = eventLabel.toLowerCase();
+  if (label.includes('aerials')) return 'AE';
+  if (label.includes('moguls')) return 'MO'; // couvre "Moguls" et "Dual Moguls"
+  return undefined;
+}
+
+async function scrapeFreestyleEC(): Promise<Match[]> {
+  const seasonCode = getFisSeasonCode();
+  return scrapeFisIcalFeed({
+    url:
+      'https://data.fis-ski.com/services/public/icalendar-feed-fis-events.html' +
+      `?seasoncode=${seasonCode}&sectorcode=FS&categorycode=EC&disciplinecode=MO,AE`,
+    competition: 'FREESTYLE_EC',
+    seasonCode,
+    classifyDiscipline: classifyFreestyleECDiscipline,
+  });
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: string }> {
@@ -1047,6 +1219,18 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     {
       key: 'ESTONIE',
       fetch: scrapeEstonie,
+    },
+    {
+      key: 'SKI_CROSS',
+      fetch: scrapeSkiCross,
+    },
+    {
+      key: 'SNOWBOARD',
+      fetch: scrapeSnowboard,
+    },
+    {
+      key: 'FREESTYLE_EC',
+      fetch: scrapeFreestyleEC,
     },
   ];
 
