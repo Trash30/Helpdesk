@@ -39,6 +39,11 @@ export const PERMISSIONS = {
   EVENTS: {
     CREATE: 'events.create',
   },
+  BMC: {
+    VIEW: 'bmc.view',
+    MANAGE: 'bmc.manage',
+    DELETE: 'bmc.delete',
+  },
 } as const;
 
 // Flat list for iteration / validation
@@ -50,6 +55,7 @@ export const PERMISSIONS_LIST: string[] = [
   ...Object.values(PERMISSIONS.ADMIN),
   ...Object.values(PERMISSIONS.KB),
   ...Object.values(PERMISSIONS.EVENTS),
+  ...Object.values(PERMISSIONS.BMC),
 ];
 
 // All admin sub-permissions that require admin.access automatically
@@ -150,6 +156,16 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: 'events.create', label: 'Gérer ses missions', description: 'Enregistrer et consulter ses propres missions Support' },
     ],
   },
+  {
+    key: 'bmc',
+    label: 'Cartes BMC',
+    icon: 'Server',
+    permissions: [
+      { key: 'bmc.view', label: 'Voir les cartes BMC', description: "Accéder à la page des cartes BMC des serveurs LNR" },
+      { key: 'bmc.manage', label: 'Ajouter/modifier une carte BMC', description: "Créer et éditer les cartes BMC" },
+      { key: 'bmc.delete', label: 'Supprimer une carte BMC', description: "Supprimer définitivement une carte BMC" },
+    ],
+  },
 ];
 
 // Default permissions for built-in roles
@@ -167,4 +183,6 @@ export const AGENT_PERMISSIONS: string[] = [
   PERMISSIONS.CLIENTS.EDIT,
   PERMISSIONS.COMMENTS.CREATE,
   PERMISSIONS.COMMENTS.DELETE,
+  PERMISSIONS.BMC.VIEW,
+  PERMISSIONS.BMC.MANAGE,
 ];

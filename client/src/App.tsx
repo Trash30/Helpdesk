@@ -25,6 +25,7 @@ import { TicketNewPage } from '@/pages/tickets/TicketNewPage';
 import { TicketDetailPage } from '@/pages/tickets/TicketDetailPage';
 import { ClientListPage } from '@/pages/clients/ClientListPage';
 import { ClientDetailPage } from '@/pages/clients/ClientDetailPage';
+import { BmcCardsPage } from '@/pages/BmcCardsPage';
 
 // Admin pages
 import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage';
@@ -145,6 +146,16 @@ export default function App() {
                 element={
                   <ProtectedRoute requiredPermission="events.create">
                     <CommercialEventsPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Cartes BMC — serveurs LNR */}
+              <Route
+                path="/bmc-cards"
+                element={
+                  <ProtectedRoute requiredPermission="bmc.view">
+                    <BmcCardsPage />
                   </ProtectedRoute>
                 }
               />

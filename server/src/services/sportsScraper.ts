@@ -1,6 +1,62 @@
 import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
 
+// ─── Timezone helpers ───────────────────────────────────────────────────────
+
+/**
+ * Returns the Europe/Paris UTC offset (in minutes, e.g. 120 for CEST, 60 for CET)
+ * that applies around the given instant. DST-aware.
+ */
+function getParisOffsetMinutes(approx: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Paris',
+    timeZoneName: 'shortOffset',
+  }).formatToParts(approx);
+  const tzName = parts.find((p) => p.type === 'timeZoneName')?.value ?? 'GMT+1';
+  const match = tzName.match(/GMT([+-]\d+)(?::(\d+))?/);
+  if (!match) return 60;
+  const hours = parseInt(match[1], 10);
+  const minutes = match[2] ? parseInt(match[2], 10) : 0;
+  return hours * 60 + (hours < 0 ? -minutes : minutes);
+}
+
+/**
+ * Converts a French wall-clock date/time (as scraped from LNH/LNR/EPCR pages,
+ * always displayed in Europe/Paris local time) into the correct UTC Date —
+ * regardless of the timezone the Node process itself is running under.
+ * Using `new Date(year, month, day, hours, minutes)` instead would silently
+ * interpret the wall-clock time as the SERVER's local timezone (e.g. UTC on a
+ * default-configured Ubuntu host), shifting matches by hours and, for evening
+ * kickoffs, onto the wrong calendar day once converted back to a French
+ * browser's local time.
+ */
+function parisWallTimeToUTC(year: number, month: number, day: number, hours: number, minutes: number): Date {
+  const approxUtc = new Date(Date.UTC(year, month, day, hours, minutes));
+  const offsetMinutes = getParisOffsetMinutes(approxUtc);
+  return new Date(Date.UTC(year, month, day, hours, minutes) - offsetMinutes * 60_000);
+}
+
+/**
+ * Returns "now", but with its getFullYear/getMonth/getDate/getHours getters
+ * reflecting the Europe/Paris wall clock rather than the Node process's own
+ * timezone — used so "today"/"this week" boundaries match the French calendar
+ * day regardless of the server's configured timezone.
+ */
+function asParisLocal(instant: Date): Date {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  }).formatToParts(instant);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? '0');
+  return new Date(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
+}
+
+function getParisNowAsLocal(): Date {
+  return asParisLocal(new Date());
+}
+
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
@@ -122,11 +178,11 @@ function getISOWeekBounds(refDate: Date): { monday: Date; sunday: Date } {
 function isInCurrentWeek(dateStr: string): boolean {
   const matchDate = new Date(dateStr);
   if (isNaN(matchDate.getTime())) return false;
-  // Normalize match date to local midnight for date-only comparison
-  const matchLocal = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
-  // Use getTime() on the parsed date to recover local components correctly:
-  // new Date(isoString) gives UTC; .getFullYear() etc. convert to local automatically
-  const { monday, sunday } = getISOWeekBounds(new Date());
+  // Normalize match date to its Europe/Paris calendar day, regardless of the
+  // server process's own timezone.
+  const matchParis = asParisLocal(matchDate);
+  const matchLocal = new Date(matchParis.getFullYear(), matchParis.getMonth(), matchParis.getDate());
+  const { monday, sunday } = getISOWeekBounds(getParisNowAsLocal());
   const mondayDate = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate());
   const sundayDate = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate());
   return matchLocal >= mondayDate && matchLocal <= sundayDate;
@@ -175,10 +231,14 @@ function parseLNRDate(rawDate: string, rawTime: string): string {
   }
 
   const timeMatch = rawTime.match(/(\d{1,2})h(\d{2})/);
-  const hours = timeMatch ? parseInt(timeMatch[1], 10) : 0;
+  // Une fois le match joué, la page LNR/LNH n'affiche plus l'heure (remplacée par le score).
+  // Défaut à midi (et non minuit) pour que la conversion en UTC ne fasse jamais basculer
+  // la date calendaire sur la veille (France = UTC+1/+2, jamais > 12h d'écart) : sinon le
+  // matchKey/fingerprint du match change d'un jour et il apparaît en doublon (scrapé + ghost).
+  const hours = timeMatch ? parseInt(timeMatch[1], 10) : 12;
   const minutes = timeMatch ? parseInt(timeMatch[2], 10) : 0;
 
-  return new Date(year, month, day, hours, minutes).toISOString();
+  return parisWallTimeToUTC(year, month, day, hours, minutes).toISOString();
 }
 
 // ─── LNR Scraper (Pro D2 & Top 14) ─────────────────────────────────────────
@@ -344,7 +404,7 @@ async function scrapeLNR(
 // ─── LNH Scraper (ajaxpost1 endpoint) ───────────────────────────────────────
 
 /**
- * Scrapes LNH Starligue via the internal AJAX endpoint discovered in DevTools.
+ * Scrapes LNH Daikin Starligue via the internal AJAX endpoint discovered in DevTools.
  * POST /ajaxpost1 with days_id=all returns the full season HTML calendar.
  * Parsed with cheerio using verified selectors.
  *
@@ -366,12 +426,13 @@ async function scrapeLNH(): Promise<Match[]> {
     // network requests on https://www.lnh.fr/daikin-starligue/calendrier
     // (season 2026-2027: competition renamed from "Liqui Moly StarLigue" to
     // "Daikin StarLigue", seasons_id 39 -> 40, key changed accordingly — see #25)
+    // Saison 2026/2027 (mise a jour le 2026-09-04, valeurs lues sur la page live).
     const params = new URLSearchParams({
       seasons_id: '40',
       days_id: 'all',
       teams_id: 'all',
       univers: 'd1-26623',
-      key: '594259290',
+      key: '972492778',
       current_month: 'all',
       type: 'all',
       type_id: 'all',
@@ -402,7 +463,7 @@ async function scrapeLNH(): Promise<Match[]> {
         .split('\n')
         .map(s => s.trim())
         .filter(Boolean)
-        .join(' ');                   // e.g. "Liqui Moly StarLigue - J22 ven. 03 avril 20h00"
+        .join(' ');                   // e.g. "Daikin StarLigue - J22 ven. 03 avril 20h00"
 
       // Extract "DD mois HHhMM" — skip the "Jxx" round and day-of-week abbreviation
       // Handles both abbreviated ("ven. 03 avril 20h00") and full day names

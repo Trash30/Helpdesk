@@ -15,7 +15,8 @@
       "Bash(gh issue:*)",
       "Bash(git checkout:*)",
       "Bash(git add:*)",
-      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\NicolasBROUTIN\\\\Documents\\\\HELPDESK PROJECT\" -Recurse -Directory | Select-Object -First 20 | Format-Table Name, @{Label=\"Path\";Expression={$_.FullName.Substring\\(50\\)}} -AutoSize)"
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\NicolasBROUTIN\\\\Documents\\\\HELPDESK PROJECT\" -Recurse -Directory | Select-Object -First 20 | Format-Table Name, @{Label=\"Path\";Expression={$_.FullName.Substring\\(50\\)}} -AutoSize)",
+      "Artifact"
     ]
   }
 }

@@ -54,6 +54,11 @@ enum MatchNoteStatus {
   ROUGE
 }
 
+enum BmcDivision {
+  TOP14
+  PRO_D2
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model Role {
@@ -96,6 +101,7 @@ model User {
   kbArticles         KbArticle[]       @relation("KbAuthor")
   kbAttachments      KbAttachment[]    @relation("KbAttachmentUploader")
   commercialEvents   CommercialEvent[]
+  bmcCards           BmcCard[]
 }
 
 model ClientRole {
@@ -401,4 +407,17 @@ model CommercialEvent {
   createdBy            User     @relation(fields: [createdById], references: [id])
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
+}
+
+model BmcCard {
+  id          String      @id @default(uuid())
+  name        String
+  ip          String
+  division    BmcDivision
+  createdById String
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([ip])
 }

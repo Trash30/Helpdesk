@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Ticket, Users, Settings, Tag, UserCheck,
   Shield, Users2, BarChart2, Plus, Search, LogOut, User,
   ChevronRight, Moon, Sun, Languages, Menu, Building2, MapPin, Landmark, FileType, BookOpen,
-  CalendarPlus,
+  CalendarPlus, Server,
 } from 'lucide-react';
 import { useBranding } from '@/hooks/useBranding';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -313,6 +313,9 @@ export function MainLayout() {
           )}
           {can('events.create') && (
             <NavItem to="/evenements/commercial" icon={<CalendarPlus size={18} />} label={t('nav.missionSupport')} collapsed={collapsed} onNavigate={closeMobile} />
+          )}
+          {can('bmc.view') && (
+            <NavItem to="/bmc-cards" icon={<Server size={18} />} label={t('nav.bmc')} collapsed={collapsed} onNavigate={closeMobile} />
           )}
 
           {can('admin.access') && (

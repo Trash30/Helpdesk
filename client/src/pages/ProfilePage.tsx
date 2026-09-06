@@ -16,7 +16,7 @@ import api from '@/lib/axios';
 const COMPETITIONS = [
   { key: 'TOP14',          label: 'TOP 14' },
   { key: 'PRO_D2',         label: 'PRO D2' },
-  { key: 'LNH',            label: 'Liqui Moly Starligue' },
+  { key: 'LNH',            label: 'Daikin Starligue' },
   { key: 'EPCR',           label: 'EPCR Champions Cup' },
   { key: 'EPCR_CHALLENGE', label: 'EPCR Challenge Cup' },
   { key: 'ELMS',           label: 'ELMS' },

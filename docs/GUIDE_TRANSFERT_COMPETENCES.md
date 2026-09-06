@@ -109,17 +109,22 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 server/src/
 ├── index.ts              # Point d'entrée — démarre Express
 ├── app.ts                # Configuration Express (middlewares, routes)
-├── routes/               # Un fichier par ressource
-│   ├── auth.ts           # Authentification
+├── routes/               # Un fichier par ressource (21 fichiers)
+│   ├── auth.ts           # Authentification + préférences compétitions
 │   ├── tickets.ts        # Gestion des tickets
 │   ├── clients.ts        # Gestion des clients
 │   ├── comments.ts       # Commentaires
-│   ├── attachments.ts    # Pièces jointes
+│   ├── attachments.ts    # Pièces jointes tickets
 │   ├── categories.ts     # Catégories tickets
+│   ├── clientRoles.ts / organisations.ts / clubs.ts / poles.ts / ticketTypes.ts  # Référentiels
 │   ├── users.ts          # Agents
 │   ├── roles.ts          # Rôles et permissions
 │   ├── dashboard.ts      # Statistiques
-│   ├── sports.ts         # Matchs + notes + pièces jointes matchs
+│   ├── sports.ts         # Matchs de la semaine + refresh
+│   ├── matchNotes.ts     # Notes de match + images + rapport hebdo
+│   ├── matchAttachments.ts  # PDF joints aux matchs (purge H+6)
+│   ├── commercialEvents.ts  # Missions Support terrain
+│   ├── bmcCards.ts       # Cartes BMC des serveurs LNR
 │   ├── kb.ts             # Base de connaissances
 │   ├── surveys.ts        # Enquêtes satisfaction
 │   └── settings.ts       # Paramètres système
@@ -185,15 +190,38 @@ npx prisma migrate dev --name add-phone2-to-client
 
 ### 5.2 Ajouter une nouvelle permission
 
+Tout se passe dans `server/src/config/permissions.ts` — **source de vérité unique** (le seed `server/prisma/seed.ts` s'appuie dessus).
+
 ```typescript
-// server/src/config/permissions.ts
-export const PERMISSION_GROUPS = {
+// 1. Ajouter la/les clés dans PERMISSIONS
+export const PERMISSIONS = {
   // ...
-  REPORTING: ['reporting.view', 'reporting.export'],  // Nouveau groupe
+  REPORTING: { VIEW: 'reporting.view', EXPORT: 'reporting.export' },
+} as const;
+
+// 2. Étendre PERMISSIONS_LIST
+export const PERMISSIONS_LIST: string[] = [
+  // ...
+  ...Object.values(PERMISSIONS.REPORTING),
+];
+
+// 3. Ajouter le groupe affiché dans l'éditeur de rôles (PERMISSION_GROUPS)
+{
+  key: 'reporting',
+  label: 'Reporting',
+  icon: 'BarChart2',            // nom d'icône lucide-react
+  permissions: [
+    { key: 'reporting.view',   label: 'Voir les rapports',      description: '...' },
+    { key: 'reporting.export', label: 'Exporter les rapports',  description: '...' },
+  ],
 }
+
+// 4. (optionnel) Ajouter aux rôles par défaut : ADMIN_PERMISSIONS / AGENT_PERMISSIONS
 ```
 
-Puis assigner la permission aux rôles via l'interface d'administration.
+Puis `requirePermission('reporting.view')` sur les routes concernées, et assigner la permission aux rôles via l'interface d'administration.
+
+> État actuel : **28 permissions**, 8 groupes (Tickets, Clients, Commentaires, Enquêtes, Admin, Base de connaissance, Missions Support, Cartes BMC).
 
 ### 5.3 Ajouter une compétition sportive
 
@@ -210,6 +238,11 @@ async function scrapeNouvelleCompetition(): Promise<Match[]> {
   const resp = await createClient().get('https://...');
   const $ = cheerio.load(resp.data);
   // parser les matchs depuis le DOM
+  // Si le site source affiche l'heure en horaire français (cas de tous les sites
+  // FR type LNR/LNH/EPCR) : passer par parisWallTimeToUTC(year, month, day, hours, minutes)
+  // plutôt que new Date(year, month, day, hours, minutes).toISOString() — ce dernier
+  // interprète l'heure dans le fuseau du serveur Node (pas forcément Europe/Paris),
+  // ce qui peut décaler le match d'un jour une fois reconverti côté navigateur.
   return matches.filter(m => isInCurrentWeek(m.date));
 }
 
@@ -240,11 +273,15 @@ NOUVELLE_COMPETITION: { label: 'Nom affiché', favicon: 'https://...', calendarU
 const COMPETITION_ORDER: Competition[] = [..., 'NOUVELLE_COMPETITION'];
 ```
 
-**3. Route API** (`server/src/routes/auth.ts`) — ajouter la valeur à `VALID_COMPETITIONS` :
+**3. Route API** (`server/src/routes/auth.ts`) — ajouter la valeur à `VALID_COMPETITIONS` **et** augmenter le `.max()` du schéma Zod :
 
 ```typescript
 const VALID_COMPETITIONS = ['TOP14', ..., 'NOUVELLE_COMPETITION'] as const;
+// ...
+sportCompetitions: z.array(z.enum(VALID_COMPETITIONS)).max(7),  // ← passer à 8
 ```
+
+> `VALID_COMPETITIONS` ne contient que les compétitions **sélectionnables en préférence utilisateur** (7 actuellement). `LIGUE1` est scrapée et affichée dans le widget mais n'est pas une préférence — elle n'est donc pas dans cette liste.
 
 **4. Profil utilisateur** (`client/src/pages/ProfilePage.tsx`) — ajouter dans la liste `COMPETITIONS` :
 
@@ -259,18 +296,50 @@ const COMPETITIONS = [
 
 > **Note diffuseur :** `broadcasterLogo` est automatiquement affiché dans le widget et persisté en base lors du premier save d'une note. Il apparaît ensuite dans le CR DOCX exporté sous la date du match (ligne `Diffuseur : [logo]`).
 
-### 5.4 Mettre à jour les clés LNH (annuellement)
+### 5.4 Mettre à jour les clés LNH (annuellement, à faire début septembre)
 
-Les paramètres `seasons_id` et `key` du scraper LNH expirent chaque saison.
+Les paramètres `seasons_id` et `key` du scraper LNH expirent chaque saison (nouvelle saison =
+nouvelle valeur des deux). L'URL du calendrier dépend aussi du **naming sponsor**, qui change
+périodiquement : `/liquimoly-starligue/` → `/daikin-starligue/` (août 2026). Vérifier le slug
+courant sur lnh.fr.
 
+⚠️ **Piège vécu (rentrée 2026/2027, incident du 2026-09-04)** : contrairement à un `seasons_id`
+totalement invalide, une valeur **de la saison précédente** continue de répondre normalement —
+le scraper ne loggue aucune erreur (`0 matches scraped` ne se déclenche pas) car il reçoit un
+calendrier complet et valide, juste celui de la mauvaise saison. Résultat observé côté utilisateur :
+les matchs affichés semblaient décalés d'un jour ("affiché pour demain") alors qu'en réalité
+c'était tout le calendrier scrapé qui était faux. **Ne pas se fier à l'absence d'erreur dans les
+logs pour valider que la mise à jour annuelle a été faite** — vérifier activement chaque année,
+même si tout semble fonctionner.
+
+**Méthode rapide (sans DevTools)** : `seasons_id` et `key` de la saison en cours sont visibles
+directement dans le HTML de la page, pas besoin d'ouvrir l'onglet Réseau :
+```
+curl -s https://www.lnh.fr/daikin-starligue/calendrier | grep -o '<select name="seasons_id">.\{0,80\}' 
+curl -s https://www.lnh.fr/daikin-starligue/calendrier | grep -o 'name="key" value="[0-9]*"'
+```
+- Dans le `<select name="seasons_id">`, prendre la `<option value="XX" selected>` (ex. `value="40"` pour "2026 / 2027")
+- Le `key` est dans `<input type="hidden" name="key" value="...">`
+
+**Méthode alternative (DevTools, si la méthode curl ne suffit pas)** :
 ```
 1. Ouvrir lnh.fr dans un navigateur
 2. Ouvrir l'onglet Réseau (F12 → Network)
 3. Filtrer sur "XHR" / "Fetch"
-4. Naviguer sur la page des matchs
-5. Repérer la requête vers l'API LNH (contient seasons_id et key)
-6. Mettre à jour server/src/services/sportsScraper.ts fonction scrapeLNH()
-7. Redémarrer le serveur (pm2 restart helpdesk-server)
+4. Naviguer sur la page des matchs (ex. https://www.lnh.fr/daikin-starligue/calendrier)
+5. Repérer la requête POST /ajaxpost1 (contient seasons_id et key)
+```
+
+**Puis, dans les deux cas :**
+```
+6. Mettre à jour server/src/services/sportsScraper.ts fonction scrapeLNH() :
+   - seasons_id, key
+   - LNH_BASE + slug dans l'URL et le header Referer si le naming sponsor a changé
+7. Répercuter le label affiché ('Daikin Starligue') dans SportsMatchesWidget.tsx
+   (COMPETITION_META) et ProfilePage.tsx (COMPETITIONS) — la clé reste 'LNH'
+8. Vérifier que le calendrier retourné correspond bien à aujourd'hui (comparer avec lnh.fr),
+   pas seulement qu'il n'est pas vide
+9. Redémarrer le serveur (sudo pm2 restart helpdesk-server)
 ```
 
 ### 5.5 Déployer une mise à jour
@@ -281,7 +350,7 @@ Le serveur de test est configuré comme repo git — récupérer les changements
 
 ```bash
 cd /opt/helpdesk
-git pull origin feat/client-organisation-tickettype
+git pull origin main
 
 cd server && npm ci && npx prisma migrate deploy && npm run build
 cd ../client && npm run build
@@ -396,6 +465,23 @@ Désormais l'IP peut changer (DHCP) — le nom `helpdesk.local` continue de fonc
 
 ---
 
+### 5.8 Missions Support & Cartes BMC
+
+Deux modules récents, tous deux 100 % CRUD REST + page React dédiée.
+
+**Missions Support** (`/evenements/commercial`, ex-« événements commerciaux ») :
+- Modèle `CommercialEvent`, routes `server/src/routes/commercialEvents.ts`, page `client/src/pages/commercial/CommercialEventsPage.tsx`.
+- Permission `events.create` pour créer / lister ses missions ; édition et suppression réservées au **créateur** ou à un `admin.access`.
+- `/commercial-events/today` et `/upcoming` sont ouverts à tout utilisateur authentifié (widget dashboard + page « Événements du jour »).
+
+**Cartes BMC** (`/bmc-cards`) :
+- Modèle `BmcCard` (`@@unique` sur `ip`), routes `server/src/routes/bmcCards.ts`, page `client/src/pages/BmcCardsPage.tsx`.
+- Permissions `bmc.view` / `bmc.manage` / `bmc.delete`.
+- **Règle de sécurité** : `ip` doit être une IPv4 privée RFC 1918 (regex `PRIVATE_IPV4_RE` dans `bmcCards.ts`, même esprit que `PRIVATE_IP_RE` du CORS). `division` ∈ `{ TOP14, PRO_D2 }`.
+- Pas de migration à prévoir hors ajout de champ — suivre la procédure §5.1.
+
+---
+
 ## 6. Débogage
 
 ### Voir les logs en production
@@ -437,6 +523,7 @@ curl -b cookies.txt http://localhost:3001/api/tickets
 | Note de match disparue le lendemain | Scraper LNR — voir ci-dessous | Ghost match reconstruit automatiquement |
 | Note absente sur match scrapé | Heure ISO différente entre scraper et DB | Lookup fuzzy par fingerprint date-only |
 | Matchs en doublon dans le widget | Ghost + scrapé même match heure différente | Déduplication par fingerprint date-only |
+| Match en double dans le rapport hebdo exporté (widget OK) | Note orpheline — `matchKey` d'avant un correctif de date scraper | Dédoublonnage serveur par équipes/compétition — voir ci-dessous |
 
 ### Bug connu — notes Pro D2 / Top 14 disparaissent le lendemain
 
@@ -459,6 +546,20 @@ curl -b cookies.txt http://localhost:3001/api/tickets
 Cela résout aussi les faux doublons (ghost + scrapé affichés simultanément) : le ghost est exclu si le fingerprint existe déjà dans les résultats du scraper.
 
 **Fichier concerné :** `SportsMatchesWidget.tsx` — maps `notesByKey` + `notesByFingerprint`, helper `getNoteForMatch`.
+
+### Bug connu — match en double dans le rapport hebdo exporté (corrigé septembre 2026)
+
+**Symptôme :** un match apparaît deux fois dans le rapport Word (.docx) généré via le bouton "Générer le rapport" (`MatchReportExport.tsx`), alors que le widget sports ne l'affiche qu'une seule fois pour la même semaine.
+
+**Cause :** `MatchNote.matchKey` (unique en base) a le format `"{competition}_{homeTeam}_{awayTeam}_{date}"` — il inclut la date. Quand un correctif de scraper change la date calculée d'un match (fuseau horaire — voir [[known_issues]] "dates dépendantes du fuseau serveur", ou changement de saison — voir §5.4 "seasons_id/key LNH"), toute note créée **avant** le correctif garde son ancien `matchKey` et devient orpheline en base : elle n'est plus jamais résolue par le widget (qui ne cherche que le `matchKey` courant), mais reste une ligne `MatchNote` à part entière. Si la nouvelle date (post-correctif) retombe dans la même semaine ISO, le rapport hebdo — qui filtre uniquement par plage de `matchDate`, sans notion de "note courante vs orpheline" — renvoie les deux lignes pour le même match réel.
+
+Contrairement au bug de doublon widget ci-dessus (résolu par fingerprint date-only côté client), ce cas ne se voit **que dans l'export**, car le widget ne consulte jamais les notes orphelines — seule la route de rapport, qui lit toutes les notes de la semaine sans filtrer par correspondance à un match actif, était affectée.
+
+**Solution implémentée (septembre 2026) :** `GET /sports/match-notes/report/week` (`server/src/routes/matchNotes.ts`) regroupe les notes de la semaine par `competition + homeTeam + awayTeam` (normalisés, **sans la date**) avant de construire le rapport. Pour un groupe contenant plusieurs notes, seule celle dont le `matchKey` correspond à un match actuellement renvoyé par `fetchAllMatches()` (scraper live, via le cache existant) est conservée ; en repli (aucune correspondance, ex. match déjà passé et sorti de la fenêtre du scraper), on garde la note la plus récemment modifiée (`updatedAt`). Filtrage en lecture seule : les lignes orphelines ne sont ni corrigées ni supprimées en base, elles s'accumulent silencieusement — un nettoyage ponctuel reste à envisager si leur nombre devient gênant.
+
+**Limite assumée :** si deux vrais matchs différents opposent les mêmes équipes dans la même compétition la même semaine (rare, ex. matchs aller-retour de coupe), ils seraient à tort fusionnés en un seul dans le rapport. Cas non résolu, jugé acceptable au vu de sa rareté face au bug corrigé.
+
+**Fichier concerné :** `server/src/routes/matchNotes.ts` — handler `GET /report/week`.
 
 ---
 
@@ -567,14 +668,17 @@ refactor(auth): simplifier middleware validation token
 
 | Ressource | Emplacement |
 |-----------|-------------|
+| Index de la documentation | `docs/README.md` |
 | Architecture fonctionnelle | `docs/ARCHITECTURE.md` |
 | Documentation API | `docs/API_REFERENCE.md` |
 | Documentation sécurité | `docs/SECURITE.md` |
 | Troubleshooting déploiement | `docs/TROUBLESHOOTING_DEPLOIEMENT.md` |
+| Guide utilisateur agent (FR/EN) | `docs/GUIDE_UTILISATEUR_AGENT.md` / `_EN.md` |
+| Calendrier de charge 2026-2027 | `docs/CALENDRIER_CHARGE_2026_2027.html` |
+| Calendrier ETP 2026-2027 | `docs/CALENDRIER_ETP_2026_2027.html` |
 | Schéma base de données | `server/prisma/schema.prisma` |
 | Configuration déploiement | `ecosystem.config.js` |
-| Guide installation Linux | `GUIDE-DEPLOIEMENT-UBUNTU.html` |
-| Guide installation Windows | `GUIDE-DEPLOIEMENT-WINDOWS.html` |
+| Script de synchronisation Windows → serveur | `sync-to-server.ps1` |
 | Données de test | `server/prisma/seed.ts` |
 
 ---

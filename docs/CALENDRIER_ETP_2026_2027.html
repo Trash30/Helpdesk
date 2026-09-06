@@ -1,0 +1,790 @@
+<title>Estimation ETP — Saison 2026-2027</title>
+<meta name="description" content="Calendrier jour par jour de la charge de support estimée en ETP, du 28 juillet 2026 au 1er juillet 2027." />
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #eef1f6;
+    --surface-1: #f8f9fb;
+    --surface-2: #ffffff;
+    --surface-border: #dde2ea;
+    --text-primary: #121a24;
+    --text-secondary: #566072;
+    --text-muted: #8a92a1;
+    --accent: #185fa5;
+    --accent-ink: #0d3d6b;
+    --rugby: #185fa5;
+    --rugby-bg: #e4edf6;
+    --hand: #0e8a7c;
+    --hand-bg: #e1f2ef;
+    --foot: #4c8a3b;
+    --foot-bg: #e8f1e2;
+    --endur: #c06a1e;
+    --endur-bg: #f6e8d8;
+    --winter: #6a4fb0;
+    --winter-bg: #ece7f7;
+    --wrestling: #c23b5a;
+    --wrestling-bg: #f7e1e6;
+    --athletics: #a3790a;
+    --athletics-bg: #f5ecd6;
+    --row-hover: #eef3f9;
+    --shadow: 0 1px 2px rgba(20, 30, 45, 0.06), 0 8px 24px -12px rgba(20, 30, 45, 0.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-0: #0d1117;
+      --surface-1: #141a22;
+      --surface-2: #1a2129;
+      --surface-border: #2a3340;
+      --text-primary: #eef1f6;
+      --text-secondary: #a7b0bf;
+      --text-muted: #6d7686;
+      --accent: #5b9bdb;
+      --accent-ink: #bcdcfb;
+      --rugby: #5b9bdb;
+      --rugby-bg: #1c2c3d;
+      --hand: #3fbfae;
+      --hand-bg: #163330;
+      --foot: #7fc06a;
+      --foot-bg: #1f2e18;
+      --endur: #e2954a;
+      --endur-bg: #3a2712;
+      --winter: #a58ce0;
+      --winter-bg: #2a2440;
+      --wrestling: #e2708c;
+      --wrestling-bg: #3a1e26;
+      --athletics: #e0b23f;
+      --athletics-bg: #3a2f10;
+      --row-hover: #1c242e;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #0d1117;
+    --surface-1: #141a22;
+    --surface-2: #1a2129;
+    --surface-border: #2a3340;
+    --text-primary: #eef1f6;
+    --text-secondary: #a7b0bf;
+    --text-muted: #6d7686;
+    --accent: #5b9bdb;
+    --accent-ink: #bcdcfb;
+    --rugby: #5b9bdb;
+    --rugby-bg: #1c2c3d;
+    --hand: #3fbfae;
+    --hand-bg: #163330;
+    --foot: #7fc06a;
+    --foot-bg: #1f2e18;
+    --endur: #e2954a;
+    --endur-bg: #3a2712;
+    --winter: #a58ce0;
+    --winter-bg: #2a2440;
+    --wrestling: #e2708c;
+    --wrestling-bg: #3a1e26;
+    --athletics: #e0b23f;
+    --athletics-bg: #3a2f10;
+    --row-hover: #1c242e;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.6);
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --surface-0: #eef1f6;
+    --surface-1: #f8f9fb;
+    --surface-2: #ffffff;
+    --surface-border: #dde2ea;
+    --text-primary: #121a24;
+    --text-secondary: #566072;
+    --text-muted: #8a92a1;
+    --accent: #185fa5;
+    --accent-ink: #0d3d6b;
+    --rugby: #185fa5;
+    --rugby-bg: #e4edf6;
+    --hand: #0e8a7c;
+    --hand-bg: #e1f2ef;
+    --foot: #4c8a3b;
+    --foot-bg: #e8f1e2;
+    --endur: #c06a1e;
+    --endur-bg: #f6e8d8;
+    --winter: #6a4fb0;
+    --winter-bg: #ece7f7;
+    --wrestling: #c23b5a;
+    --wrestling-bg: #f7e1e6;
+    --athletics: #a3790a;
+    --athletics-bg: #f5ecd6;
+    --row-hover: #eef3f9;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--surface-0);
+    color: var(--text-primary);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono {
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Consolas", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  header.hero {
+    margin-bottom: 22px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 6px 0 4px;
+    text-wrap: balance;
+  }
+  .sub {
+    color: var(--text-secondary);
+    font-size: 14.5px;
+    max-width: 62ch;
+  }
+  .sub a { color: var(--accent); }
+
+  /* ── Summary panel ─────────────────────────────────────────── */
+  .summary {
+    background: var(--surface-2);
+    border: 1px solid var(--surface-border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 18px 20px;
+    margin: 20px 0 16px;
+    display: grid;
+    gap: 16px;
+  }
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 14px;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat .num {
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Consolas", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .stat .label {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .sparkline {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 46px;
+    padding-top: 4px;
+    border-top: 1px solid var(--surface-border);
+  }
+  .spark-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .spark-bar {
+    width: 100%;
+    max-width: 22px;
+    background: var(--accent);
+    border-radius: 3px 3px 1px 1px;
+    opacity: 0.85;
+  }
+  .spark-label {
+    font-size: 9.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  /* ── Méthodologie ─────────────────────────────────────────── */
+  .method {
+    background: var(--surface-2);
+    border: 1px solid var(--surface-border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 16px 20px;
+    margin-bottom: 22px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .method .method-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .method ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+  .method b { color: var(--text-primary); }
+
+  /* ── Legend ─────────────────────────────────────────────────── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+  /* ── Calendar navigation ──────────────────────────────────── */
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 22px 0 12px;
+  }
+  .cal-nav button {
+    background: var(--surface-2);
+    border: 1px solid var(--surface-border);
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 700;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+  .cal-nav button:hover:not(:disabled) { background: var(--row-hover); }
+  .cal-nav button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .cal-title {
+    font-size: 15.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .cal-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 10px;
+  }
+
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    padding: 0 2px 6px;
+  }
+  .cal-weekdays span { text-align: center; }
+
+  .heat-scale {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0 14px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .heat-scale .heat-steps {
+    display: flex;
+    gap: 3px;
+  }
+  .heat-scale .heat-step {
+    width: 18px;
+    height: 8px;
+    border-radius: 2px;
+    border: 1px solid var(--surface-border);
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .cal-cell {
+    min-height: 108px;
+    background: color-mix(in srgb, var(--accent) calc(var(--heat, 0) * 1%), var(--surface-2));
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
+    padding: 7px 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    cursor: pointer;
+    transition: background 0.12s;
+    position: relative;
+    overflow: hidden;
+  }
+  .cal-cell:hover { filter: brightness(1.06); }
+  .cal-cell.is-outside { opacity: 0.35; }
+  .cal-cell.is-today { box-shadow: inset 0 0 0 2px var(--accent); }
+  .cal-cell.is-selected { box-shadow: inset 0 0 0 2px var(--text-primary); }
+  .cal-cell.is-today.is-selected { box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px var(--text-primary); }
+  .cal-cell.heat-strong { color: #fff; }
+  .cal-cell.heat-strong .cal-daynum,
+  .cal-cell.heat-strong .cal-etp { color: #fff; }
+  .cal-cell.has-exact::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--wrestling);
+    box-shadow: 0 0 0 2px var(--surface-2);
+  }
+  .cal-daynum {
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Consolas", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+  .cal-etp {
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Consolas", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .cal-etp .unit { font-size: 10px; font-weight: 700; opacity: 0.75; margin-left: 2px; }
+  .cal-comps { display: flex; flex-direction: column; gap: 2px; min-width: 0; margin-top: 1px; }
+  .cal-comp {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9.5px;
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .cal-comp .sq { width: 6px; height: 6px; border-radius: 2px; flex: none; background: var(--fam); }
+  .cal-comp.is-approx { opacity: 0.72; text-decoration: underline dotted; text-underline-offset: 2px; }
+  .cal-dots { display: none; flex-wrap: wrap; gap: 3px; }
+  .cal-dots .dot { width: 6px; height: 6px; opacity: 0.85; }
+  .cal-cell.heat-strong .cal-dots .dot { box-shadow: 0 0 0 1px rgba(255,255,255,0.6); }
+
+  /* ── Day detail panel ────────────────────────────────────── */
+  .day-panel {
+    margin-top: 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--surface-border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 16px 18px;
+  }
+  .dp-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+  .dp-etp {
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", "Consolas", monospace;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .dp-etp .unit { font-size: 12px; font-weight: 700; color: var(--text-muted); margin-left: 4px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .badge .w { opacity: 0.75; font-weight: 600; }
+  .empty-note {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--surface-border);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  @media (max-width: 560px) {
+    .cal-cell { min-height: 58px; padding: 5px; gap: 1px; }
+    .cal-daynum { font-size: 11px; }
+    .cal-etp { font-size: 13px; }
+    .cal-title { font-size: 13px; }
+    /* Les noms complets ne tiennent plus à 7 colonnes sur mobile : on repasse sur des pastilles. */
+    .cal-comps { display: none; }
+    .cal-dots { display: flex; }
+  }
+</style>
+
+<div class="page">
+  <header class="hero">
+    <div class="eyebrow">Helpdesk VOGO · Support Missions</div>
+    <h1>Estimation ETP — charge de support</h1>
+    <p class="sub">Du <strong>28 juillet 2026</strong> au <strong>1er juillet 2027</strong> : même base de données que le <a href="https://claude.ai/code/artifact/46cbacfe-9129-45fb-985e-16db2aceee1d" target="_blank" rel="noopener">calendrier détaillé par compétition</a>, mais chaque jour affiche l'ETP (équivalent temps plein) estimé nécessaire pour assurer le support, selon la méthode de pondération ci-dessous.</p>
+  </header>
+
+  <div class="summary">
+    <div class="stat-row" id="statRow"></div>
+    <div class="sparkline" id="sparkline"></div>
+  </div>
+
+  <div class="method">
+    <div class="method-title">Méthode de calcul (à ajuster si besoin)</div>
+    <ul>
+      <li><b>Rugby LNR (TOP 14 + Pro D2, combinés)</b> — 1 ETP dès qu'au moins l'un des deux joue ce jour-là (jamais cumulé, même si les deux jouent le même jour)</li>
+      <li><b>LNH (Starligue Handball)</b> — 1 ETP</li>
+      <li><b>Premium Liiga (Estonie)</b> — 1 ETP</li>
+      <li><b>FIS Hiver (Ski Cross + Snowboard + Freestyle, combinés)</b> — 0,5 ETP dès qu'au moins une des trois disciplines joue ce jour-là (jamais cumulé, même si plusieurs jouent le même jour)</li>
+      <li><b>SuperSevens</b> — 0 ETP (non comptabilisé)</li>
+      <li><b>Toutes les autres compétitions</b> (Champions Cup, Challenge Cup, Ligue 1 Monaco, ELMS, Trophée des Champions, Beach Wrestling, Diamond League) — 0,2 ETP chacune, cumulables entre elles</li>
+    </ul>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="cal-nav">
+    <button id="prevMonth" aria-label="Mois précédent">‹</button>
+    <div class="cal-title" id="calTitle"></div>
+    <button id="nextMonth" aria-label="Mois suivant">›</button>
+  </div>
+  <p class="cal-hint">La couleur de fond et le chiffre en gras indiquent l'ETP estimé ce jour précis (voir méthode ci-dessus). Un nom souligné en pointillé = date probable ou provisoire, pas encore confirmée par la source ; un point <span style="color:var(--wrestling)">●</span> en haut à droite signale un événement ponctuel confirmé (Trophée des Champions, SuperSevens, Beach Wrestling, Diamond League).</p>
+  <div class="heat-scale">
+    <span>ETP :</span>
+    <span class="heat-steps" id="heatSteps"></span>
+    <span>Chargé</span>
+  </div>
+  <div class="cal-weekdays" id="calWeekdays"></div>
+  <div class="cal-grid" id="calGrid"></div>
+  <div class="day-panel" id="dayPanel"></div>
+
+  <footer>
+    Données match par match, extraites le 5 août 2026 des flux officiels (LNR, LNH, EPCR, AS Monaco, ELMS, jalgpall.ee, FIS) et de supersevens.lnr.fr / beachwrestling.org / zurich.diamondleague.com pour les événements ponctuels — identiques au calendrier détaillé.
+    Précision par compétition : <strong>confirmée</strong> = date de match publiée par la source ; <strong>probable</strong> = journée LNR annoncée sur un week-end complet, le jour exact n'est pas encore fixé ; <strong>provisoire</strong> = date explicitement marquée comme non définitive par la source (LNH, AS Monaco).
+    Les pondérations ETP sont une première estimation de travail, à valider avec l'équipe support.
+  </footer>
+</div>
+
+<script>
+  // Un triplet [date, compétition, précision] par jour de match réel — extrait le
+  // 5 août 2026 depuis les flux officiels (LNR, LNH, EPCR, AS Monaco, ELMS,
+  // jalgpall.ee, FIS) par docs/scrape-season-calendar.js (SANS le filtre "semaine
+  // courante" du scraper de prod). précision : 'e' confirmée, 'r' probable
+  // (journée LNR annoncée sur tout un week-end, jour exact pas encore publié),
+  // 'p' provisoire (LNH / AS Monaco marquent la date comme non définitive).
+  const DAY_EVENTS = [["2026-08-07","ESTONIE","e"],["2026-08-08","ESTONIE","e"],["2026-08-09","ESTONIE","e"],["2026-08-14","ESTONIE","e"],["2026-08-16","ESTONIE","e"],["2026-08-21","ESTONIE","e"],["2026-08-22","ELMS","e"],["2026-08-22","ESTONIE","e"],["2026-08-23","ELMS","e"],["2026-08-23","ESTONIE","e"],["2026-08-26","ESTONIE","e"],["2026-08-27","PRO_D2","e"],["2026-08-28","PRO_D2","e"],["2026-08-29","ESTONIE","e"],["2026-08-30","ESTONIE","e"],["2026-08-30","LIGUE1","e"],["2026-09-03","PRO_D2","e"],["2026-09-04","ESTONIE","e"],["2026-09-04","LNH","e"],["2026-09-04","PRO_D2","e"],["2026-09-05","ESTONIE","e"],["2026-09-05","LNH","e"],["2026-09-05","TOP14","e"],["2026-09-06","ESTONIE","e"],["2026-09-06","LNH","e"],["2026-09-06","TOP14","e"],["2026-09-08","ESTONIE","e"],["2026-09-09","ESTONIE","e"],["2026-09-10","LNH","e"],["2026-09-10","PRO_D2","e"],["2026-09-11","LNH","e"],["2026-09-11","PRO_D2","e"],["2026-09-12","ELMS","e"],["2026-09-12","ESTONIE","e"],["2026-09-12","LNH","e"],["2026-09-12","TOP14","e"],["2026-09-13","ELMS","e"],["2026-09-13","ESTONIE","e"],["2026-09-13","LNH","e"],["2026-09-13","TOP14","e"],["2026-09-16","ESTONIE","e"],["2026-09-17","PRO_D2","e"],["2026-09-18","ESTONIE","e"],["2026-09-18","LNH","e"],["2026-09-18","PRO_D2","e"],["2026-09-19","ESTONIE","e"],["2026-09-19","LIGUE1","p"],["2026-09-19","LNH","e"],["2026-09-19","TOP14","e"],["2026-09-20","ESTONIE","e"],["2026-09-20","LNH","e"],["2026-09-20","TOP14","e"],["2026-09-24","PRO_D2","e"],["2026-09-25","LNH","e"],["2026-09-25","PRO_D2","e"],["2026-09-26","LNH","e"],["2026-09-26","TOP14","e"],["2026-09-27","LNH","e"],["2026-09-27","TOP14","e"],["2026-10-02","LNH","p"],["2026-10-03","TOP14","e"],["2026-10-04","TOP14","e"],["2026-10-08","PRO_D2","r"],["2026-10-09","ELMS","e"],["2026-10-09","LNH","p"],["2026-10-09","PRO_D2","r"],["2026-10-10","ELMS","e"],["2026-10-10","ESTONIE","e"],["2026-10-10","LIGUE1","p"],["2026-10-10","TOP14","r"],["2026-10-11","ESTONIE","e"],["2026-10-11","TOP14","r"],["2026-10-13","ESTONIE","e"],["2026-10-14","ESTONIE","e"],["2026-10-15","PRO_D2","r"],["2026-10-16","LNH","p"],["2026-10-16","PRO_D2","r"],["2026-10-17","EPCR","e"],["2026-10-17","EPCR_CHALLENGE","e"],["2026-10-17","ESTONIE","e"],["2026-10-18","EPCR","e"],["2026-10-18","EPCR_CHALLENGE","e"],["2026-10-18","ESTONIE","e"],["2026-10-21","ESTONIE","e"],["2026-10-22","PRO_D2","r"],["2026-10-23","LNH","p"],["2026-10-23","PRO_D2","r"],["2026-10-24","ESTONIE","e"],["2026-10-24","LIGUE1","p"],["2026-10-24","TOP14","r"],["2026-10-25","ESTONIE","e"],["2026-10-25","TOP14","r"],["2026-10-27","ESTONIE","e"],["2026-10-28","ESTONIE","e"],["2026-10-29","PRO_D2","r"],["2026-10-30","LNH","p"],["2026-10-30","PRO_D2","r"],["2026-10-31","ESTONIE","e"],["2026-10-31","TOP14","r"],["2026-11-01","ESTONIE","e"],["2026-11-01","TOP14","r"],["2026-11-05","PRO_D2","r"],["2026-11-06","PRO_D2","r"],["2026-11-07","ESTONIE","e"],["2026-11-07","TOP14","r"],["2026-11-08","TOP14","r"],["2026-11-13","LNH","p"],["2026-11-19","PRO_D2","r"],["2026-11-20","LNH","p"],["2026-11-20","PRO_D2","r"],["2026-11-21","LIGUE1","p"],["2026-11-26","PRO_D2","r"],["2026-11-27","LNH","p"],["2026-11-27","PRO_D2","r"],["2026-11-27","SNOWBOARD","e"],["2026-11-28","TOP14","r"],["2026-11-29","TOP14","r"],["2026-12-03","PRO_D2","r"],["2026-12-04","LNH","p"],["2026-12-04","PRO_D2","r"],["2026-12-05","LIGUE1","p"],["2026-12-05","SNOWBOARD","e"],["2026-12-05","TOP14","r"],["2026-12-06","SNOWBOARD","e"],["2026-12-06","TOP14","r"],["2026-12-08","SKI_CROSS","e"],["2026-12-09","SKI_CROSS","e"],["2026-12-10","PRO_D2","r"],["2026-12-10","SKI_CROSS","e"],["2026-12-11","EPCR","e"],["2026-12-11","LNH","p"],["2026-12-11","PRO_D2","r"],["2026-12-11","SKI_CROSS","e"],["2026-12-11","SNOWBOARD","e"],["2026-12-12","EPCR","e"],["2026-12-12","EPCR_CHALLENGE","e"],["2026-12-12","SNOWBOARD","e"],["2026-12-13","EPCR","e"],["2026-12-13","EPCR_CHALLENGE","e"],["2026-12-13","SNOWBOARD","e"],["2026-12-14","FREESTYLE_EC","e"],["2026-12-14","SKI_CROSS","e"],["2026-12-15","FREESTYLE_EC","e"],["2026-12-15","SKI_CROSS","e"],["2026-12-17","PRO_D2","r"],["2026-12-17","SKI_CROSS","e"],["2026-12-17","SNOWBOARD","e"],["2026-12-18","PRO_D2","r"],["2026-12-18","SKI_CROSS","e"],["2026-12-19","SKI_CROSS","e"],["2026-12-19","SNOWBOARD","e"],["2026-12-19","TOP14","r"],["2026-12-20","SKI_CROSS","e"],["2026-12-20","TOP14","r"],["2026-12-22","LNH","p"],["2026-12-26","TOP14","r"],["2026-12-27","TOP14","r"],["2027-01-02","LIGUE1","p"],["2027-01-02","TOP14","r"],["2027-01-03","TOP14","r"],["2027-01-07","PRO_D2","r"],["2027-01-08","PRO_D2","r"],["2027-01-09","EPCR","e"],["2027-01-09","EPCR_CHALLENGE","e"],["2027-01-09","SNOWBOARD","e"],["2027-01-10","EPCR","e"],["2027-01-10","EPCR_CHALLENGE","e"],["2027-01-14","PRO_D2","r"],["2027-01-14","SKI_CROSS","e"],["2027-01-15","PRO_D2","r"],["2027-01-15","SKI_CROSS","e"],["2027-01-15","SNOWBOARD","e"],["2027-01-16","EPCR","e"],["2027-01-16","EPCR_CHALLENGE","e"],["2027-01-16","LIGUE1","p"],["2027-01-16","SKI_CROSS","e"],["2027-01-16","SNOWBOARD","e"],["2027-01-17","EPCR","e"],["2027-01-17","EPCR_CHALLENGE","e"],["2027-01-17","SKI_CROSS","e"],["2027-01-17","SNOWBOARD","e"],["2027-01-20","SKI_CROSS","e"],["2027-01-21","PRO_D2","r"],["2027-01-21","SKI_CROSS","e"],["2027-01-22","PRO_D2","r"],["2027-01-22","SKI_CROSS","e"],["2027-01-22","SNOWBOARD","e"],["2027-01-23","FREESTYLE_EC","e"],["2027-01-23","SKI_CROSS","e"],["2027-01-23","SNOWBOARD","e"],["2027-01-23","TOP14","r"],["2027-01-24","FREESTYLE_EC","e"],["2027-01-24","SNOWBOARD","e"],["2027-01-24","TOP14","r"],["2027-01-26","SNOWBOARD","e"],["2027-01-27","SNOWBOARD","e"],["2027-01-28","PRO_D2","r"],["2027-01-28","SKI_CROSS","e"],["2027-01-29","FREESTYLE_EC","e"],["2027-01-29","PRO_D2","r"],["2027-01-29","SKI_CROSS","e"],["2027-01-30","FREESTYLE_EC","e"],["2027-01-30","LIGUE1","p"],["2027-01-30","SKI_CROSS","e"],["2027-01-30","SNOWBOARD","e"],["2027-01-30","TOP14","r"],["2027-01-31","FREESTYLE_EC","e"],["2027-01-31","SKI_CROSS","e"],["2027-01-31","TOP14","r"],["2027-02-01","FREESTYLE_EC","e"],["2027-02-04","SKI_CROSS","e"],["2027-02-05","LNH","p"],["2027-02-05","SKI_CROSS","e"],["2027-02-06","FREESTYLE_EC","e"],["2027-02-06","SKI_CROSS","e"],["2027-02-07","FREESTYLE_EC","e"],["2027-02-07","SKI_CROSS","e"],["2027-02-11","PRO_D2","r"],["2027-02-12","LNH","p"],["2027-02-12","PRO_D2","r"],["2027-02-13","FREESTYLE_EC","e"],["2027-02-14","FREESTYLE_EC","e"],["2027-02-18","PRO_D2","r"],["2027-02-19","LNH","p"],["2027-02-19","PRO_D2","r"],["2027-02-19","SNOWBOARD","e"],["2027-02-20","LIGUE1","p"],["2027-02-20","SNOWBOARD","e"],["2027-02-20","TOP14","r"],["2027-02-21","SNOWBOARD","e"],["2027-02-21","TOP14","r"],["2027-02-24","SKI_CROSS","e"],["2027-02-25","PRO_D2","r"],["2027-02-25","SKI_CROSS","e"],["2027-02-26","LNH","p"],["2027-02-26","PRO_D2","r"],["2027-02-26","SKI_CROSS","e"],["2027-02-27","SKI_CROSS","e"],["2027-02-27","SNOWBOARD","e"],["2027-02-27","TOP14","r"],["2027-02-28","SNOWBOARD","e"],["2027-02-28","TOP14","r"],["2027-03-02","SKI_CROSS","e"],["2027-03-03","SKI_CROSS","e"],["2027-03-04","PRO_D2","r"],["2027-03-04","SKI_CROSS","e"],["2027-03-05","LNH","p"],["2027-03-05","PRO_D2","r"],["2027-03-05","SKI_CROSS","e"],["2027-03-06","LIGUE1","p"],["2027-03-18","SKI_CROSS","e"],["2027-03-19","LNH","p"],["2027-03-19","SKI_CROSS","e"],["2027-03-20","FREESTYLE_EC","e"],["2027-03-20","LIGUE1","p"],["2027-03-20","SKI_CROSS","e"],["2027-03-20","SNOWBOARD","e"],["2027-03-20","TOP14","r"],["2027-03-21","FREESTYLE_EC","e"],["2027-03-21","SKI_CROSS","e"],["2027-03-21","SNOWBOARD","e"],["2027-03-21","TOP14","r"],["2027-03-25","PRO_D2","r"],["2027-03-26","LNH","p"],["2027-03-26","PRO_D2","r"],["2027-03-26","SNOWBOARD","e"],["2027-03-27","SNOWBOARD","e"],["2027-03-27","TOP14","r"],["2027-03-28","SNOWBOARD","e"],["2027-03-28","TOP14","r"],["2027-04-01","PRO_D2","r"],["2027-04-02","LNH","p"],["2027-04-02","PRO_D2","r"],["2027-04-08","PRO_D2","r"],["2027-04-09","LNH","p"],["2027-04-09","PRO_D2","r"],["2027-04-10","LIGUE1","p"],["2027-04-13","LNH","p"],["2027-04-15","PRO_D2","r"],["2027-04-16","LNH","p"],["2027-04-16","PRO_D2","r"],["2027-04-17","LIGUE1","p"],["2027-04-17","TOP14","r"],["2027-04-18","TOP14","r"],["2027-04-22","PRO_D2","r"],["2027-04-23","LNH","p"],["2027-04-23","PRO_D2","r"],["2027-04-24","TOP14","r"],["2027-04-25","TOP14","r"],["2027-04-30","LNH","p"],["2027-05-01","LIGUE1","p"],["2027-05-06","PRO_D2","r"],["2027-05-07","PRO_D2","r"],["2027-05-08","TOP14","r"],["2027-05-09","TOP14","r"],["2027-05-13","PRO_D2","r"],["2027-05-14","LNH","p"],["2027-05-14","PRO_D2","r"],["2027-05-15","TOP14","r"],["2027-05-16","LIGUE1","p"],["2027-05-16","TOP14","r"],["2027-05-19","LNH","p"],["2027-05-20","PRO_D2","r"],["2027-05-21","PRO_D2","r"],["2027-05-22","PRO_D2","r"],["2027-05-23","PRO_D2","r"],["2027-05-27","PRO_D2","r"],["2027-05-28","PRO_D2","r"],["2027-05-29","LIGUE1","p"],["2027-05-29","PRO_D2","r"],["2027-05-29","TOP14","r"],["2027-05-30","PRO_D2","r"],["2027-05-30","TOP14","r"],["2027-06-04","PRO_D2","r"],["2027-06-05","PRO_D2","r"],["2027-06-05","TOP14","r"],["2027-06-06","PRO_D2","r"],["2027-06-06","TOP14","r"],["2027-06-12","TOP14","r"],["2027-06-13","TOP14","e"],["2027-06-19","TOP14","r"],["2027-06-20","TOP14","r"],["2027-06-26","TOP14","e"]];
+
+  const FAMILY = {
+    TOP14: 'rugby', PRO_D2: 'rugby', EPCR: 'rugby', EPCR_CHALLENGE: 'rugby', SUPER7: 'rugby',
+    LNH: 'hand', TROPHEE_CHAMPIONS_LNH: 'hand',
+    LIGUE1: 'foot', ESTONIE: 'foot',
+    ELMS: 'endur',
+    SKI_CROSS: 'winter', SNOWBOARD: 'winter', FREESTYLE_EC: 'winter',
+    BEACH_WRESTLING: 'wrestling',
+    DIAMOND_LEAGUE: 'athletics',
+  };
+  const LABEL = {
+    TOP14: 'TOP 14', PRO_D2: 'Pro D2', EPCR: 'Champions Cup', EPCR_CHALLENGE: 'Challenge Cup', SUPER7: 'SuperSevens (Rugby à 7)',
+    LNH: 'Starligue (Hand)', TROPHEE_CHAMPIONS_LNH: 'Trophée des Champions (Hand)',
+    LIGUE1: 'Ligue 1 (Monaco)', ESTONIE: 'Premium Liiga (Estonie)',
+    ELMS: 'ELMS (Endurance)',
+    SKI_CROSS: 'Ski Cross', SNOWBOARD: 'Snowboard', FREESTYLE_EC: 'Freestyle (Bosses/Acro)',
+    BEACH_WRESTLING: 'Beach Wrestling',
+    DIAMOND_LEAGUE: 'Weltklasse Zürich (Diamond League)',
+  };
+  const FAMILY_LABEL = { rugby: 'Rugby', hand: 'Handball', foot: 'Football', endur: 'Endurance auto', winter: 'FIS Hiver (ski/snowboard)', wrestling: 'Beach Wrestling', athletics: 'Athlétisme' };
+  // Libellés courts pour tenir dans une case de calendrier (7 colonnes).
+  const SHORT_LABEL = {
+    TOP14: 'TOP 14', PRO_D2: 'Pro D2', EPCR: 'Champions Cup', EPCR_CHALLENGE: 'Challenge Cup', SUPER7: 'SuperSevens',
+    LNH: 'LNH', TROPHEE_CHAMPIONS_LNH: 'Trophée LNH',
+    LIGUE1: 'Ligue 1', ESTONIE: 'Estonie',
+    ELMS: 'ELMS',
+    SKI_CROSS: 'Ski Cross', SNOWBOARD: 'Snowboard', FREESTYLE_EC: 'Freestyle',
+    BEACH_WRESTLING: 'Beach Wr.',
+    DIAMOND_LEAGUE: 'Diamond League',
+  };
+  const PRECISION_LABEL = { e: 'confirmée', r: 'probable', p: 'provisoire' };
+
+  // ── Pondération ETP ──────────────────────────────────────────
+  // Bloc rugby LNR : 1 ETP max, jamais cumulé même si TOP14 et Pro D2 jouent le même jour.
+  const LNR_CODES = new Set(['TOP14', 'PRO_D2']);
+  // Bloc FIS Hiver : 0,5 ETP max, jamais cumulé même si plusieurs disciplines jouent le même jour.
+  const FIS_CODES = new Set(['SKI_CROSS', 'SNOWBOARD', 'FREESTYLE_EC']);
+  const BLOCKS = [
+    { codes: LNR_CODES, weight: 1 },
+    { codes: FIS_CODES, weight: 0.5 },
+  ];
+  const SOLO_WEIGHTS = { LNH: 1, ESTONIE: 1, SUPER7: 0 };
+  const DEFAULT_WEIGHT = 0.2;
+  function blockOf(code) { return BLOCKS.find(b => b.codes.has(code)); }
+  function weightOf(code) {
+    const block = blockOf(code);
+    if (block) return block.weight;
+    return SOLO_WEIGHTS[code] !== undefined ? SOLO_WEIGHTS[code] : DEFAULT_WEIGHT;
+  }
+  function computeETP(codes) {
+    const unique = [...new Set(codes)];
+    let etp = 0;
+    const countedBlocks = new Set();
+    unique.forEach(code => {
+      const block = blockOf(code);
+      if (block) {
+        if (!countedBlocks.has(block)) { etp += block.weight; countedBlocks.add(block); }
+        return;
+      }
+      etp += weightOf(code);
+    });
+    return Math.round(etp * 10) / 10;
+  }
+  function fmtETP(v) { return v.toFixed(1).replace('.', ','); }
+
+  // Événements ponctuels non couverts par le scraper de saison, ajoutés à la main.
+  const EXACT_EVENTS = [
+    { code: 'TROPHEE_CHAMPIONS_LNH', start: '2026-08-29', end: '2026-08-29', place: 'Trophée des Champions LNH' },
+    { code: 'SUPER7', start: '2026-08-21', end: '2026-08-22', place: 'Biarritz' },
+    { code: 'SUPER7', start: '2026-08-28', end: '2026-08-29', place: 'Pau' },
+    { code: 'BEACH_WRESTLING', start: '2026-08-28', end: '2026-08-29', place: 'Baku (Azerbaïdjan)' },
+    { code: 'BEACH_WRESTLING', start: '2026-09-26', end: '2026-09-27', place: 'Katerini (Grèce)' },
+    { code: 'DIAMOND_LEAGUE', start: '2026-08-26', end: '2026-08-27', place: 'Weltklasse Zürich' },
+  ];
+
+  const MONTH_NAMES = ['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
+  const MONTH_NAMES_FULL = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  const DAY_NAMES = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const DAY_MS = 86400000;
+
+  function mondayOf(date) {
+    const d = new Date(date);
+    const day = (d.getDay() + 6) % 7;
+    d.setDate(d.getDate() - day);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+
+  // "YYYY-MM-DD" en composantes LOCALES (contrairement à Date#toISOString(), qui
+  // convertit en UTC et recule donc d'un jour dans les fuseaux UTC+, ex. Europe/Paris).
+  function ymd(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  const startDate = new Date('2026-07-28T00:00:00');
+  const todayKey = ymd(startDate);
+  const endDate = new Date('2027-07-01T00:00:00');
+
+  // ── Index jour → compétitions actives ce jour précis ───────
+  const compsByDate = {};
+  function addEvent(date, code, precision, place) {
+    (compsByDate[date] || (compsByDate[date] = [])).push({ code, precision, place });
+  }
+  DAY_EVENTS.forEach(([date, code, precision]) => addEvent(date, code, precision));
+  EXACT_EVENTS.forEach(ev => {
+    let d = new Date(ev.start + 'T00:00:00');
+    const end = new Date(ev.end + 'T00:00:00');
+    while (d <= end) {
+      addEvent(ymd(d), ev.code, 'e', ev.place);
+      d = new Date(d.getTime() + DAY_MS);
+    }
+  });
+  function eventsForDate(dateStr) { return compsByDate[dateStr] || []; }
+
+  const etpByDate = {};
+  Object.keys(compsByDate).forEach(d => { etpByDate[d] = computeETP(compsByDate[d].map(e => e.code)); });
+  function etpForDate(dateStr) { return etpByDate[dateStr] || 0; }
+
+  // ── Stats ──────────────────────────────────────────────────
+  const allActiveDates = Object.keys(compsByDate).sort();
+  const activeDays = allActiveDates.length;
+  let busiestDate = allActiveDates[0];
+  allActiveDates.forEach(d => { if (etpByDate[d] > etpByDate[busiestDate]) busiestDate = d; });
+  const maxETP = Math.max(...allActiveDates.map(d => etpByDate[d]), 0.1);
+  const avgETP = allActiveDates.reduce((sum, d) => sum + etpByDate[d], 0) / (activeDays || 1);
+  const highLoadDays = allActiveDates.filter(d => etpByDate[d] >= 1.0).length;
+
+  function fmtShortDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return `${String(d.getDate()).padStart(2,'0')} ${MONTH_NAMES[d.getMonth()].replace('.', '')}`;
+  }
+
+  const statRow = document.getElementById('statRow');
+  statRow.innerHTML = `
+    <div class="stat"><span class="num mono">${activeDays}</span><span class="label">Jours avec événement</span></div>
+    <div class="stat"><span class="num mono">${busiestDate ? fmtETP(etpByDate[busiestDate]) : '0,0'}</span><span class="label">Pic ETP${busiestDate ? ' (' + fmtShortDate(busiestDate) + ')' : ''}</span></div>
+    <div class="stat"><span class="num mono">${fmtETP(avgETP)}</span><span class="label">ETP moyen (jours actifs)</span></div>
+    <div class="stat"><span class="num mono">${highLoadDays}</span><span class="label">Jours à ETP ≥ 1,0</span></div>
+  `;
+
+  // Sparkline : ETP moyen des jours actifs, par mois
+  const monthBuckets = {};
+  allActiveDates.forEach(d => {
+    const dt = new Date(d + 'T00:00:00');
+    const mk = dt.getFullYear() + '-' + String(dt.getMonth()).padStart(2,'0');
+    if (!monthBuckets[mk]) monthBuckets[mk] = { sum: 0, count: 0, date: dt };
+    monthBuckets[mk].sum += etpByDate[d];
+    monthBuckets[mk].count += 1;
+  });
+  const monthKeys = Object.keys(monthBuckets).sort();
+  const maxSparkAvg = Math.max(...monthKeys.map(k => monthBuckets[k].sum / monthBuckets[k].count), 0.1);
+  const spark = document.getElementById('sparkline');
+  spark.innerHTML = monthKeys.map(k => {
+    const b = monthBuckets[k];
+    const avg = b.sum / b.count;
+    const h = Math.max(4, Math.round((avg / maxSparkAvg) * 36));
+    return `<div class="spark-col">
+      <div class="spark-bar" style="height:${h}px" title="${fmtETP(avg)} ETP moyen"></div>
+      <div class="spark-label">${MONTH_NAMES[b.date.getMonth()]}</div>
+    </div>`;
+  }).join('');
+
+  // ── Legend ─────────────────────────────────────────────────
+  const legend = document.getElementById('legend');
+  legend.innerHTML = Object.entries(FAMILY_LABEL).map(([fam, label]) => `
+    <span class="legend-item"><span class="dot" style="background:var(--${fam})"></span>${label}</span>
+  `).join('');
+
+  // ── Calendar: month grid with < > navigation ───────────────
+  document.getElementById('calWeekdays').innerHTML = DAY_NAMES.map(d => `<span>${d}</span>`).join('');
+
+  const mStart = startDate.getFullYear() * 12 + startDate.getMonth();
+  const mEnd = endDate.getFullYear() * 12 + endDate.getMonth();
+
+  const HEAT_STEPS = 5;
+  document.getElementById('heatSteps').innerHTML = Array.from({ length: HEAT_STEPS }, (_, i) => {
+    const pct = Math.round((i / (HEAT_STEPS - 1)) * 78);
+    return `<span class="heat-step" style="background:color-mix(in srgb, var(--accent) ${pct}%, var(--surface-2))"></span>`;
+  }).join('');
+
+  let curM = mStart;
+  let selectedDate = todayKey;
+
+  function renderCalendar(idx) {
+    curM = idx;
+    const y = Math.floor(idx / 12);
+    const m = idx % 12;
+    document.getElementById('calTitle').textContent = `${MONTH_NAMES_FULL[m]} ${y}`;
+    document.getElementById('prevMonth').disabled = idx <= mStart;
+    document.getElementById('nextMonth').disabled = idx >= mEnd;
+
+    const firstOfMonth = new Date(y, m, 1);
+    const lastOfMonth = new Date(y, m + 1, 0);
+    const startGrid = mondayOf(firstOfMonth);
+    const endGrid = new Date(mondayOf(lastOfMonth).getTime() + 6 * DAY_MS);
+    const totalDays = Math.round((endGrid - startGrid) / DAY_MS) + 1;
+
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    let day = new Date(startGrid);
+    for (let i = 0; i < totalDays; i++) {
+      const dateStr = ymd(day);
+      const isOutside = day.getMonth() !== m;
+      const events = eventsForDate(dateStr);
+      const etp = etpForDate(dateStr);
+      const families = [...new Set(events.map(e => FAMILY[e.code]))];
+      const hasExact = events.some(e => e.place);
+      const heat = Math.round((etp / maxETP) * 78);
+      const isStrong = heat >= 45;
+
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell'
+        + (isOutside ? ' is-outside' : '')
+        + (dateStr === todayKey ? ' is-today' : '')
+        + (dateStr === selectedDate ? ' is-selected' : '')
+        + (isStrong ? ' heat-strong' : '')
+        + (hasExact ? ' has-exact' : '');
+      cell.style.setProperty('--heat', String(heat));
+      cell.innerHTML = `
+        <span class="cal-daynum">${day.getDate()}</span>
+        ${etp > 0 ? `<span class="cal-etp">${fmtETP(etp)}<span class="unit">ETP</span></span>` : ''}
+        <span class="cal-comps">${events.map(e => `<span class="cal-comp${e.precision !== 'e' ? ' is-approx' : ''}" style="--fam:var(--${FAMILY[e.code]})" title="${LABEL[e.code] || e.code} (${PRECISION_LABEL[e.precision]})">
+          <span class="sq"></span>${SHORT_LABEL[e.code] || e.code}
+        </span>`).join('')}</span>
+        <span class="cal-dots">${families.map(f => `<span class="dot" style="background:var(--${f})" title="${FAMILY_LABEL[f]}"></span>`).join('')}</span>
+      `;
+      cell.title = etp > 0 ? `${fmtETP(etp)} ETP estimé` : 'Aucune compétition active';
+      cell.addEventListener('click', () => selectDay(dateStr));
+      grid.appendChild(cell);
+      day = new Date(day.getTime() + DAY_MS);
+    }
+  }
+
+  function selectDay(dateStr) {
+    selectedDate = dateStr;
+    renderCalendar(curM);
+    renderDayPanel(dateStr);
+  }
+
+  function renderDayPanel(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const dayLabel = `${DAY_NAMES[(d.getDay() + 6) % 7]} ${d.getDate()} ${MONTH_NAMES_FULL[d.getMonth()]} ${d.getFullYear()}`;
+    const events = eventsForDate(dateStr);
+    const etp = etpForDate(dateStr);
+    const panel = document.getElementById('dayPanel');
+    const inRange = d >= startDate && d <= endDate;
+
+    if (events.length === 0) {
+      const note = inRange ? 'Aucune compétition connue ce jour.' : 'Hors période couverte par les données (28 juil. 2026 → 1 juil. 2027).';
+      panel.innerHTML = `<div class="dp-title">${dayLabel}</div><span class="empty-note">${note}</span>`;
+      return;
+    }
+
+    const shownBlocks = new Set();
+    const badge = e => {
+      const loc = e.place ? ` — ${e.place}` : '';
+      const approx = e.precision !== 'e' ? ` <em>(${PRECISION_LABEL[e.precision]})</em>` : '';
+      let w;
+      const block = blockOf(e.code);
+      if (block) {
+        if (shownBlocks.has(block)) {
+          w = 'combiné, déjà compté';
+        } else {
+          const blockName = LNR_CODES.has(e.code) ? 'LNR' : 'FIS';
+          w = `${fmtETP(block.weight)} (bloc ${blockName})`;
+          shownBlocks.add(block);
+        }
+      } else {
+        w = fmtETP(weightOf(e.code));
+      }
+      return `<span class="badge" style="background:var(--${FAMILY[e.code]}-bg);color:var(--${FAMILY[e.code]})">${LABEL[e.code] || e.code}${loc}${approx} <span class="w">· ${w}</span></span>`;
+    };
+    panel.innerHTML = `<div class="dp-title">${dayLabel}</div><div class="dp-etp">${fmtETP(etp)}<span class="unit">ETP estimé</span></div><div class="badges">${events.map(badge).join('')}</div>`;
+  }
+
+  document.getElementById('prevMonth').addEventListener('click', () => { if (curM > mStart) renderCalendar(curM - 1); });
+  document.getElementById('nextMonth').addEventListener('click', () => { if (curM < mEnd) renderCalendar(curM + 1); });
+
+  renderCalendar(mStart);
+  renderDayPanel(selectedDate);
+</script>
