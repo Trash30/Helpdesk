@@ -60,7 +60,7 @@ function getParisNowAsLocal(): Date {
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'CONFERENCE_LEAGUE' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
@@ -613,23 +613,36 @@ async function scrapeEPCRCompetition(
   }
 }
 
-// ─── Ligue 1 — AS Monaco home matches (scraper) ──────────────────────────────
+// ─── AS Monaco home matches — Ligue 1 + UEFA Conference League (scraper) ─────
 
 /**
- * Scrapes AS Monaco's official fixtures page (SSR) and returns Ligue 1 home
- * matches only (venue = Stade Louis-II).
+ * Maps the `data-competition` attribute of AS Monaco's match cards to our
+ * competition identifiers. Cards whose code is not listed here (friendlies,
+ * Coupe de France, empty value…) are ignored.
+ */
+const MONACO_COMPETITION_MAP: Record<string, Match['competition']> = {
+  L1: 'LIGUE1',
+  CL: 'CONFERENCE_LEAGUE', // "UEFA Conference League - Journée N" in .matchPresCardMeta
+};
+
+/**
+ * Scrapes AS Monaco's official fixtures page (SSR) and returns home matches
+ * only (venue = Stade Louis-II) for Ligue 1 and UEFA Conference League.
+ * Both competitions come from the same HTTP request (single cache key
+ * 'AS_MONACO' in fetchAllMatches).
  *
  * Page structure (verified live, 2026-08 — see #25, the previous selector
  * `a[href*="/pros/calendrier/"]` no longer exists and silently dropped every match):
  *   Each match: div[data-component="MatchPresentationCard"]
- *     data-competition="L1"        → Ligue 1 filter (empty for friendlies/other comps)
+ *     data-competition="L1" | "CL" → Ligue 1 / UEFA Conference League
+ *                                     (empty for friendlies/other comps)
  *     time[datetime]                → "2026-08-06 20:00:00.000+02:00" (exact kickoff)
  *     .matchPresCardTeamName (x2)   → team names, in home → away order
  *     .matchPresCardMeta p          → contains the venue text (e.g. "Stade Louis-II")
  *   NOTE: data-away="true" is present on Monaco's HOME matches (inverted naming) —
  *   don't rely on it, use the venue text / team order instead.
  */
-async function scrapeMonacoLigue1(): Promise<Match[]> {
+async function scrapeMonaco(): Promise<Match[]> {
   const client = createClient();
   const matches: Match[] = [];
 
@@ -645,8 +658,9 @@ async function scrapeMonacoLigue1(): Promise<Match[]> {
     $('[data-component="MatchPresentationCard"]').each((_, el) => {
       const card = $(el);
 
-      // Ligue 1 only
-      if (card.attr('data-competition') !== 'L1') return;
+      // Ligue 1 + UEFA Conference League only
+      const competition = MONACO_COMPETITION_MAP[card.attr('data-competition') ?? ''];
+      if (!competition) return;
 
       // Home matches only (Stade Louis-II)
       const metaText = card.find('.matchPresCardMeta p').first().text();
@@ -678,7 +692,7 @@ async function scrapeMonacoLigue1(): Promise<Match[]> {
       const awayTeamLogo = toAsmAbsolute(logos.eq(1).attr('data-src') || logos.eq(1).attr('src'));
 
       matches.push({
-        competition: 'LIGUE1',
+        competition,
         homeTeam,
         awayTeam,
         date,
@@ -689,10 +703,15 @@ async function scrapeMonacoLigue1(): Promise<Match[]> {
     });
 
     const filtered = matches.filter(m => m.date && isInCurrentWeek(m.date));
-    log(`LIGUE1: ${filtered.length} Monaco home matches this week (out of ${matches.length} total)`);
+    const countBy = (list: Match[], c: Match['competition']) => list.filter(m => m.competition === c).length;
+    log(
+      `AS_MONACO: ${filtered.length} home matches this week ` +
+      `(LIGUE1 ${countBy(filtered, 'LIGUE1')}/${countBy(matches, 'LIGUE1')}, ` +
+      `CONFERENCE_LEAGUE ${countBy(filtered, 'CONFERENCE_LEAGUE')}/${countBy(matches, 'CONFERENCE_LEAGUE')} home matches total)`
+    );
     return filtered;
   } catch (err) {
-    logError('LIGUE1 scraping failed:', err instanceof Error ? err.message : err);
+    logError('AS_MONACO (LIGUE1 + CONFERENCE_LEAGUE) scraping failed:', err instanceof Error ? err.message : err);
     return [];
   }
 }
@@ -1209,8 +1228,9 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
       fetch: () => scrapeEPCRCompetition('https://www.epcrugby.com/fr/challenge-cup/matchs', 'EPCR_CHALLENGE'),
     },
     {
-      key: 'LIGUE1',
-      fetch: scrapeMonacoLigue1,
+      // Single fetch for both LIGUE1 and CONFERENCE_LEAGUE (same asmonaco.com page)
+      key: 'AS_MONACO',
+      fetch: scrapeMonaco,
     },
     {
       key: 'ELMS',
