@@ -273,15 +273,17 @@ NOUVELLE_COMPETITION: { label: 'Nom affiché', favicon: 'https://...', calendarU
 const COMPETITION_ORDER: Competition[] = [..., 'NOUVELLE_COMPETITION'];
 ```
 
-**3. Route API** (`server/src/routes/auth.ts`) — ajouter la valeur à `VALID_COMPETITIONS` **et** augmenter le `.max()` du schéma Zod :
+**3. Route API** (`server/src/routes/auth.ts`) — ajouter la valeur à `VALID_COMPETITIONS` (le `.max()` du schéma Zod est calculé à partir de la longueur de la liste, il n'y a plus rien à ajuster) :
 
 ```typescript
 const VALID_COMPETITIONS = ['TOP14', ..., 'NOUVELLE_COMPETITION'] as const;
 // ...
-sportCompetitions: z.array(z.enum(VALID_COMPETITIONS)).max(7),  // ← passer à 8
+sportCompetitions: z.array(z.enum(VALID_COMPETITIONS)).max(VALID_COMPETITIONS.length),
 ```
 
-> `VALID_COMPETITIONS` ne contient que les compétitions **sélectionnables en préférence utilisateur** (7 actuellement). `LIGUE1` est scrapée et affichée dans le widget mais n'est pas une préférence — elle n'est donc pas dans cette liste.
+> `VALID_COMPETITIONS` doit contenir **toutes** les compétitions affichées dans le widget (12 actuellement, `LIGUE1` et `CONFERENCE_LEAGUE` comprises). Une valeur absente de cette liste ne peut pas être cochée dans le profil, et dès qu'un utilisateur coche au moins une compétition, celles qu'il n'a pas cochées sont masquées.
+
+> **Cas particulier AS Monaco** : `LIGUE1` et `CONFERENCE_LEAGUE` sont produites par la même fonction (`scrapeMonaco`) à partir d'une seule requête sur `asmonaco.com/fr/pros/calendrier`. La table `MONACO_COMPETITION_MAP` traduit l'attribut `data-competition` de chaque carte (`L1` → `LIGUE1`, `CL` → `CONFERENCE_LEAGUE` ; les autres codes sont ignorés). Pour suivre une autre compétition du club, ajouter une entrée dans cette table. La clé de cache est `AS_MONACO`.
 
 **4. Profil utilisateur** (`client/src/pages/ProfilePage.tsx`) — ajouter dans la liste `COMPETITIONS` :
 

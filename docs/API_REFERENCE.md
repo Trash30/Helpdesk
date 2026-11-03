@@ -72,7 +72,7 @@ Met à jour les préférences de compétitions sportives de l'utilisateur connec
 { "sportCompetitions": ["TOP14", "ESTONIE"] }
 ```
 
-**Valeurs acceptées :** `TOP14`, `PRO_D2`, `LNH`, `EPCR`, `EPCR_CHALLENGE`, `ELMS`, `ESTONIE`
+**Valeurs acceptées :** `TOP14`, `PRO_D2`, `LNH`, `EPCR`, `EPCR_CHALLENGE`, `ELMS`, `ESTONIE`, `SKI_CROSS`, `SNOWBOARD`, `FREESTYLE_EC`, `LIGUE1`, `CONFERENCE_LEAGUE` (12 valeurs ; la taille maximale du tableau suit automatiquement la longueur de cette liste)
 
 **Réponse 200**
 ```json
@@ -456,9 +456,11 @@ Supprime définitivement une carte. Permission requise : `bmc.delete`.
 ## Sports
 
 ### GET /api/sports/matches
-Retourne tous les matchs de la semaine (cache 1h par compétition).
+Retourne tous les matchs de la semaine (cache en mémoire par source, expirant en fin de journée).
 
-**Compétitions :** TOP14, PRO_D2, EPCR, EPCR_CHALLENGE, LNH, LIGUE1, ELMS, ESTONIE
+**Compétitions :** TOP14, PRO_D2, EPCR, EPCR_CHALLENGE, LNH, LIGUE1, CONFERENCE_LEAGUE, ELMS, ESTONIE, SKI_CROSS, SNOWBOARD, FREESTYLE_EC
+
+> `LIGUE1` et `CONFERENCE_LEAGUE` (UEFA Conference League) proviennent de la même page asmonaco.com (une seule requête, clé de cache `AS_MONACO`) et ne contiennent que les matchs de l'AS Monaco à domicile (Stade Louis-II).
 
 > `LNH` = Daikin Starligue (naming sponsor du handball français — anciennement « Liqui Moly Starligue »). Le label affiché est géré côté frontend, la clé de compétition reste `LNH`.
 
