@@ -527,9 +527,12 @@ fetchAllMatches()
       { key: 'EPCR',            fetch: scrapeEPCR },
       { key: 'EPCR_CHALLENGE',  fetch: scrapeEPCRChallenge },
       { key: 'LNH',             fetch: scrapeLNH },       // Daikin Starligue
-      { key: 'LIGUE1',          fetch: scrapeLigue1 },    // AS Monaco à domicile
+      { key: 'AS_MONACO',       fetch: scrapeMonaco },    // LIGUE1 + CONFERENCE_LEAGUE, AS Monaco à domicile
       { key: 'ELMS',            fetch: scrapeELMS },
       { key: 'ESTONIE',         fetch: scrapeEstonie },
+      { key: 'SKI_CROSS',       fetch: scrapeSkiCross },
+      { key: 'SNOWBOARD',       fetch: scrapeSnowboard },
+      { key: 'FREESTYLE_EC',    fetch: scrapeFreestyleEC },
     ])
   → Filtre par isInCurrentWeek(match.date)
   → Cache en mémoire (expire fin de journée)
@@ -546,7 +549,9 @@ fetchAllMatches()
 | Champions Cup (EPCR) | Nuxt SSR payload JSON | Clubs français en home team |
 | Challenge Cup (EPCR) | Nuxt SSR payload JSON | Clubs français en home team |
 | Daikin Starligue (LNH) | POST AJAX (seasons_id + key) | Tous |
-| Ligue 1 | HTML Cheerio (AS Monaco) | AS Monaco domicile |
+| Ligue 1 | HTML Cheerio (AS Monaco, `data-competition="L1"`) | AS Monaco domicile |
+| UEFA Conference League | HTML Cheerio (AS Monaco, `data-competition="CL"`, même requête que Ligue 1) | AS Monaco domicile |
+| Coupe du Monde Ski Cross / Snowboard, Coupe d'Europe Freestyle | iCal data.fis-ski.com | Tous |
 | ELMS | JSON-LD Schema.org | Tous les rounds (slugs dynamiques) |
 | Premium Liiga (ESTONIE) | iCal jalgpall.ee | Tous |
 
@@ -555,7 +560,8 @@ fetchAllMatches()
 ```typescript
 interface Match {
   competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE'
-             | 'LIGUE1' | 'ELMS' | 'ESTONIE';
+             | 'LIGUE1' | 'CONFERENCE_LEAGUE' | 'ELMS' | 'ESTONIE'
+             | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
   homeTeam: string;
   awayTeam: string;
   date: string;        // ISO string
