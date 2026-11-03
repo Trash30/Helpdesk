@@ -19,6 +19,8 @@ const COMPETITIONS = [
   { key: 'LNH',            label: 'Daikin Starligue' },
   { key: 'EPCR',           label: 'EPCR Champions Cup' },
   { key: 'EPCR_CHALLENGE', label: 'EPCR Challenge Cup' },
+  { key: 'LIGUE1',         label: 'Ligue 1' },
+  { key: 'CONFERENCE_LEAGUE', label: 'UEFA Conference League' },
   { key: 'ELMS',           label: 'ELMS' },
   { key: 'ESTONIE',        label: 'Premium Liiga (Estonie)' },
   { key: 'SKI_CROSS',      label: 'Ski Cross' },
