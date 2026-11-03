@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
+export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'CONFERENCE_LEAGUE' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
 
 export interface Match {
   competition: Competition;
@@ -79,6 +79,8 @@ export interface MatchNoteData {
 
 export const COMPETITION_META: Record<Competition, { label: string; favicon: string; calendarUrl: string }> = {
   LIGUE1:         { label: 'Ligue 1',       favicon: 'https://www.ligue1.com/favicon.ico',                                                          calendarUrl: 'https://www.ligue1.com/fr/calendar' },
+  // Matchs à domicile de l'AS Monaco uniquement (Stade Louis-II).
+  CONFERENCE_LEAGUE: { label: 'UEFA Conference League', favicon: 'https://www.uefa.com/favicon.ico',                                           calendarUrl: 'https://www.uefa.com/uefaconferenceleague/fixtures-results/' },
   TOP14:          { label: 'Top 14',        favicon: 'https://top14.lnr.fr/favicon.ico',                                                            calendarUrl: 'https://top14.lnr.fr/calendrier-et-resultats' },
   PRO_D2:         { label: 'Pro D2',        favicon: 'https://prod2.lnr.fr/favicon.ico',                                                            calendarUrl: 'https://prod2.lnr.fr/calendrier-et-resultats' },
   EPCR:           { label: 'Champions Cup', favicon: 'https://media-cdn.incrowdsports.com/77535d85-bcdc-49b9-9dc9-879e70d9adba.svg',                calendarUrl: 'https://www.epcrugby.com/fr/champions-cup/matchs' },
@@ -93,7 +95,7 @@ export const COMPETITION_META: Record<Competition, { label: string; favicon: str
   FREESTYLE_EC:   { label: 'Freestyle (Coupe d\'Europe)', favicon: 'https://www.fis-ski.com/favicon.ico',                                         calendarUrl: 'https://www.fis-ski.com/DB/alpine-skiing/calendar-results.html?sectorcode=FS&categorycode=EC&disciplinecode=MO,AE&seasonselection=' },
 };
 
-const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS', 'ESTONIE', 'SKI_CROSS', 'SNOWBOARD', 'FREESTYLE_EC'];
+const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'CONFERENCE_LEAGUE', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS', 'ESTONIE', 'SKI_CROSS', 'SNOWBOARD', 'FREESTYLE_EC'];
 
 /**
  * Disciplines Snowboard Coupe du Monde FIS.
