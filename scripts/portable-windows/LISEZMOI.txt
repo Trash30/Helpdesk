@@ -1,0 +1,22 @@
+HELPDESK VOGO - VERSION PORTABLE (Windows)
+==========================================
+
+Aucune installation : copiez ce dossier sur une cle USB (ou sur le PC) puis double-cliquez
+sur  Start-HelpDesk.bat
+
+- Le navigateur s'ouvre sur http://localhost:3000
+- Comptes : administrateurs -> mot de passe Helpdesk2026
+            autres comptes  -> mot de passe Agent2026 (a changer a la 1re connexion)
+- Pour arreter : fermez la fenetre noire. Ne retirez la cle qu'apres.
+  (si la fenetre a ete fermee brutalement : lancez Stop-HelpDesk.bat)
+
+Toutes les donnees sont dans le dossier "data" (base + fichiers envoyes) :
+copier le dossier complet = sauvegarde complete.
+
+PREREQUIS / LIMITES
+- Windows 10/11 64 bits. Ne pas lancer "en tant qu'administrateur" (PostgreSQL le refuse).
+- Cle USB : formatee en NTFS ou exFAT (pas FAT32). En cas de souci, copiez le dossier sur le disque du PC.
+- Internet requis pour le calendrier sportif (recuperation des matchs en ligne).
+- Mono-utilisateur : le serveur n'ecoute que sur ce PC (127.0.0.1).
+- Ports utilises : 3000 (application) et 54329 (base). Ils doivent etre libres.
+- Une base installee sur la cle n'est PAS synchronisee avec le serveur de production.

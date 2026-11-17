@@ -18,7 +18,7 @@ SET "permissions" = COALESCE((
         AND p NOT LIKE 'surveys.%'
         AND p <> 'admin.clientRoles'
     ), ARRAY[]::text[]),
-    "roleUpdatedAt" = now();
+    "roleUpdatedAt" = (now() AT TIME ZONE 'UTC');
 
 -- ─── 2. Nettoyage des paramètres propres au ticketing ────────────────────────
 DELETE FROM "Settings"
