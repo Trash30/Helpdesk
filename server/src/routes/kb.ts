@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { KbStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { authMiddleware } from '../middleware/auth';
-import { requirePermission, hasPermission } from '../middleware/permissions';
+import { requirePermission } from '../middleware/permissions';
 import { kbImageUpload } from '../utils/upload';
 import path from 'path';
 
@@ -79,7 +79,6 @@ router.get(
       include: {
         category: true,
         author: { select: userSelect },
-        sourceTicket: { select: { id: true, ticketNumber: true, title: true } },
         attachments: true,
       },
     });
@@ -104,7 +103,6 @@ router.post(
       categoryId: z.string().uuid().optional().nullable(),
       tags: z.array(z.string()).default([]),
       status: z.nativeEnum(KbStatus).default('DRAFT'),
-      sourceTicketId: z.string().uuid().optional().nullable(),
     });
 
     const parse = schema.safeParse(req.body);
@@ -113,7 +111,7 @@ router.post(
       return;
     }
 
-    const { title, content, categoryId, tags, status, sourceTicketId } = parse.data;
+    const { title, content, categoryId, tags, status } = parse.data;
 
     const article = await prisma.kbArticle.create({
       data: {
@@ -122,7 +120,6 @@ router.post(
         categoryId: categoryId ?? null,
         tags,
         status,
-        sourceTicketId: sourceTicketId ?? null,
         authorId: req.user!.id,
         publishedAt: status === 'PUBLISHED' ? new Date() : null,
       },
@@ -240,76 +237,6 @@ router.post(
     // Retourne l'URL publique pour insertion dans le contenu TipTap
     const url = `/uploads/kb/${file.filename}`;
     res.status(201).json({ data: { url, attachmentId: attachment.id } });
-  }
-);
-
-// ─── POST /api/kb/from-ticket/:ticketId ──────────────────────────────────────
-// Crée un brouillon KB pré-rempli depuis un ticket
-router.post(
-  '/kb/from-ticket/:ticketId',
-  requirePermission('kb.write'),
-  async (req: Request, res: Response) => {
-    const ticket = await prisma.ticket.findFirst({
-      where: { id: req.params.ticketId, deletedAt: null },
-      include: {
-        category: true,
-        comments: {
-          include: { author: { select: { firstName: true, lastName: true } } },
-          orderBy: { createdAt: 'asc' },
-        },
-      },
-    });
-
-    if (!ticket) {
-      res.status(404).json({ error: 'Ticket introuvable' });
-      return;
-    }
-
-    // Vérification d'accès : viewAll OU assigné OU créateur
-    const user = req.user!;
-    const canViewAll = hasPermission(user, 'tickets.viewAll');
-    if (!canViewAll && ticket.assignedToId !== user.id && ticket.createdById !== user.id) {
-      res.status(403).json({ error: 'Accès refusé à ce ticket' });
-      return;
-    }
-
-    // Récupérer les IDs de commentaires sélectionnés (optionnel)
-    const selectedCommentIds: string[] = Array.isArray(req.body.commentIds)
-      ? req.body.commentIds
-      : [];
-
-    // Construire le contenu HTML pré-rempli
-    const selectedComments = selectedCommentIds.length > 0
-      ? ticket.comments.filter(c => selectedCommentIds.includes(c.id))
-      : ticket.comments;
-
-    let content = `<h2>Problème</h2><p>${ticket.description || ''}</p>`;
-    if (selectedComments.length > 0) {
-      content += `<h2>Résolution</h2>`;
-      selectedComments.forEach(c => {
-        content += `<p>${c.content}</p>`;
-      });
-    }
-
-    const article = await prisma.kbArticle.create({
-      data: {
-        title: ticket.title,
-        content,
-        categoryId: ticket.categoryId ?? null,
-        tags: [],
-        status: 'DRAFT',
-        sourceTicketId: ticket.id,
-        authorId: req.user!.id,
-        publishedAt: null,
-      },
-      include: {
-        category: true,
-        author: { select: { id: true, firstName: true, lastName: true, email: true } },
-        sourceTicket: { select: { id: true, ticketNumber: true, title: true } },
-      },
-    });
-
-    res.status(201).json({ data: article });
   }
 );
 

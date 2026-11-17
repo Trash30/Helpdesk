@@ -36,7 +36,6 @@
     "delete": "Supprimer",
     "published": "Publié",
     "draft": "Brouillon",
-    "createdFromTicket": "Créé à partir du ticket",
     "publishedOn": "Publié le {{date}}",
     "newArticle": "Nouvel article",
     "editArticle": "Modifier l'article",

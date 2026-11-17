@@ -1,0 +1,12 @@
+{
+  "welcome": "Welcome {{name}}",
+  "kpiEventsToday": "Events today",
+  "kpiEventsTodaySub": "Today's sports sessions",
+  "kpiEventsWeek": "Events this week",
+  "kpiEventsWeekSub": "Matches & sessions",
+  "kpiMissionsJ30": "Support Missions D+30",
+  "kpiMissionsJ30Sub": "Upcoming Support Missions",
+  "missionsTitle": "Support Missions — next 30 days",
+  "missionCount_one": "{{count}} mission",
+  "missionCount_other": "{{count}} missions"
+}

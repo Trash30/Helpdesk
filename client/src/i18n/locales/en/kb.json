@@ -36,7 +36,6 @@
     "delete": "Delete",
     "published": "Published",
     "draft": "Draft",
-    "createdFromTicket": "Created from ticket",
     "publishedOn": "Published on {{date}}",
     "newArticle": "New article",
     "editArticle": "Edit the article",

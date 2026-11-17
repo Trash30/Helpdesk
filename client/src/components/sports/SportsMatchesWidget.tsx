@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'CONFERENCE_LEAGUE' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
+export type Competition = 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'CONFERENCE_LEAGUE' | 'ELMS' | 'ALMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
 
 export interface Match {
   competition: Competition;
@@ -87,6 +87,7 @@ export const COMPETITION_META: Record<Competition, { label: string; favicon: str
   EPCR_CHALLENGE: { label: 'Challenge Cup', favicon: 'https://media-cdn.incrowdsports.com/96d27751-bc48-42e6-890e-a389508ab133.svg',                calendarUrl: 'https://www.epcrugby.com/fr/challenge-cup/matchs' },
   LNH:            { label: 'Daikin Starligue', favicon: 'https://www.lnh.fr/medias/_site/header/logo-lnh.svg',                                    calendarUrl: 'https://www.lnh.fr/daikin-starligue/calendrier' },
   ELMS:           { label: 'ELMS',          favicon: 'https://www.europeanlemansseries.com/favicon.ico',                                            calendarUrl: 'https://www.europeanlemansseries.com/en/season/2026' },
+  ALMS:           { label: 'ALMS',          favicon: 'https://www.asianlemansseries.com/favicon.ico',                                               calendarUrl: 'https://www.asianlemansseries.com/en/season/2026' },
   ESTONIE:        { label: 'Premium Liiga', favicon: 'https://jalgpall.ee/favicon.ico',                                                            calendarUrl: 'https://jalgpall.ee/voistlused/52/premium-liiga' },
   // `seasonselection` est volontairement laissé vide : le site FIS retombe alors sur
   // la saison en cours, ce qui évite d'avoir à maintenir l'année ici chaque saison.
@@ -95,7 +96,7 @@ export const COMPETITION_META: Record<Competition, { label: string; favicon: str
   FREESTYLE_EC:   { label: 'Freestyle (Coupe d\'Europe)', favicon: 'https://www.fis-ski.com/favicon.ico',                                         calendarUrl: 'https://www.fis-ski.com/DB/alpine-skiing/calendar-results.html?sectorcode=FS&categorycode=EC&disciplinecode=MO,AE&seasonselection=' },
 };
 
-const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'CONFERENCE_LEAGUE', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS', 'ESTONIE', 'SKI_CROSS', 'SNOWBOARD', 'FREESTYLE_EC'];
+const COMPETITION_ORDER: Competition[] = ['LIGUE1', 'CONFERENCE_LEAGUE', 'TOP14', 'PRO_D2', 'EPCR', 'EPCR_CHALLENGE', 'LNH', 'ELMS', 'ALMS', 'ESTONIE', 'SKI_CROSS', 'SNOWBOARD', 'FREESTYLE_EC'];
 
 /**
  * Disciplines Snowboard Coupe du Monde FIS.
@@ -229,10 +230,10 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
   const matchKey = getMatchKey(match);
 
   // Nettoyer le nom de l'epreuve : enlever le prefixe "ELMS " si present
-  const eventName = match.homeTeam.replace(/^ELMS\s+/i, '');
+  const eventName = match.homeTeam.replace(/^(ELMS|ALMS)\s+/i, '');
 
   // Badge couleur : bleu pour Qualifying, orange pour Race
-  const isRace = match.awayTeam === 'Race';
+  const isRace = /^Race\b/.test(match.awayTeam);
   const sessionBadgeClass = isRace
     ? 'bg-orange-100 text-orange-700 border border-orange-200'
     : 'bg-blue-100 text-blue-700 border border-blue-200';
@@ -297,11 +298,11 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
     <div className="group flex flex-col gap-1.5 sm:gap-1 py-3 sm:py-2.5 px-2 sm:px-3">
       {/* Ligne principale : flag + nom epreuve + badge session */}
       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-        {/* Logo ELMS */}
+        {/* Logo ELMS / ALMS */}
         {match.homeTeamLogo && (
           <img
             src={match.homeTeamLogo}
-            alt="ELMS"
+            alt={match.competition}
             className="w-5 h-5 object-contain shrink-0"
           />
         )}
@@ -357,7 +358,7 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
       )}
 
       {/* Shared file input — used by both mobile button and desktop dropzone */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <input
           type="file"
           accept="application/pdf"
@@ -368,7 +369,7 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
       )}
 
       {/* Mobile : bouton visible permanent */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <button
           type="button"
           className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
@@ -381,7 +382,7 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
       )}
 
       {/* Desktop : dropzone drag & drop (hover only) */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <div
           className={`hidden sm:inline-flex w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
             opacity-0 group-hover:opacity-100 transition-opacity duration-150
@@ -575,7 +576,7 @@ export function SkiCrossMatchRow({ match, attachments, existingNote }: SkiCrossM
       )}
 
       {/* Shared file input — used by both mobile button and desktop dropzone */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <input
           type="file"
           accept="application/pdf"
@@ -586,7 +587,7 @@ export function SkiCrossMatchRow({ match, attachments, existingNote }: SkiCrossM
       )}
 
       {/* Mobile : bouton visible permanent */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <button
           type="button"
           className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
@@ -599,7 +600,7 @@ export function SkiCrossMatchRow({ match, attachments, existingNote }: SkiCrossM
       )}
 
       {/* Desktop : dropzone drag & drop (hover only) */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <div
           className={`hidden sm:inline-flex w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
             opacity-0 group-hover:opacity-100 transition-opacity duration-150
@@ -791,7 +792,7 @@ export function SnowboardMatchRow({ match, attachments, existingNote }: Snowboar
       )}
 
       {/* Shared file input — used by both mobile button and desktop dropzone */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <input
           type="file"
           accept="application/pdf"
@@ -802,7 +803,7 @@ export function SnowboardMatchRow({ match, attachments, existingNote }: Snowboar
       )}
 
       {/* Mobile : bouton visible permanent */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <button
           type="button"
           className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
@@ -815,7 +816,7 @@ export function SnowboardMatchRow({ match, attachments, existingNote }: Snowboar
       )}
 
       {/* Desktop : dropzone drag & drop (hover only) */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <div
           className={`hidden sm:inline-flex w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
             opacity-0 group-hover:opacity-100 transition-opacity duration-150
@@ -1008,7 +1009,7 @@ export function FreestyleECMatchRow({ match, attachments, existingNote }: Freest
       )}
 
       {/* Shared file input — used by both mobile button and desktop dropzone */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <input
           type="file"
           accept="application/pdf"
@@ -1019,7 +1020,7 @@ export function FreestyleECMatchRow({ match, attachments, existingNote }: Freest
       )}
 
       {/* Mobile : bouton visible permanent */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <button
           type="button"
           className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
@@ -1032,7 +1033,7 @@ export function FreestyleECMatchRow({ match, attachments, existingNote }: Freest
       )}
 
       {/* Desktop : dropzone drag & drop (hover only) */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <div
           className={`hidden sm:inline-flex w-full border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
             opacity-0 group-hover:opacity-100 transition-opacity duration-150
@@ -1233,7 +1234,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
       )}
 
       {/* Shared file input */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <input
           type="file"
           accept="application/pdf"
@@ -1244,7 +1245,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
       )}
 
       {/* Mobile : bouton visible permanent */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <button
           type="button"
           className="sm:hidden inline-flex items-center gap-1.5 text-xs px-3 py-2 min-h-[40px] rounded border border-dashed border-muted-foreground/40 text-muted-foreground w-full justify-center mt-1"
@@ -1257,7 +1258,7 @@ export function MatchRow({ match, attachments, existingNote }: MatchRowProps) {
       )}
 
       {/* Desktop : dropzone drag & drop (hover only) */}
-      {can('tickets.create') && (
+      {can('sports.edit') && (
         <div
           className={`hidden sm:inline-flex w-full mt-1 border border-dashed rounded px-2 py-1.5 text-center text-xs cursor-pointer transition-all items-center justify-center gap-2
             opacity-0 group-hover:opacity-100 transition-opacity duration-150
@@ -1507,7 +1508,7 @@ function MatchesList({ matches }: MatchesListProps) {
 
             <div className="divide-y">
               {compMatches.map((match, idx) =>
-                match.competition === 'ELMS' ? (
+                (match.competition === 'ELMS' || match.competition === 'ALMS') ? (
                   <ElmsMatchRow
                     key={`${match.homeTeam}-${match.awayTeam}-${idx}`}
                     match={match}

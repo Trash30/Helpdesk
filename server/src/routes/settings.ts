@@ -12,12 +12,6 @@ const router = Router();
 const ALLOWED_SETTINGS_KEYS = [
   'company_name',
   'logo_url',
-  'default_priority',
-  'default_assigned_to',
-  'auto_close_days',
-  'survey_delay_hours',
-  'survey_cooldown_days',
-  'survey_enabled',
 ];
 
 // ─── GET /api/settings/public (no auth) ──────────────────────────────────────

@@ -20,40 +20,8 @@ import {
 // Permission groups for read-only preview
 const PERMISSION_GROUPS = [
   {
-    key: 'tickets', label: 'Tickets',
-    permissions: [
-      { key: 'tickets.view', label: 'Voir les tickets' },
-      { key: 'tickets.create', label: 'Créer un ticket' },
-      { key: 'tickets.edit', label: 'Modifier un ticket' },
-      { key: 'tickets.close', label: 'Fermer / résoudre un ticket' },
-      { key: 'tickets.delete', label: 'Supprimer un ticket' },
-      { key: 'tickets.assign', label: 'Assigner un ticket' },
-      { key: 'tickets.viewAll', label: 'Voir tous les tickets' },
-    ],
-  },
-  {
-    key: 'clients', label: 'Clients',
-    permissions: [
-      { key: 'clients.view', label: 'Voir les clients' },
-      { key: 'clients.create', label: 'Créer un client' },
-      { key: 'clients.edit', label: 'Modifier un client' },
-      { key: 'clients.delete', label: 'Supprimer un client' },
-    ],
-  },
-  {
-    key: 'comments', label: 'Commentaires',
-    permissions: [
-      { key: 'comments.create', label: 'Ajouter un commentaire' },
-      { key: 'comments.delete', label: 'Supprimer ses commentaires' },
-      { key: 'comments.deleteAny', label: 'Supprimer tout commentaire' },
-    ],
-  },
-  {
-    key: 'surveys', label: 'Enquêtes',
-    permissions: [
-      { key: 'surveys.view', label: 'Voir les résultats' },
-      { key: 'surveys.configure', label: 'Configurer le modèle' },
-    ],
+    key: 'sports', label: 'Calendrier sportif',
+    permissions: [{ key: 'sports.edit', label: 'Notes et PDF des matchs' }],
   },
   {
     key: 'admin', label: 'Administration',
@@ -62,7 +30,6 @@ const PERMISSION_GROUPS = [
       { key: 'admin.users', label: 'Gérer les agents' },
       { key: 'admin.roles', label: 'Gérer les rôles' },
       { key: 'admin.categories', label: 'Gérer les catégories' },
-      { key: 'admin.clientRoles', label: 'Gérer les rôles clients' },
       { key: 'admin.settings', label: 'Modifier les paramètres' },
     ],
   },
@@ -77,7 +44,6 @@ interface User {
   email: string;
   isActive: boolean;
   role: Role;
-  _count?: { assignedTickets: number };
 }
 
 const defaultForm = {
@@ -220,7 +186,6 @@ export function AdminUsersPage() {
               <th className="text-left p-3 font-medium">{t('users.colAgent')}</th>
               <th className="text-left p-3 font-medium">{t('users.colEmail')}</th>
               <th className="text-left p-3 font-medium">{t('users.colRole')}</th>
-              <th className="text-left p-3 font-medium">{t('users.colTickets')}</th>
               <th className="text-left p-3 font-medium">{t('users.colStatus')}</th>
               <th className="w-10 p-3" />
             </tr>
@@ -241,9 +206,6 @@ export function AdminUsersPage() {
                   <span className="text-xs px-2 py-0.5 rounded-full border font-medium">
                     {user.role.name}
                   </span>
-                </td>
-                <td className="p-3 text-muted-foreground">
-                  {user._count?.assignedTickets ?? 0}
                 </td>
                 <td className="p-3">
                   <span className={`text-xs px-1.5 py-0.5 rounded ${

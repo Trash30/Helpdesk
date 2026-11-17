@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
-import { Plus, Copy, Trash2, Pencil, Shield, Ticket, Users, MessageSquare, BarChart2, BookOpen, CalendarPlus } from 'lucide-react';
+import { Plus, Copy, Trash2, Pencil, Shield, BookOpen, CalendarPlus, MessageCircle, Trophy } from 'lucide-react';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,46 +16,16 @@ import {
 // Permission groups (mirrors server config)
 const PERMISSION_GROUPS = [
   {
-    key: 'tickets', label: 'Tickets', Icon: Ticket,
-    permissions: [
-      { key: 'tickets.view', label: 'Voir les tickets', description: 'Accès à la liste et au détail des tickets' },
-      { key: 'tickets.create', label: 'Créer un ticket', description: 'Créer de nouveaux tickets' },
-      { key: 'tickets.edit', label: 'Modifier un ticket', description: 'Éditer le titre, la description, la priorité...' },
-      { key: 'tickets.close', label: 'Fermer un ticket', description: 'Passer un ticket en CLOSED' },
-      { key: 'tickets.delete', label: 'Supprimer un ticket', description: 'Supprimer définitivement un ticket' },
-      { key: 'tickets.assign', label: 'Assigner un ticket', description: "Assigner un ticket à un agent" },
-      { key: 'tickets.viewAll', label: 'Voir tous les tickets', description: "Sans ce droit, l'agent ne voit que ses tickets assignés" },
-    ],
-  },
-  {
-    key: 'clients', label: 'Clients', Icon: Users,
-    permissions: [
-      { key: 'clients.view', label: 'Voir les clients', description: 'Accès à la liste et aux fiches clients' },
-      { key: 'clients.create', label: 'Créer un client', description: 'Ajouter de nouveaux clients' },
-      { key: 'clients.edit', label: 'Modifier un client', description: 'Éditer les informations client' },
-      { key: 'clients.delete', label: 'Supprimer un client', description: 'Supprimer un client (bloqué si tickets ouverts)' },
-    ],
-  },
-  {
-    key: 'comments', label: 'Commentaires', Icon: MessageSquare,
-    permissions: [
-      { key: 'comments.create', label: 'Ajouter un commentaire', description: 'Poster des commentaires sur les tickets' },
-      { key: 'comments.delete', label: 'Supprimer ses commentaires', description: 'Supprimer ses propres commentaires uniquement' },
-      { key: 'comments.deleteAny', label: 'Supprimer tout commentaire', description: 'Supprimer les commentaires de tous les agents' },
-    ],
-  },
-  {
-    key: 'surveys', label: 'Enquêtes', Icon: BarChart2,
-    permissions: [
-      { key: 'surveys.view', label: 'Voir les résultats', description: 'Accéder aux résultats et statistiques des enquêtes' },
-      { key: 'surveys.configure', label: 'Configurer le modèle', description: "Modifier les questions du modèle d'enquête" },
-    ],
-  },
-  {
     key: 'kb', label: 'Base de connaissance', Icon: BookOpen,
     permissions: [
       { key: 'kb.read', label: 'Lire les articles', description: 'Accéder à la base de connaissance et lire les articles' },
       { key: 'kb.write', label: 'Créer / modifier / supprimer des articles', description: 'Créer, modifier et supprimer des articles de la base de connaissance' },
+    ],
+  },
+  {
+    key: 'sports', label: 'Calendrier sportif', Icon: Trophy,
+    permissions: [
+      { key: 'sports.edit', label: 'Notes et PDF des matchs', description: "Rédiger les notes de match, joindre des PDF et forcer l'actualisation du calendrier" },
     ],
   },
   {
@@ -65,13 +35,18 @@ const PERMISSION_GROUPS = [
     ],
   },
   {
+    key: 'whatsapp', label: 'Groupes WhatsApp', Icon: MessageCircle,
+    permissions: [
+      { key: 'whatsapp.groups', label: 'Préparer les groupes WhatsApp', description: 'Importer la planification et préparer les groupes WhatsApp des matchs' },
+    ],
+  },
+  {
     key: 'admin', label: 'Administration', Icon: Shield,
     permissions: [
       { key: 'admin.access', label: 'Accéder au panneau admin', description: 'Voir le menu Administration dans la sidebar' },
       { key: 'admin.users', label: 'Gérer les agents', description: 'Créer, modifier, activer/désactiver des agents' },
       { key: 'admin.roles', label: 'Gérer les rôles', description: 'Créer et modifier les rôles et leurs permissions' },
-      { key: 'admin.categories', label: 'Gérer les catégories', description: 'Gérer les catégories de tickets' },
-      { key: 'admin.clientRoles', label: 'Gérer les rôles clients', description: 'Gérer les rôles attribuables aux clients' },
+      { key: 'admin.categories', label: 'Gérer les catégories', description: 'Gérer les catégories de la base de connaissance' },
       { key: 'admin.settings', label: 'Modifier les paramètres', description: 'Paramètres généraux, logo, branding' },
     ],
   },
@@ -83,12 +58,7 @@ const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap(g => g.permissions.map(p => p.
 function applyDependencies(perms: string[], added: string): string[] {
   const set = new Set(perms);
   set.add(added);
-  if (added === 'tickets.edit') { set.add('tickets.view'); }
-  if (added === 'tickets.close') { set.add('tickets.view'); set.add('tickets.edit'); }
-  if (added === 'tickets.delete') { set.add('tickets.view'); }
-  if (added === 'tickets.assign') { set.add('tickets.view'); }
-  if (added === 'comments.deleteAny') { set.add('comments.delete'); }
-  if (['admin.users', 'admin.roles', 'admin.categories', 'admin.clientRoles', 'admin.settings'].includes(added)) {
+  if (['admin.users', 'admin.roles', 'admin.categories', 'admin.settings'].includes(added)) {
     set.add('admin.access');
   }
   return [...set];

@@ -62,7 +62,7 @@ router.post(
   '/match-attachments',
   matchAttachmentUpload.single('file'),
   async (req: Request, res: Response) => {
-    if (!hasPermission(req.user!, 'tickets.create')) {
+    if (!hasPermission(req.user!, 'sports.edit')) {
       res.status(403).json({ error: 'Permission refus\u00e9e' });
       return;
     }

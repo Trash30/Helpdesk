@@ -48,7 +48,7 @@ interface Category {
   description?: string | null;
   isActive: boolean;
   position: number;
-  _count?: { tickets: number };
+  _count?: { kbArticles: number };
 }
 
 function CategoryIcon({ name, className }: { name: string; className?: string }) {
@@ -350,14 +350,14 @@ export function AdminCategoriesPage() {
         onOpenChange={open => !open && setDeleteTarget(null)}
         title={t('categories.deleteTitle')}
         description={
-          deleteTarget?._count?.tickets
-            ? t('categories.deleteInUse', { count: deleteTarget._count.tickets })
+          deleteTarget?._count?.kbArticles
+            ? t('categories.deleteInUse', { count: deleteTarget._count.kbArticles })
             : t('categories.deleteConfirm', { name: deleteTarget?.name })
         }
-        confirmLabel={deleteTarget?._count?.tickets ? t('categories.close') : t('categories.delete')}
-        variant={deleteTarget?._count?.tickets ? 'default' : 'destructive'}
+        confirmLabel={deleteTarget?._count?.kbArticles ? t('categories.close') : t('categories.delete')}
+        variant={deleteTarget?._count?.kbArticles ? 'default' : 'destructive'}
         loading={deleting}
-        onConfirm={deleteTarget?._count?.tickets ? () => setDeleteTarget(null) : handleDelete}
+        onConfirm={deleteTarget?._count?.kbArticles ? () => setDeleteTarget(null) : handleDelete}
       />
     </div>
   );

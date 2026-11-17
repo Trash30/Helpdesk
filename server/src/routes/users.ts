@@ -46,7 +46,6 @@ router.get(
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
       include: {
         role: true,
-        _count: { select: { assignedTickets: { where: { deletedAt: null } } } },
       },
       omit: { password: true, passwordResetToken: true },
     });
@@ -212,22 +211,6 @@ router.delete(
     const existing = await prisma.user.findUnique({ where: { id } });
     if (!existing) {
       res.status(404).json({ error: 'Agent introuvable' });
-      return;
-    }
-
-    // Block if agent has open assigned tickets
-    const openTicketsCount = await prisma.ticket.count({
-      where: {
-        assignedToId: id,
-        status: { in: ['OPEN', 'IN_PROGRESS', 'PENDING'] },
-        deletedAt: null,
-      },
-    });
-
-    if (openTicketsCount > 0) {
-      res
-        .status(400)
-        .json({ error: 'Cet agent a des tickets ouverts assignés. Réassignez-les avant de le supprimer.' });
       return;
     }
 

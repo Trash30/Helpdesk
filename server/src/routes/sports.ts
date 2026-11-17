@@ -1,6 +1,5 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authMiddleware } from '../middleware/auth';
-import { requirePermission } from '../middleware/permissions';
 import { fetchAllMatches, clearCache } from '../services/sportsScraper';
 
 const router = Router();
@@ -28,7 +27,14 @@ router.get('/matches', async (_req: Request, res: Response) => {
 
 // ─── POST /api/sports/refresh ────────────────────────────────────────────────
 
-router.post('/refresh', requirePermission('tickets.create'), async (_req: Request, res: Response) => {
+// Accessible aux utilisateurs pouvant éditer les matchs OU préparer les groupes WhatsApp
+const canRefresh = (req: Request, res: Response, next: NextFunction) => {
+  const perms = req.user?.permissions ?? [];
+  if (perms.includes('sports.edit') || perms.includes('whatsapp.groups')) return next();
+  res.status(403).json({ error: 'Permission refusée' });
+};
+
+router.post('/refresh', canRefresh, async (_req: Request, res: Response) => {
   const now = Date.now();
   if (now - lastRefreshAt < REFRESH_COOLDOWN_MS) {
     const retryInSec = Math.ceil((REFRESH_COOLDOWN_MS - (now - lastRefreshAt)) / 1000);

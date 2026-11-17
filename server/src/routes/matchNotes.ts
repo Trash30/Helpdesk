@@ -56,11 +56,11 @@ const matchNoteBodySchema = z.object({
 
 // ─── POST /api/sports/match-notes/upload-image ──────────────────────────────
 // Upload d'une image collée/insérée dans une note (éditeur TipTap)
-// Nécessite la permission d'écriture des notes (tickets.create)
+// Nécessite la permission d'écriture des notes (sports.edit)
 
 router.post(
   '/upload-image',
-  requirePermission('tickets.create'),
+  requirePermission('sports.edit'),
   matchNoteImageUpload.single('image'),
   (req: Request, res: Response) => {
     if (!req.file) {
@@ -353,9 +353,9 @@ router.get('/report/week', async (_req: Request, res: Response) => {
 });
 
 // ─── PUT /api/sports/match-notes/:matchKey ──────────────────────────────────
-// Crée ou met à jour la note d'un match (upsert) — nécessite tickets.create
+// Crée ou met à jour la note d'un match (upsert) — nécessite sports.edit
 
-router.put('/:matchKey', requirePermission('tickets.create'), async (req: Request, res: Response) => {
+router.put('/:matchKey', requirePermission('sports.edit'), async (req: Request, res: Response) => {
   const matchKey = decodeURIComponent(req.params.matchKey);
 
   const parsed = matchNoteBodySchema.safeParse(req.body);

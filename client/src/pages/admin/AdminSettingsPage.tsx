@@ -14,14 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 interface Settings {
   logo_url?: string | null;
   company_name?: string;
-  default_priority?: string;
-  default_assigned_to?: string;
-  auto_close_days?: string;
-  survey_delay_hours?: string;
-  survey_cooldown_days?: string;
 }
-
-interface Agent { id: string; firstName: string; lastName: string }
 
 export function AdminSettingsPage() {
   const { t } = useTranslation('admin');
@@ -33,13 +26,7 @@ export function AdminSettingsPage() {
     queryFn: async () => (await api.get('/admin/settings')).data,
   });
 
-  const { data: agentsRes } = useQuery<{ data: Agent[] }>({
-    queryKey: ['agents'],
-    queryFn: async () => (await api.get('/admin/users')).data,
-  });
-
   const settings = settingsRes?.data ?? {};
-  const agents = agentsRes?.data ?? [];
 
   // ── Apparence ────────────────────────────────────────────────────────────────
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -95,55 +82,6 @@ export function AdminSettingsPage() {
     finally { setShowDeleteLogo(false); }
   };
 
-  // ── Tickets ──────────────────────────────────────────────────────────────────
-  const [defaultPriority, setDefaultPriority] = useState('MEDIUM');
-  const [defaultAssignedTo, setDefaultAssignedTo] = useState('');
-  const [autoCloseDays, setAutoCloseDays] = useState('0');
-  const [savingTickets, setSavingTickets] = useState(false);
-
-  useEffect(() => {
-    if (settings.default_priority) setDefaultPriority(settings.default_priority);
-    if (settings.default_assigned_to !== undefined) setDefaultAssignedTo(settings.default_assigned_to ?? '');
-    if (settings.auto_close_days !== undefined) setAutoCloseDays(settings.auto_close_days ?? '0');
-  }, [settings.default_priority, settings.default_assigned_to, settings.auto_close_days]);
-
-  const saveTickets = async () => {
-    setSavingTickets(true);
-    try {
-      await api.put('/admin/settings', {
-        default_priority: defaultPriority,
-        default_assigned_to: defaultAssignedTo,
-        auto_close_days: autoCloseDays,
-      });
-      queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
-      toast.success(t('settings.ticketSettingsSaved'));
-    } catch { toast.error(t('settings.saveError')); }
-    finally { setSavingTickets(false); }
-  };
-
-  // ── Enquêtes ─────────────────────────────────────────────────────────────────
-  const [surveyDelay, setSurveyDelay] = useState('48');
-  const [surveyCooldown, setSurveyCooldown] = useState('10');
-  const [savingSurveys, setSavingSurveys] = useState(false);
-
-  useEffect(() => {
-    if (settings.survey_delay_hours) setSurveyDelay(settings.survey_delay_hours);
-    if (settings.survey_cooldown_days) setSurveyCooldown(settings.survey_cooldown_days);
-  }, [settings.survey_delay_hours, settings.survey_cooldown_days]);
-
-  const saveSurveys = async () => {
-    setSavingSurveys(true);
-    try {
-      await api.put('/admin/settings', {
-        survey_delay_hours: surveyDelay,
-        survey_cooldown_days: surveyCooldown,
-      });
-      queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
-      toast.success(t('settings.surveySettingsSaved'));
-    } catch { toast.error(t('settings.saveError')); }
-    finally { setSavingSurveys(false); }
-  };
-
   const currentLogo = logoPreview ?? settings.logo_url ?? null;
 
   return (
@@ -196,78 +134,6 @@ export function AdminSettingsPage() {
           <div className="flex justify-end">
             <Button onClick={saveAppearance} disabled={savingAppearance}>
               {savingAppearance ? t('settings.saving') : t('settings.save')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tickets */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">{t('settings.tickets')}</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="def-priority">{t('settings.defaultPriority')}</Label>
-            <select id="def-priority" value={defaultPriority} onChange={e => setDefaultPriority(e.target.value)}
-              className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none">
-              <option value="LOW">{t('settings.priorityLow')}</option>
-              <option value="MEDIUM">{t('settings.priorityMedium')}</option>
-              <option value="HIGH">{t('settings.priorityHigh')}</option>
-              <option value="CRITICAL">{t('settings.priorityCritical')}</option>
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="def-agent">{t('settings.defaultAgent')}</Label>
-            <select id="def-agent" value={defaultAssignedTo} onChange={e => setDefaultAssignedTo(e.target.value)}
-              className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none">
-              <option value="">{t('settings.unassigned')}</option>
-              {agents.map(a => <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>)}
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="auto-close">{t('settings.autoClose')}</Label>
-            <Input id="auto-close" type="number" min="0" value={autoCloseDays}
-              onChange={e => setAutoCloseDays(e.target.value)} className="mt-1" />
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('settings.autoCloseHelp')}
-            </p>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={saveTickets} disabled={savingTickets}>
-              {savingTickets ? t('settings.saving') : t('settings.save')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Enquêtes */}
-      <Card>
-        <CardHeader><CardTitle className="text-base">{t('settings.surveys')}</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="survey-delay">{t('settings.surveyDelay')}</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input id="survey-delay" type="number" min="1" value={surveyDelay}
-                onChange={e => setSurveyDelay(e.target.value)} className="w-28" />
-              <span className="text-sm text-muted-foreground">{t('settings.hours')}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('settings.surveyDelayHelp')}
-            </p>
-          </div>
-          <div>
-            <Label htmlFor="survey-cooldown">{t('settings.surveyCooldown')}</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <Input id="survey-cooldown" type="number" min="1" value={surveyCooldown}
-                onChange={e => setSurveyCooldown(e.target.value)} className="w-28" />
-              <span className="text-sm text-muted-foreground">{t('settings.days')}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {t('settings.surveyCooldownHelp')}
-            </p>
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={saveSurveys} disabled={savingSurveys}>
-              {savingSurveys ? t('settings.saving') : t('settings.save')}
             </Button>
           </div>
         </CardContent>
