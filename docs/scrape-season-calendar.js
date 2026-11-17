@@ -585,21 +585,34 @@ async function scrapeMonacoSeason() {
 
 /** Jour local de l'événement, lu littéralement dans l'ISO (offset explicite). */
 function ymdFromIsoLiteral(iso) {
-  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const m = (iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
 }
+
+/** Même regex que sportsScraper.ts : "Race", "Race - ...", "Race 1 - ..." (ALMS). */
+const RACE_SESSION_RE = /^race(?:\s+(\d+))?\s*(?:[-–]|$)/i;
 
 function extractQualifyingClass(sessionName) {
   let m = sessionName.match(/^Qualifying session\s+(.+)$/i);
   if (m) return m[1].trim();
   m = sessionName.match(/^Qualifying\s+-\s+([^-]+)/i);
   if (m) return m[1].trim();
+  // ALMS : "Qualifications 1 - Hypercar & LMP2 - 4 Hours of ..."
+  m = sessionName.match(/^Qualifications?\s*(\d+)?\s+-\s+([^-]+?)\s+-/i);
+  if (m) return m[1] ? `${m[2].trim()} Q${m[1]}` : m[2].trim();
   return 'Qualifying';
 }
 
-async function scrapeELMSSeason() {
+/** ELMS et ALMS partagent la même plateforme (/en/season/<année> + /en/race/<slug> avec JSON-LD). */
+const LE_MANS_SERIES = {
+  ELMS: { baseUrl: 'https://www.europeanlemansseries.com', seasonUrl: 'https://www.europeanlemansseries.com/en/season/2026' },
+  // La saison ALMS "2026" couvre nov. 2026 → début 2027
+  ALMS: { baseUrl: 'https://www.asianlemansseries.com', seasonUrl: 'https://www.asianlemansseries.com/en/season/2026' },
+};
+
+async function scrapeLeMansSeriesSeason(competition) {
+  const { baseUrl, seasonUrl } = LE_MANS_SERIES[competition];
   const client = createClient();
-  const seasonUrl = 'https://www.europeanlemansseries.com/en/season/2026';
 
   const seasonResp = await client.get(seasonUrl);
   const $season = cheerio.load(seasonResp.data);
@@ -611,13 +624,13 @@ async function scrapeELMSSeason() {
     if (m) slugSet.add(m[1].trim());
   });
   const slugs = Array.from(slugSet).filter((s) => s && !s.includes('official-test'));
-  log(`  ELMS: ${slugs.length} slugs de course : ${slugs.join(', ')}`);
-  if (slugs.length === 0) throw new Error('aucun slug de course trouvé sur la page saison 2026');
+  log(`  ${competition}: ${slugs.length} slugs de course : ${slugs.join(', ')}`);
+  if (slugs.length === 0) throw new Error(`aucun slug de course trouvé sur ${seasonUrl}`);
 
   const out = [];
   for (const slug of slugs) {
     try {
-      const raceResp = await client.get(`https://www.europeanlemansseries.com/en/race/${slug}`);
+      const raceResp = await client.get(`${baseUrl}/en/race/${slug}`);
       const $race = cheerio.load(raceResp.data);
 
       let jsonLd = null;
@@ -627,25 +640,25 @@ async function scrapeELMSSeason() {
           if (parsed['@type'] === 'SportsEvent' && parsed.subEvent) jsonLd = parsed;
         } catch { /* ignore */ }
       });
-      if (!jsonLd) { log(`    [WARN] ELMS ${slug}: pas de JSON-LD SportsEvent`); await sleep(POLITE_DELAY_MS); continue; }
+      if (!jsonLd) { log(`    [WARN] ${competition} ${slug}: pas de JSON-LD SportsEvent`); await sleep(POLITE_DELAY_MS); continue; }
 
       const eventName = jsonLd.name || slug;
       const subEvents = jsonLd.subEvent || [];
 
       const raceSessions = subEvents.filter(
-        (se) => se.name === 'Race' || se.name.toLowerCase().startsWith('race -') || se.name.toLowerCase().startsWith('race–')
+        (se) => RACE_SESSION_RE.test(se.name || '')
       );
-      const qualSessions = subEvents.filter((se) => /^qualifying/i.test(se.name));
+      const qualSessions = subEvents.filter((se) => /^qualif/i.test(se.name || ''));
 
       for (const s of raceSessions) {
-        out.push({ competition: 'ELMS', homeTeam: eventName, awayTeam: 'Race', days: [ymdFromIsoLiteral(s.startDate)], precision: 'exact' });
+        out.push({ competition, homeTeam: eventName, awayTeam: 'Race', days: [ymdFromIsoLiteral(s.startDate)], precision: 'exact' });
       }
       for (const s of qualSessions) {
-        out.push({ competition: 'ELMS', homeTeam: eventName, awayTeam: `Qualif. ${extractQualifyingClass(s.name)}`, days: [ymdFromIsoLiteral(s.startDate)], precision: 'exact' });
+        out.push({ competition, homeTeam: eventName, awayTeam: `Qualif. ${extractQualifyingClass(s.name)}`, days: [ymdFromIsoLiteral(s.startDate)], precision: 'exact' });
       }
-      log(`    ELMS ${slug}: ${raceSessions.length} course(s) + ${qualSessions.length} qualif(s)`);
+      log(`    ${competition} ${slug}: ${raceSessions.length} course(s) + ${qualSessions.length} qualif(s)`);
     } catch (err) {
-      log(`    [ERREUR] ELMS ${slug}: ${err.message}`);
+      log(`    [ERREUR] ${competition} ${slug}: ${err.message}`);
     }
     await sleep(POLITE_DELAY_MS);
   }
@@ -772,7 +785,8 @@ const SOURCES = [
   { key: 'EPCR', fetch: () => scrapeEPCRSeason('https://www.epcrugby.com/fr/champions-cup/matchs', 'EPCR') },
   { key: 'EPCR_CHALLENGE', fetch: () => scrapeEPCRSeason('https://www.epcrugby.com/fr/challenge-cup/matchs', 'EPCR_CHALLENGE') },
   { key: 'LIGUE1', fetch: scrapeMonacoSeason },
-  { key: 'ELMS', fetch: scrapeELMSSeason },
+  { key: 'ELMS', fetch: () => scrapeLeMansSeriesSeason('ELMS') },
+  { key: 'ALMS', fetch: () => scrapeLeMansSeriesSeason('ALMS') },
   { key: 'ESTONIE', fetch: scrapeEstonieSeason },
   { key: 'SKI_CROSS', fetch: scrapeSkiCrossSeason },
   { key: 'SNOWBOARD', fetch: scrapeSnowboardSeason },
