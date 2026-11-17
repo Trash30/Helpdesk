@@ -8,5 +8,21 @@
   "kpiMissionsJ30Sub": "Upcoming Support Missions",
   "missionsTitle": "Support Missions — next 30 days",
   "missionCount_one": "{{count}} mission",
-  "missionCount_other": "{{count}} missions"
+  "missionCount_other": "{{count}} missions",
+  "season": {
+    "title": "Season outlook",
+    "subtitle": "Calendar view of all tracked competitions until the end of the seasons. Separate from the weekly view.",
+    "stats": "{{days}} event days · {{comps}} competitions · peak of {{peak}} on the same day",
+    "error": "Unable to load the season calendar.",
+    "prev": "Previous month",
+    "next": "Next month",
+    "jump": "Jump to month",
+    "today": "Back to today",
+    "cellTitle": "{{count}} competition(s) that day",
+    "cellEmpty": "No known competition",
+    "noEvent": "No known competition on this day.",
+    "footer": "Snapshot of {{date}}. Dotted underline = probable or provisional date. Playoffs and unpublished calendars are not shown."
+  },
+  "kpiSeason": "Season outlook",
+  "kpiSeasonSub": "Full-season calendar"
 }
