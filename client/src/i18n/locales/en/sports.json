@@ -61,7 +61,17 @@
     "broadcasterLabel": "Broadcaster: ",
     "productionLabel": "Production: ",
     "chaperonedBy": "Match chaperoned by: ",
-    "generatedOn": "Generated on {{date}} — VOGO Support"
+    "generatedOn": "Generated on {{date}} — VOGO Support",
+    "exportSuccessArchived": "Report exported and archived",
+    "archiveError": "Archiving failed: the downloaded file is still valid",
+    "historyButton": "History",
+    "historyTitle": "Archived reports",
+    "historyLoading": "Loading…",
+    "historyEmpty": "No archived report yet. Every export is kept here.",
+    "historyWeek": "Week {{week}} — {{year}}",
+    "historyNotes_one": "{{count}} note",
+    "historyNotes_other": "{{count}} notes",
+    "downloadError": "Download failed"
   },
   "noteEditor": {
     "placeholder": "Add your support notes for this match...",

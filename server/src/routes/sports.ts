@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import { fetchAllMatches, clearCache } from '../services/sportsScraper';
+import { SEASON_CALENDAR } from '../data/seasonCalendar';
 
 const router = Router();
 
@@ -23,6 +24,13 @@ router.get('/matches', async (_req: Request, res: Response) => {
     }
     res.status(500).json({ error: 'Impossible de recuperer les matchs sportifs' });
   }
+});
+
+// ─── GET /api/sports/season-calendar ────────────────────────────────────────
+// Vue annuelle (projection) — instantané statique, indépendant du scraper hebdomadaire.
+
+router.get('/season-calendar', (_req: Request, res: Response) => {
+  res.json({ data: SEASON_CALENDAR });
 });
 
 // ─── POST /api/sports/refresh ────────────────────────────────────────────────

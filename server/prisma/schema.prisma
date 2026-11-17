@@ -67,6 +67,7 @@ model User {
   kbAttachments      KbAttachment[]    @relation("KbAttachmentUploader")
   commercialEvents   CommercialEvent[]
   bmcCards           BmcCard[]
+  matchReports       MatchReport[]      @relation("MatchReportAuthor")
 }
 
 model Category {
@@ -191,4 +192,22 @@ model BmcCard {
   updatedAt   DateTime    @updatedAt
 
   @@unique([ip])
+}
+
+
+model MatchReport {
+  id          String   @id @default(uuid())
+  year        Int
+  weekNumber  Int
+  startOfWeek DateTime
+  endOfWeek   DateTime
+  noteCount   Int
+  filename    String
+  size        Int
+  data        Bytes    // fichier .docx tel que généré (images incluses)
+  createdById String
+  createdBy   User     @relation("MatchReportAuthor", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([year, weekNumber])
 }

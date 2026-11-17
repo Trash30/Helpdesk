@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, History, Loader2 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Document, Packer, Paragraph, TextRun, ImageRun, HeadingLevel, AlignmentType, BorderStyle } from 'docx';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
@@ -314,13 +316,15 @@ function formatNoteDate(dateStr: string, time: string): string {
 export function MatchReportExport() {
   const { t, i18n } = useTranslation('sports');
   const dateLocale = i18n.language === 'en' ? 'en-US' : 'fr-FR';
+  const queryClient = useQueryClient();
   const [isExporting, setIsExporting] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
       const response = await api.get('/sports/match-notes/report/week');
-      const { weekNumber, year, notes } = response.data.data as WeekReportResponse;
+      const { weekNumber, year, startOfWeek, endOfWeek, notes } = response.data.data as WeekReportResponse;
 
       const validNotes = notes.filter((n) => {
         const status = n.status ?? 'VERT';
@@ -591,7 +595,18 @@ export function MatchReportExport() {
       a.click();
       URL.revokeObjectURL(blobUrl);
 
-      toast.success(t('reportExport.exportSuccess'));
+      // Archivage en base (best effort : l'export local reste valide si l'archivage échoue)
+      try {
+        await api.post('/sports/reports', blob, {
+          params: { year, weekNumber, startOfWeek, endOfWeek, noteCount: validNotes.length },
+          headers: { 'Content-Type': 'application/octet-stream' },
+        });
+        queryClient.invalidateQueries({ queryKey: ['match-reports'] });
+        toast.success(t('reportExport.exportSuccessArchived'));
+      } catch (archiveErr: any) {
+        toast.success(t('reportExport.exportSuccess'));
+        if (archiveErr?.response?.status !== 403) toast.error(t('reportExport.archiveError'));
+      }
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? t('reportExport.exportError'));
     } finally {
@@ -600,16 +615,99 @@ export function MatchReportExport() {
   };
 
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      onClick={handleExport}
-      disabled={isExporting}
-      className="h-11 sm:h-8 text-sm sm:text-xs gap-1.5 px-3"
-    >
-      {isExporting ? <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin" /> : <Download className="h-4 w-4 sm:h-3.5 sm:w-3.5" />}
-      {t('reportExport.exportButton')}
-    </Button>
+    <>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={handleExport}
+        disabled={isExporting}
+        className="h-11 sm:h-8 text-sm sm:text-xs gap-1.5 px-3"
+      >
+        {isExporting ? <Loader2 className="h-4 w-4 sm:h-3.5 sm:w-3.5 animate-spin" /> : <Download className="h-4 w-4 sm:h-3.5 sm:w-3.5" />}
+        {t('reportExport.exportButton')}
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={() => setHistoryOpen(true)}
+        className="h-11 sm:h-8 text-sm sm:text-xs gap-1.5 px-3"
+      >
+        <History className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+        {t('reportExport.historyButton')}
+      </Button>
+      <MatchReportHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} locale={dateLocale} />
+    </>
+  );
+}
+
+// ─── Historique des rapports archivés ───────────────────────────────────────
+
+interface ArchivedReport {
+  id: string;
+  year: number;
+  weekNumber: number;
+  startOfWeek: string;
+  endOfWeek: string;
+  noteCount: number;
+  filename: string;
+  size: number;
+  createdAt: string;
+  createdBy: { id: string; firstName: string; lastName: string };
+}
+
+function MatchReportHistoryDialog({ open, onOpenChange, locale }: { open: boolean; onOpenChange: (o: boolean) => void; locale: string }) {
+  const { t } = useTranslation('sports');
+  const { data, isLoading } = useQuery({
+    queryKey: ['match-reports'],
+    queryFn: async () => (await api.get('/sports/reports')).data.data as ArchivedReport[],
+    enabled: open,
+  });
+
+  const download = async (r: ArchivedReport) => {
+    try {
+      const res = await api.get(`/sports/reports/${r.id}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = r.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(t('reportExport.downloadError'));
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t('reportExport.historyTitle')}</DialogTitle>
+        </DialogHeader>
+        {isLoading && <p className="text-sm text-muted-foreground">{t('reportExport.historyLoading')}</p>}
+        {data && data.length === 0 && <p className="text-sm text-muted-foreground">{t('reportExport.historyEmpty')}</p>}
+        <ul className="max-h-[60vh] overflow-y-auto divide-y">
+          {(data ?? []).map((r) => (
+            <li key={r.id} className="flex items-center justify-between gap-3 py-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">
+                  {t('reportExport.historyWeek', { week: r.weekNumber, year: r.year })}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(r.createdAt).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}
+                  {' · '}{r.createdBy.firstName} {r.createdBy.lastName}
+                  {' · '}{t('reportExport.historyNotes', { count: r.noteCount })}
+                  {' · '}{Math.max(1, Math.round(r.size / 1024))} Ko
+                </p>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={() => download(r)} className="shrink-0 gap-1.5">
+                <Download className="h-3.5 w-3.5" /> .docx
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </DialogContent>
+    </Dialog>
   );
 }

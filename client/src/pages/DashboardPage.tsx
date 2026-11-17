@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { CalendarDays, CalendarPlus } from 'lucide-react';
+import { ArrowRight, CalendarDays, CalendarPlus, CalendarRange } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { useAuthStore } from '@/stores/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import api from '@/lib/axios';
 import { SportsMatchesWidget } from '@/components/sports/SportsMatchesWidget';
+import { SeasonCalendarWidget } from '@/components/sports/SeasonCalendarWidget';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,7 +40,7 @@ interface KpiCardProps {
 function KpiCard({ label, value, color, icon, children, onClick }: KpiCardProps) {
   return (
     <Card
-      className={`shadow-sm overflow-hidden ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      className={`shadow-sm overflow-hidden flex-1 basis-[calc(50%-0.5rem)] lg:basis-0 min-w-[160px] ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
       onClick={onClick}
     >
       <div style={{ height: '3px', backgroundColor: color }} />
@@ -94,7 +95,7 @@ export function DashboardPage() {
       <h1 className="text-2xl font-bold">{t('welcome', { name: user?.firstName ?? '' })}</h1>
 
       {/* ── KPI cards ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex flex-wrap gap-4">
             {/* Événements aujourd'hui */}
             <KpiCard
               label={t('kpiEventsToday')}
@@ -115,6 +116,17 @@ export function DashboardPage() {
               onClick={() => { document.getElementById('sports-section')?.scrollIntoView({ behavior: 'smooth' }); }}
             >
               <p className="text-xs text-muted-foreground mt-1">{t('kpiEventsWeekSub')}</p>
+            </KpiCard>
+
+            {/* Projection de la saison (accès à la vue annuelle) */}
+            <KpiCard
+              label={t('kpiSeason')}
+              value={<ArrowRight size={28} />}
+              color="#6A4FB0"
+              icon={<CalendarRange size={20} />}
+              onClick={() => { document.getElementById('season-section')?.scrollIntoView({ behavior: 'smooth' }); }}
+            >
+              <p className="text-xs text-muted-foreground mt-1">{t('kpiSeasonSub')}</p>
             </KpiCard>
 
             {/* Événements commerciaux J+30 */}
@@ -187,6 +199,11 @@ export function DashboardPage() {
       {/* ── ROW 7 — Sports Matches Widget ─────────────────────────────────── */}
       <div id="sports-section">
         <SportsMatchesWidget />
+      </div>
+
+      {/* Projection de la saison (vue annuelle, indépendante de la vue semaine) */}
+      <div id="season-section">
+        <SeasonCalendarWidget />
       </div>
     </div>
   );

@@ -8,5 +8,21 @@
   "kpiMissionsJ30Sub": "Missions Support à venir",
   "missionsTitle": "Missions Support — 30 prochains jours",
   "missionCount_one": "{{count}} mission",
-  "missionCount_other": "{{count}} missions"
+  "missionCount_other": "{{count}} missions",
+  "season": {
+    "title": "Projection de la saison",
+    "subtitle": "Vue calendrier de toutes les compétitions suivies, jusqu'à la fin des saisons. Indépendante de la vue de la semaine.",
+    "stats": "{{days}} jours avec événement · {{comps}} compétitions · pic de {{peak}} le même jour",
+    "error": "Impossible de charger le calendrier de la saison.",
+    "prev": "Mois précédent",
+    "next": "Mois suivant",
+    "jump": "Aller au mois",
+    "today": "Revenir à aujourd'hui",
+    "cellTitle": "{{count}} compétition(s) ce jour",
+    "cellEmpty": "Aucune compétition connue",
+    "noEvent": "Aucune compétition connue ce jour.",
+    "footer": "Instantané du {{date}}. Nom souligné en pointillé = date probable ou provisoire. Les phases finales et calendriers non encore publiés n'apparaissent pas."
+  },
+  "kpiSeason": "Projection saison",
+  "kpiSeasonSub": "Calendrier de la saison complète"
 }
