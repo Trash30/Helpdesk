@@ -2,8 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import commonFr from './locales/fr/common.json';
-import ticketsFr from './locales/fr/tickets.json';
-import clientsFr from './locales/fr/clients.json';
+import dashboardFr from './locales/fr/dashboard.json';
 import commercialFr from './locales/fr/commercial.json';
 import adminFr from './locales/fr/admin.json';
 import sportsFr from './locales/fr/sports.json';
@@ -11,8 +10,7 @@ import kbFr from './locales/fr/kb.json';
 import authFr from './locales/fr/auth.json';
 
 import commonEn from './locales/en/common.json';
-import ticketsEn from './locales/en/tickets.json';
-import clientsEn from './locales/en/clients.json';
+import dashboardEn from './locales/en/dashboard.json';
 import commercialEn from './locales/en/commercial.json';
 import adminEn from './locales/en/admin.json';
 import sportsEn from './locales/en/sports.json';
@@ -26,8 +24,7 @@ i18n.use(initReactI18next).init({
   resources: {
     fr: {
       common: commonFr,
-      tickets: ticketsFr,
-      clients: clientsFr,
+      dashboard: dashboardFr,
       commercial: commercialFr,
       admin: adminFr,
       sports: sportsFr,
@@ -36,8 +33,7 @@ i18n.use(initReactI18next).init({
     },
     en: {
       common: commonEn,
-      tickets: ticketsEn,
-      clients: clientsEn,
+      dashboard: dashboardEn,
       commercial: commercialEn,
       admin: adminEn,
       sports: sportsEn,
@@ -48,7 +44,7 @@ i18n.use(initReactI18next).init({
   lng: initialLocale,
   fallbackLng: 'fr',
   defaultNS: 'common',
-  ns: ['common', 'tickets', 'clients', 'commercial', 'admin', 'sports', 'kb', 'auth'],
+  ns: ['common', 'dashboard', 'commercial', 'admin', 'sports', 'kb', 'auth'],
   interpolation: { escapeValue: false },
 });
 

@@ -1,20 +1,17 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import {
-  LayoutDashboard, Ticket, Users, Settings, Tag, UserCheck,
-  Shield, Users2, BarChart2, Plus, Search, LogOut, User,
-  ChevronRight, Moon, Sun, Languages, Menu, Building2, MapPin, Landmark, FileType, BookOpen,
-  CalendarPlus, Server,
+  LayoutDashboard, Settings, Tag,
+  Shield, Users2, LogOut, User,
+  ChevronRight, Moon, Sun, Languages, Menu, BookOpen,
+  CalendarPlus, Server, MessageCircle,
 } from 'lucide-react';
 import { useBranding } from '@/hooks/useBranding';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthStore } from '@/stores/authStore';
-import { getInitials, timeAgo } from '@/lib/utils';
-import { STATUS_TOKENS, type StatusKey } from '@/lib/colors';
+import { getInitials } from '@/lib/utils';
 import api from '@/lib/axios';
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
@@ -24,15 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debouncedValue;
-}
 
 function useDarkMode() {
   const [dark, setDark] = useState(() => {
@@ -60,147 +48,6 @@ function useLocale() {
     localStorage.setItem('locale', next);
   };
   return { locale: i18n.language, toggle };
-}
-
-function GlobalSearch() {
-  const { t } = useTranslation('common');
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const debouncedQuery = useDebounce(query, 300);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
-
-  const enabled = debouncedQuery.length > 0;
-
-  const ticketsQuery = useQuery({
-    queryKey: ['search-tickets', debouncedQuery],
-    queryFn: () => api.get(`/tickets?search=${encodeURIComponent(debouncedQuery)}&limit=5`).then(r => r.data.data ?? []),
-    enabled,
-  });
-
-  const clientsQuery = useQuery({
-    queryKey: ['search-clients', debouncedQuery],
-    queryFn: () => api.get(`/clients?search=${encodeURIComponent(debouncedQuery)}&limit=5`).then(r => r.data.data ?? []),
-    enabled,
-  });
-
-  const tickets: any[] = ticketsQuery.data ?? [];
-  const clients: any[] = clientsQuery.data ?? [];
-  const results = [
-    ...tickets.map((t: any) => ({ type: 'ticket', item: t })),
-    ...clients.map((c: any) => ({ type: 'client', item: c })),
-  ];
-
-  useEffect(() => {
-    if (enabled) setOpen(true);
-    else setOpen(false);
-    setActiveIndex(-1);
-  }, [debouncedQuery, enabled]);
-
-  useEffect(() => {
-    function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, []);
-
-  const selectResult = useCallback((r: { type: string; item: any }) => {
-    setQuery('');
-    setOpen(false);
-    if (r.type === 'ticket') navigate(`/tickets/${r.item.id}`);
-    else navigate(`/clients/${r.item.id}`);
-  }, [navigate]);
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') { setOpen(false); setQuery(''); }
-    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex(i => Math.min(i + 1, results.length - 1)); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex(i => Math.max(i - 1, 0)); }
-    if (e.key === 'Enter' && activeIndex >= 0 && results[activeIndex]) {
-      selectResult(results[activeIndex]);
-    }
-  };
-
-  const statusStyle = (status: string): React.CSSProperties => {
-    const token = STATUS_TOKENS[status as StatusKey];
-    if (!token) return {};
-    return { backgroundColor: token.bg, color: token.fg };
-  };
-
-  return (
-    <div ref={containerRef} className="relative w-full sm:w-72">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder={t('header.searchPlaceholder')}
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onFocus={() => query.length > 0 && setOpen(true)}
-          onKeyDown={onKeyDown}
-          role="combobox"
-          aria-expanded={open}
-          aria-controls="global-search-results"
-          aria-autocomplete="list"
-          aria-label={t('header.searchAriaLabel')}
-          aria-activedescendant={activeIndex >= 0 ? `search-result-${activeIndex}` : undefined}
-          className="w-full pl-9 pr-3 h-10 sm:h-9 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </div>
-
-      {open && results.length > 0 && (
-        <div id="global-search-results" role="listbox" className="absolute top-full mt-1 w-[calc(100vw-2rem)] sm:w-96 max-h-96 overflow-y-auto rounded-md border bg-popover shadow-lg z-50">
-          {tickets.length > 0 && (
-            <div>
-              <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b">{t('header.resultsTickets')}</p>
-              {tickets.map((t: any, i: number) => {
-                const idx = i;
-                return (
-                  <button
-                    key={t.id}
-                    id={`search-result-${idx}`}
-                    role="option"
-                    aria-selected={activeIndex === idx}
-                    className={`w-full text-left px-3 py-2.5 hover:bg-accent flex items-start gap-3 ${activeIndex === idx ? 'bg-accent' : ''}`}
-                    onClick={() => selectResult({ type: 'ticket', item: t })}
-                  >
-                    <span className="font-mono text-xs text-primary mt-0.5 shrink-0">{t.ticketNumber}</span>
-                    <span className="flex-1 text-sm line-clamp-1">{t.title}</span>
-                    <span className="text-xs px-1.5 py-0.5 rounded shrink-0" style={statusStyle(t.status)}>{t.status}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          {clients.length > 0 && (
-            <div>
-              <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide border-b border-t">{t('header.resultsClients')}</p>
-              {clients.map((c: any, i: number) => {
-                const idx = tickets.length + i;
-                return (
-                  <button
-                    key={c.id}
-                    id={`search-result-${idx}`}
-                    role="option"
-                    aria-selected={activeIndex === idx}
-                    className={`w-full text-left px-3 py-2.5 hover:bg-accent flex items-center gap-3 ${activeIndex === idx ? 'bg-accent' : ''}`}
-                    onClick={() => selectResult({ type: 'client', item: c })}
-                  >
-                    <span className="text-sm font-medium">{c.firstName} {c.lastName}</span>
-                    {c.company && <span className="text-xs text-muted-foreground">{c.company}</span>}
-                    {c.phone && <span className="text-xs text-muted-foreground ml-auto">{c.phone}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 interface NavItemProps {
@@ -254,13 +101,6 @@ export function MainLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch open ticket count for sidebar badge
-  const { data: stats } = useQuery({
-    queryKey: ['dashboard-stats-badge'],
-    queryFn: () => api.get('/dashboard/stats').then(r => r.data.data),
-    refetchInterval: 60000,
-  });
-
   const handleLogout = async () => {
     try { await api.post('/auth/logout'); } catch {}
     logout();
@@ -304,15 +144,14 @@ export function MainLayout() {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
           <NavItem to="/dashboard" icon={<LayoutDashboard size={18} />} label={t('nav.dashboard')} collapsed={collapsed} onNavigate={closeMobile} />
-          <NavItem to="/tickets" icon={<Ticket size={18} />} label={t('nav.tickets')} badge={stats?.openTickets} collapsed={collapsed} onNavigate={closeMobile} />
-          {can('clients.view') && (
-            <NavItem to="/clients" icon={<Users size={18} />} label={t('nav.clients')} collapsed={collapsed} onNavigate={closeMobile} />
-          )}
           {can('kb.read') && (
             <NavItem to="/kb" icon={<BookOpen size={18} />} label={t('nav.kb')} collapsed={collapsed} onNavigate={closeMobile} />
           )}
           {can('events.create') && (
             <NavItem to="/evenements/commercial" icon={<CalendarPlus size={18} />} label={t('nav.missionSupport')} collapsed={collapsed} onNavigate={closeMobile} />
+          )}
+          {can('whatsapp.groups') && (
+            <NavItem to="/whatsapp-groupes" icon={<MessageCircle size={18} />} label={t('nav.whatsappGroups')} collapsed={collapsed} onNavigate={closeMobile} />
           )}
           {can('bmc.view') && (
             <NavItem to="/bmc-cards" icon={<Server size={18} />} label={t('nav.bmc')} collapsed={collapsed} onNavigate={closeMobile} />
@@ -332,29 +171,11 @@ export function MainLayout() {
               {can('admin.categories') && (
                 <NavItem to="/admin/categories" icon={<Tag size={18} />} label={t('nav.categories')} collapsed={collapsed} onNavigate={closeMobile} />
               )}
-              {can('admin.clientRoles') && (
-                <NavItem to="/admin/client-roles" icon={<UserCheck size={18} />} label={t('nav.clientRoles')} collapsed={collapsed} onNavigate={closeMobile} />
-              )}
               {can('admin.roles') && (
                 <NavItem to="/admin/roles" icon={<Shield size={18} />} label={t('nav.roles')} collapsed={collapsed} onNavigate={closeMobile} />
               )}
               {can('admin.users') && (
                 <NavItem to="/admin/users" icon={<Users2 size={18} />} label={t('nav.team')} collapsed={collapsed} onNavigate={closeMobile} />
-              )}
-              {can('surveys.view') && (
-                <NavItem to="/admin/surveys" icon={<BarChart2 size={18} />} label={t('nav.surveys')} collapsed={collapsed} onNavigate={closeMobile} />
-              )}
-              {can('admin.clientRoles') && (
-                <NavItem to="/admin/organisations" icon={<Building2 size={18} />} label={t('nav.organisations')} collapsed={collapsed} onNavigate={closeMobile} />
-              )}
-              {can('admin.clientRoles') && (
-                <NavItem to="/admin/clubs" icon={<MapPin size={18} />} label={t('nav.clubs')} collapsed={collapsed} onNavigate={closeMobile} />
-              )}
-              {can('admin.clientRoles') && (
-                <NavItem to="/admin/poles" icon={<Landmark size={18} />} label={t('nav.poles')} collapsed={collapsed} onNavigate={closeMobile} />
-              )}
-              {can('admin.clientRoles') && (
-                <NavItem to="/admin/ticket-types" icon={<FileType size={18} />} label={t('nav.ticketTypes')} collapsed={collapsed} onNavigate={closeMobile} />
               )}
             </>
           )}
@@ -380,9 +201,7 @@ export function MainLayout() {
           >
             <Menu size={20} />
           </button>
-          <div className="flex-1 sm:flex-none">
-            <GlobalSearch />
-          </div>
+          <div className="flex-1" />
 
           <div className="ml-auto flex items-center gap-2">
             <button
@@ -400,14 +219,6 @@ export function MainLayout() {
             >
               {dark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
-            {can('tickets.create') && (
-              <Button size="sm" asChild>
-                <Link to="/tickets/new">
-                  <Plus size={16} />
-                  <span className="hidden sm:inline">{t('header.newTicket')}</span>
-                </Link>
-              </Button>
-            )}
 
             {/* Avatar + user menu */}
             <DropdownMenu>

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import DOMPurify from 'dompurify';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -43,7 +43,6 @@ interface KbArticle {
   category: { id: string; name: string; color: string } | null;
   categoryId: string | null;
   author: { firstName: string; lastName: string };
-  sourceTicket: { id: string; ticketNumber: string; title: string } | null;
   updatedAt: string;
   publishedAt: string | null;
 }
@@ -592,23 +591,6 @@ export function KbArticlePage() {
               </div>
             )}
           </div>
-
-          {article.sourceTicket && (
-            <Card className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
-              <CardContent className="py-3 px-4">
-                <p className="text-sm text-blue-800 dark:text-blue-300">
-                  {t('article.createdFromTicket')}{' '}
-                  <Link
-                    to={`/tickets/${article.sourceTicket.id}`}
-                    className="font-medium underline hover:no-underline"
-                  >
-                    #{article.sourceTicket.ticketNumber} -{' '}
-                    {article.sourceTicket.title}
-                  </Link>
-                </p>
-              </CardContent>
-            </Card>
-          )}
 
           <Card>
             <CardContent className="p-6">

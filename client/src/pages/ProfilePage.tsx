@@ -22,6 +22,7 @@ const COMPETITIONS = [
   { key: 'LIGUE1',         label: 'Ligue 1' },
   { key: 'CONFERENCE_LEAGUE', label: 'UEFA Conference League' },
   { key: 'ELMS',           label: 'ELMS' },
+  { key: 'ALMS',           label: 'ALMS' },
   { key: 'ESTONIE',        label: 'Premium Liiga (Estonie)' },
   { key: 'SKI_CROSS',      label: 'Ski Cross' },
   { key: 'SNOWBOARD',      label: 'Snowboard' },

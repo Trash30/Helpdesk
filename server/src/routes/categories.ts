@@ -48,7 +48,7 @@ router.get(
   async (_req: Request, res: Response) => {
     const categories = await prisma.category.findMany({
       orderBy: { position: 'asc' },
-      include: { _count: { select: { tickets: true } } },
+      include: { _count: { select: { kbArticles: { where: { deletedAt: null } } } } },
     });
     res.json({ data: categories });
   }
@@ -126,17 +126,17 @@ router.delete(
   async (req: Request, res: Response) => {
     const existing = await prisma.category.findUnique({
       where: { id: req.params.id },
-      include: { _count: { select: { tickets: { where: { deletedAt: null } } } } },
+      include: { _count: { select: { kbArticles: { where: { deletedAt: null } } } } },
     });
     if (!existing) {
       res.status(404).json({ error: 'Catégorie introuvable' });
       return;
     }
 
-    if (existing._count.tickets > 0) {
+    if (existing._count.kbArticles > 0) {
       res.status(400).json({
-        error: `Impossible de supprimer : ${existing._count.tickets} ticket(s) utilisent cette catégorie`,
-        count: existing._count.tickets,
+        error: `Impossible de supprimer : ${existing._count.kbArticles} article(s) de la base de connaissance utilisent cette catégorie`,
+        count: existing._count.kbArticles,
       });
       return;
     }

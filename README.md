@@ -1,4 +1,4 @@
-# Helpdesk Ticketing — Application Web
+# Helpdesk VOGO — Application Web
 
 Application interne de gestion de support technique.
 Stack : React 18 + Vite + TailwindCSS (frontend) / Node.js + Express + Prisma + PostgreSQL (backend).

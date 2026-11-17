@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { prisma } from './lib/prisma';
-import { startSurveyJob } from './jobs/surveyJob';
 import { startMatchAttachmentPurgeJob } from './jobs/matchAttachmentPurgeJob';
 import app from './app';
 
@@ -17,7 +16,6 @@ async function main() {
   });
 
   // Start background jobs
-  startSurveyJob();
   startMatchAttachmentPurgeJob();
 }
 

@@ -1,49 +1,24 @@
 {
   "nav": {
     "dashboard": "Dashboard",
-    "tickets": "Tickets",
-    "clients": "Clients",
     "kb": "Knowledge base",
     "missionSupport": "Support Mission",
     "bmc": "BMC Cards",
+    "whatsappGroups": "WhatsApp groups",
     "administration": "Administration",
     "settings": "Settings",
     "categories": "Categories",
-    "clientRoles": "Client roles",
     "roles": "Roles & permissions",
-    "team": "Team",
-    "surveys": "Surveys",
-    "organisations": "Organisations",
-    "clubs": "Clubs / Cities",
-    "poles": "Divisions",
-    "ticketTypes": "Request types"
+    "team": "Team"
   },
   "header": {
-    "searchPlaceholder": "Search...",
-    "searchAriaLabel": "Search a ticket or a client",
-    "resultsTickets": "Tickets",
-    "resultsClients": "Clients",
     "openMenu": "Open navigation menu",
-    "newTicket": "New ticket",
     "myProfile": "My profile",
     "logout": "Log out",
     "lightMode": "Light mode",
     "darkMode": "Dark mode",
     "switchToEnglish": "Switch to English",
     "switchToFrench": "Switch to French"
-  },
-  "status": {
-    "OPEN": "Open",
-    "IN_PROGRESS": "In progress",
-    "PENDING": "Pending",
-    "CLOSED": "Closed",
-    "RESOLVED": "Resolved"
-  },
-  "priority": {
-    "CRITICAL": "Critical",
-    "HIGH": "High",
-    "MEDIUM": "Medium",
-    "LOW": "Low"
   },
   "profile": {
     "title": "My profile",
@@ -73,30 +48,6 @@
     "title": "Access denied",
     "description": "You do not have the required permissions to access this page.",
     "backToDashboard": "Back to dashboard"
-  },
-  "survey": {
-    "loading": "Loading...",
-    "alreadyAnsweredTitle": "Survey already completed",
-    "expiredTitle": "Link expired",
-    "invalidTitle": "Invalid link",
-    "alreadyAnsweredText": "You have already answered this survey. Thank you for your participation!",
-    "expiredText": "This satisfaction link has expired (valid for 30 days).",
-    "invalidText": "This link is not valid or has already been used.",
-    "thankYouTitle": "Thank you for your answer!",
-    "thankYouText": "Your feedback has been recorded. It helps us improve our service.",
-    "surveyPrefix": "Satisfaction survey — Ticket",
-    "requiredProgress": "{{answered}} / {{total}} required question(s)",
-    "answerPlaceholder": "Your answer...",
-    "selectPlaceholder": "Select...",
-    "npsLegendLeft": "0 = Not at all likely",
-    "npsLegendRight": "10 = Very likely",
-    "csatLegendLeft": "1 = Very dissatisfied",
-    "csatLegendRight": "5 = Very satisfied",
-    "ratingLegendLeft": "1 = Poor",
-    "ratingLegendRight": "{{scale}} = Excellent",
-    "submitError": "Error while submitting. Please try again.",
-    "submit": "Send my answers",
-    "submitting": "Sending..."
   },
   "confirmDialog": {
     "confirm": "Confirm",
