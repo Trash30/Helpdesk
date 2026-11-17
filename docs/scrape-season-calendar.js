@@ -14,7 +14,12 @@
  *
  * Sortie :
  *   docs/calendrier-charge-2026-2027-dates.json
- *     [{ date: "2026-09-05", competition: "TOP14", precision: "exact" }, ...]
+ *     [{ date: "2026-09-05", competition: "TOP14", precision: "exact", count: 2 }, ...]
+ *     `count` = nombre de matchs de cette compétition attribués à ce jour
+ *     (2 quand deux rencontres TOP14 ont lieu le même jour, par ex.). Pour une
+ *     journée "range" (jour exact inconnu, plage de plusieurs jours), le match
+ *     n'est compté que sur le 1er jour candidat — mais reste "présent" (avec
+ *     count: 0) sur les autres jours de la plage, pour l'affichage calendrier.
  *
  *   `precision` indique la fiabilité de la date, telle que publiée par la source :
  *     - "exact"       : jour confirmé par la source.
@@ -795,7 +800,13 @@ const SOURCES = [
   const rank = (p) => (PRECISION_RANK[p] === undefined ? 2 : PRECISION_RANK[p]);
 
   const summary = [];
-  const entries = new Map(); // "day|competition" → { date, competition, precision }
+  // "day|competition" → { date, competition, precision, count }
+  // `count` = nombre de matchs attribués à ce jour précis. Pour une entrée
+  // "range" (journée annoncée sur un week-end complet, jour exact inconnu),
+  // le match est présent (badge affiché) sur TOUS les jours candidats mais ne
+  // compte que sur le PREMIER jour candidat — sinon un même match sur 2 jours
+  // candidats se compterait deux fois dans un total hebdomadaire/saison.
+  const entries = new Map();
 
   for (let i = 0; i < results.length; i++) {
     const key = SOURCES[i].key;
@@ -812,17 +823,21 @@ const SOURCES = [
 
     for (const m of matches) {
       const precision = m.precision || 'exact';
-      for (const d of m.days) {
-        if (!inWindow(d)) continue;
+      m.days.forEach((d, idx) => {
+        if (!inWindow(d)) return;
         daySet.add(d);
+        const isCanonicalDay = idx === 0; // seul le 1er jour candidat compte le match
         const mapKey = `${d}|${key}`;
         const existing = entries.get(mapKey);
         if (!existing) {
-          entries.set(mapKey, { date: d, competition: key, precision });
-        } else if (rank(precision) < rank(existing.precision)) {
-          existing.precision = precision;
+          entries.set(mapKey, { date: d, competition: key, precision, count: isCanonicalDay ? 1 : 0 });
+        } else {
+          if (isCanonicalDay) existing.count += 1;
+          if (rank(precision) < rank(existing.precision)) {
+            existing.precision = precision;
+          }
         }
-      }
+      });
     }
 
     // Répartition par précision, après arbitrage des doublons

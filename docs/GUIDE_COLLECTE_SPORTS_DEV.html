@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Collecte des événements sportifs — Guide développeur</title>
+<style>
+  @page { size: A4 landscape; margin: 14mm 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 9.5pt; color: #1f2937; line-height: 1.4; margin: 0; }
+  h1 { color: #185FA5; font-size: 20pt; margin: 0 0 2pt; }
+  .sub { color: #6b7280; margin-bottom: 10pt; }
+  h2 { color: #185FA5; font-size: 13pt; border-bottom: 2px solid #185FA5; padding-bottom: 2pt; margin: 14pt 0 6pt; page-break-after: avoid; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8pt; page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  th { background: #185FA5; color: #fff; text-align: left; padding: 4pt 5pt; font-size: 8.5pt; }
+  td { border: 1px solid #d1d5db; padding: 2pt 5pt; vertical-align: top; font-size: 8.2pt; line-height: 1.3; }
+  td:first-child code { white-space: nowrap; }
+  tr:nth-child(even) td { background: #f3f7fb; }
+  code { font-family: Consolas, monospace; font-size: 8pt; background: #eef2f7; padding: 0 2pt; border-radius: 2pt; word-break: break-all; }
+  ol, ul { margin: 3pt 0 6pt 16pt; padding: 0; }
+  .note { background: #fff7e6; border-left: 4px solid #f59e0b; padding: 5pt 8pt; margin: 6pt 0; font-size: 9pt; }
+  .pb { page-break-before: always; }
+  footer { color: #9ca3af; font-size: 8pt; margin-top: 12pt; }
+</style>
+</head>
+<body>
+
+<h1>Collecte des événements sportifs</h1>
+<div class="sub">Guide développeur — Helpdesk VOGO · Source : <code>server/src/services/sportsScraper.ts</code> et <code>server/src/routes/sports.ts</code> · Novembre 2026</div>
+
+<h2>1. Vue d'ensemble par compétition</h2>
+<table>
+<tr><th style="width:13%">Clé</th><th style="width:13%">Compétition</th><th style="width:10%">Type de source</th><th style="width:25%">URL / endpoint</th><th style="width:24%">Méthode d'extraction</th><th>Filtres métier</th></tr>
+<tr><td><code>TOP14</code></td><td>Top 14</td><td>HTML rendu serveur</td><td><code>top14.lnr.fr/calendrier-et-resultats</code></td><td><code>GET</code> + cheerio (<code>.match-line</code>, <code>.club-line</code>)</td><td>Semaine courante + journées suivantes de la saison</td></tr>
+<tr><td><code>PRO_D2</code></td><td>Pro D2</td><td>HTML rendu serveur</td><td><code>prod2.lnr.fr/calendrier-et-resultats</code></td><td>Identique Top 14 (même DOM)</td><td>Identique</td></tr>
+<tr><td><code>LNH</code></td><td>Daikin StarLigue</td><td>Endpoint AJAX interne</td><td><code>POST lnh.fr/ajaxpost1</code></td><td>Formulaire <code>x-www-form-urlencoded</code>, réponse HTML parsée (<code>.calendars-listing-item</code>)</td><td>Semaine courante</td></tr>
+<tr><td><code>EPCR</code></td><td>Champions Cup</td><td>Charge utile Nuxt SSR</td><td><code>epcrugby.com/fr/champions-cup/matchs</code></td><td>JSON dans un <code>&lt;script&gt;</code> (tableau indexé), résolution des références par indice</td><td>Clubs français à domicile</td></tr>
+<tr><td><code>EPCR_CHALLENGE</code></td><td>Challenge Cup</td><td>Charge utile Nuxt SSR</td><td><code>epcrugby.com/fr/challenge-cup/matchs</code></td><td>Identique Champions Cup</td><td>Identique</td></tr>
+<tr><td><code>LIGUE1</code></td><td>Ligue 1 (AS Monaco)</td><td>HTML rendu serveur</td><td><code>asmonaco.com/fr/pros/calendrier</code></td><td>cheerio sur <code>[data-component="MatchPresentationCard"]</code>, <code>data-competition="L1"</code></td><td>Domicile (lieu contenant « Louis »), semaine courante</td></tr>
+<tr><td><code>CONFERENCE_LEAGUE</code></td><td>UEFA Conference League (AS Monaco)</td><td>HTML rendu serveur</td><td>Idem (même requête)</td><td>Même page, <code>data-competition="CL"</code></td><td>Idem</td></tr>
+<tr><td><code>ELMS</code></td><td>European Le Mans Series</td><td>HTML + JSON-LD</td><td><code>europeanlemansseries.com/en/season/2026</code> puis <code>/en/race/{slug}</code></td><td>1) liens <code>a[href*="/en/race/"]</code> ; 2) <code>application/ld+json</code> de type <code>SportsEvent</code></td><td>Sessions « Race » et « Qualifying », semaine courante</td></tr>
+<tr><td><code>ESTONIE</code></td><td>Premium Liiga</td><td>Flux iCal</td><td><code>jalgpall.ee/voistlused/download.php?…&amp;league_id=52</code></td><td>Découpage <code>VEVENT</code> par regex, sans librairie</td><td>Semaine courante</td></tr>
+<tr><td><code>SKI_CROSS</code></td><td>Coupe du Monde FIS Ski Cross</td><td>Flux iCal</td><td><code>data.fis-ski.com/services/public/icalendar-feed-fis-events.html?seasoncode=…&amp;sectorcode=FS&amp;categorycode=WC&amp;disciplinecode=SX,SXT</code></td><td>Parseur iCal commun <code>scrapeFisIcalFeed</code></td><td>Semaine courante</td></tr>
+<tr><td><code>SNOWBOARD</code></td><td>Coupe du Monde FIS Snowboard</td><td>Flux iCal</td><td>Même flux, <code>sectorcode=SB</code>, disciplines <code>SBX,BXT,PGS,PSL,GS,PRT</code></td><td>Idem</td><td>Idem</td></tr>
+<tr><td><code>FREESTYLE_EC</code></td><td>Coupe d'Europe FIS Freestyle</td><td>Flux iCal</td><td>Même flux, <code>sectorcode=FS&amp;categorycode=EC</code>, disciplines <code>MO,AE</code></td><td>Idem</td><td>Idem</td></tr>
+</table>
+
+<h2 class="pb">2. Détails techniques et points fragiles</h2>
+<table>
+<tr><th style="width:13%">Compétition</th><th style="width:22%">Parsing des dates</th><th style="width:42%">Particularités</th><th>Maintenance / risque de casse</th></tr>
+<tr><td><b>Top 14 / Pro D2</b></td><td>Date « jeudi 02 avril » sans année + heure « 21h00 ». Année déduite (année suivante si la date est à plus de 4 mois dans le passé). Conversion heure de Paris vers UTC.</td><td>Phases finales : plusieurs « journées » peuvent tomber la même semaine sur des URLs distinctes. Le scraper lit les attributs <code>:current-week</code>, <code>:current-season</code> et <code>:filter-list</code> du composant Vue <code>filters-fixtures</code>, requête <code>{url}/{saison}/{slug}</code> pour chaque journée à venir, puis dédoublonne sur <code>date|home|away</code>. Heure absente après le match : remplacée par 12h00 pour éviter une bascule de jour en UTC.</td><td>Casse si le DOM ou les attributs Vue changent.</td></tr>
+<tr><td><b>LNH</b></td><td>Même parseur que la LNR, sur le texte de <code>.col-competitions</code> (« ven. 03 avril 20h00 »).</td><td>La requête dépend de paramètres propres à la saison (<code>seasons_id</code>, <code>key</code>, <code>univers</code>, <code>cacheKeys</code>), relevés dans les DevTools de la page calendrier.</td><td><b>À mettre à jour chaque saison</b> (ici <code>seasons_id=40</code>). Périmés : 0 match renvoyé, avec un log d'erreur explicite.</td></tr>
+<tr><td><b>EPCR</b></td><td>Date ISO fournie, heure formatée en <code>Europe/Paris</code>.</td><td>L'objet Nuxt est un tableau « aplati » : <code>arr[5]</code> contient les indices des matchs et <code>val()</code> résout chaque référence. Filtre « club français » = liste de noms codée en dur (<code>FRENCH_EPCR_CLUBS</code>), comparaison normalisée sans accents.</td><td>Liste des clubs à revoir si la composition française change. Casse si la structure Nuxt change.</td></tr>
+<tr><td><b>AS Monaco (L1 + CL)</b></td><td>Attribut <code>time[datetime]</code> avec décalage (ex. <code>2026-11-05 21:00:00.000+01:00</code>), converti en ISO.</td><td><b>Une seule requête HTTP pour deux compétitions</b>, clé de cache <code>AS_MONACO</code>. La table <code>MONACO_COMPETITION_MAP</code> sert de liste blanche : les autres codes (amicaux, valeur vide) sont ignorés. Piège : <code>data-away="true"</code> est présent sur les matchs à <i>domicile</i> ; on utilise le texte du lieu et l'ordre des équipes.</td><td>Ajouter une compétition = ajouter une entrée dans la table.</td></tr>
+<tr><td><b>ELMS</b></td><td>JSON-LD avec décalage explicite ; heure locale extraite par regex.</td><td>Parcours en 2 étapes, pages de courses chargées en parallèle (<code>Promise.allSettled</code>). Pages « official-test » exclues. Pays déduit du slug par mot-clé. Dédoublonnage sur <code>date|awayTeam</code>. Une ligne par session de course et par session de qualification (une par classe).</td><td><b>URL de saison codée en dur</b> (<code>/season/2026</code>) : à changer chaque année.</td></tr>
+<tr><td><b>Estonie</b></td><td>Heure locale Tallinn dans <code>DTSTART</code>, convertie en UTC avec un décalage manuel : +3 en avril-septembre, +2 sinon.</td><td>Pas de librairie iCal : lecture de <code>SUMMARY</code> (« A vs B »), <code>DTSTART</code>, <code>LOCATION</code>. Décodage UTF-8 forcé pour les caractères estoniens.</td><td><code>league_id=52</code> fixe. Le décalage est une approximation (ignore les vrais jours de changement d'heure).</td></tr>
+<tr><td><b>FIS (3 flux)</b></td><td><code>DTSTART;VALUE=DATE</code> : date pure sans heure, donc <code>time</code> reste vide.</td><td>Ville et pays (code IOC 3 lettres converti en ISO 2 via <code>IOC3_TO_ISO2</code>) lus dans <code>SUMMARY</code>. Genre lu dans <code>Gender:</code>. Discipline déduite du libellé <code>Event:</code> par un <code>classifyDiscipline</code> propre à chaque flux. Qualification ou finale déduite de <code>CATEGORIES</code>. L'<b>ordre des tests</b> de <code>classifySnowboardDiscipline</code> est significatif (« Parallel Giant Slalom » contient « giant slalom »).</td><td>Code saison calculé par <code>getFisSeasonCode()</code> (bascule en juillet). À vérifier si la FIS change sa convention.</td></tr>
+</table>
+
+<h2 class="pb">3. Mécanique commune (à reprendre telle quelle)</h2>
+<table>
+<tr><th style="width:18%">Brique</th><th>Fonctionnement</th></tr>
+<tr><td><b>Orchestration</b></td><td><code>fetchAllMatches()</code> lance toutes les sources en parallèle avec <code>Promise.allSettled</code>. Une source qui plante renvoie <code>[]</code> et ne casse pas les autres.</td></tr>
+<tr><td><b>Cache</b></td><td>En mémoire du processus, une entrée par source. Expiration à <b>23h59 du jour de la récupération</b> (pas de TTL fixe), pour que les matchs du jour restent visibles une fois joués, les sites retirant les matchs terminés de leur page.</td></tr>
+<tr><td><b>Fenêtre temporelle</b></td><td><code>isInCurrentWeek()</code> : semaine ISO lundi-dimanche calculée en fuseau Europe/Paris, quel que soit le fuseau du serveur.</td></tr>
+<tr><td><b>Modèle commun</b></td><td>Interface <code>Match</code> : <code>competition</code>, <code>homeTeam</code>, <code>awayTeam</code>, <code>date</code> (ISO), <code>time</code> ("HH:mm" ou vide), <code>venue</code>, <code>country</code>, <code>discipline</code>, <code>gender</code>, logos et logo du diffuseur. Tri final par date croissante.</td></tr>
+<tr><td><b>Client HTTP</b></td><td>axios, timeout 10 s, User-Agent de navigateur, <code>Accept-Language: fr-FR</code>.</td></tr>
+<tr><td><b>Exposition</b></td><td><code>GET /api/sports/matches</code> (authentifié) et <code>POST /api/sports/refresh</code> (permission <code>tickets.create</code>, cooldown 30 s, vide le cache). Logs émis uniquement hors production.</td></tr>
+<tr><td><b>Préférences utilisateur</b></td><td>Filtrage par compétition suivie côté client (<code>user.sportCompetitions</code>). Le serveur valide la liste autorisée dans <code>PATCH /auth/sport-competitions</code>.</td></tr>
+</table>
+
+<h2>4. Checklist : ajouter une compétition</h2>
+<ol>
+  <li>Ajouter la valeur au type <code>Match['competition']</code>.</li>
+  <li>Écrire <code>scrapeXxx(): Promise&lt;Match[]&gt;</code> : capturer les erreurs, renvoyer <code>[]</code> en cas d'échec, filtrer avec <code>isInCurrentWeek</code>.</li>
+  <li>L'ajouter au tableau <code>sources</code> de <code>fetchAllMatches</code> (clé de cache unique).</li>
+  <li>Serveur : l'ajouter à <code>VALID_COMPETITIONS</code> (<code>routes/auth.ts</code>).</li>
+  <li>Client : type <code>Competition</code>, <code>COMPETITION_META</code> et <code>COMPETITION_ORDER</code> du widget, et liste du profil.</li>
+</ol>
+
+<h2>5. Limites à connaître avant de transposer</h2>
+<div class="note">
+  <ul>
+    <li>Tout repose sur du <b>scraping de pages publiques non contractuelles</b>, sans API officielle. Une refonte de site peut casser une source silencieusement : le scraper renvoie <code>[]</code>. Pour un outil interne, prévoir une alerte quand une source passe à 0 résultat.</li>
+    <li>Le cache est <b>en mémoire du processus</b> : perdu à chaque redémarrage, non partagé entre instances.</li>
+    <li>Les valeurs propres à une saison (LNH <code>seasons_id</code>/<code>key</code>, URL de saison ELMS, <code>league_id</code> estonien) sont à revoir chaque année.</li>
+  </ul>
+</div>
+
+<footer>Helpdesk VOGO — document technique interne · généré à partir du code de la branche feat/sports-conference-league</footer>
+</body>
+</html>

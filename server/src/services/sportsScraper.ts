@@ -60,7 +60,7 @@ function getParisNowAsLocal(): Date {
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export interface Match {
-  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'CONFERENCE_LEAGUE' | 'ELMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
+  competition: 'LNH' | 'PRO_D2' | 'TOP14' | 'EPCR' | 'EPCR_CHALLENGE' | 'LIGUE1' | 'CONFERENCE_LEAGUE' | 'ELMS' | 'ALMS' | 'ESTONIE' | 'SKI_CROSS' | 'SNOWBOARD' | 'FREESTYLE_EC';
   homeTeam: string;
   awayTeam: string;
   date: string;       // ISO date string
@@ -716,7 +716,8 @@ async function scrapeMonaco(): Promise<Match[]> {
   }
 }
 
-// ─── ELMS (European Le Mans Series) ────────────────────────────────────────
+// ─── ELMS (European Le Mans Series) + ALMS (Asian Le Mans Series) ───────────
+// Les deux sites partagent la meme plateforme (/en/season/<annee> et /en/race/<slug> avec JSON-LD SportsEvent).
 
 interface ElmsSubEvent {
   name: string;
@@ -747,8 +748,14 @@ function extractLocalTime(isoStr: string): string {
   return d.toISOString().slice(11, 16);
 }
 
-const ELMS_COUNTRY_BY_SLUG: Record<string, string> = {
+const LMS_COUNTRY_BY_SLUG: Record<string, string> = {
   barcelona:    'ES',
+  jerez:        'ES',
+  sepang:       'MY',
+  dubai:        'AE',
+  'abu-dhabi':  'AE',
+  buriram:      'TH',
+  losail:       'QA',
   castellet:    'FR',
   imola:        'IT',
   spa:          'BE',
@@ -757,13 +764,15 @@ const ELMS_COUNTRY_BY_SLUG: Record<string, string> = {
   portimão:     'PT',
 };
 
-function getElmsCountry(slug: string): string | undefined {
+function getLmsCountry(slug: string): string | undefined {
   const lower = slug.toLowerCase();
-  for (const [keyword, code] of Object.entries(ELMS_COUNTRY_BY_SLUG)) {
+  for (const [keyword, code] of Object.entries(LMS_COUNTRY_BY_SLUG)) {
     if (lower.includes(keyword)) return code;
   }
   return undefined;
 }
+
+const RACE_SESSION_RE = /^race(?:\s+(\d+))?\s*(?:[-–]|$)/i;
 
 function extractQualifyingClass(sessionName: string): string {
   // "Qualifying session LMGT3" → "LMGT3"
@@ -772,12 +781,38 @@ function extractQualifyingClass(sessionName: string): string {
   // "Qualifying - LMGT3 - 4 Hours of ..." → "LMGT3"
   m = sessionName.match(/^Qualifying\s+-\s+([^-]+)/i);
   if (m) return m[1].trim();
+  // ALMS : "Qualifications 1 - Hypercar & LMP2 - 4 Hours of ..." -> "Hypercar & LMP2 Q1"
+  m = sessionName.match(/^Qualifications?\s*(\d+)?\s+-\s+([^-]+?)\s+-/i);
+  if (m) return m[1] ? `${m[2].trim()} Q${m[1]}` : m[2].trim();
   return 'Qualifying';
 }
 
-async function scrapeELMS(): Promise<Match[]> {
+interface LeMansSeriesConfig {
+  competition: 'ELMS' | 'ALMS';
+  baseUrl: string;
+  /** A mettre a jour chaque saison */
+  seasonUrl: string;
+}
+
+const ELMS_CONFIG: LeMansSeriesConfig = {
+  competition: 'ELMS',
+  baseUrl: 'https://www.europeanlemansseries.com',
+  seasonUrl: 'https://www.europeanlemansseries.com/en/season/2026',
+};
+
+// La saison ALMS "2026" couvre 2026-2027 (courses en nov. 2026 puis en 2027)
+const ALMS_CONFIG: LeMansSeriesConfig = {
+  competition: 'ALMS',
+  baseUrl: 'https://www.asianlemansseries.com',
+  seasonUrl: 'https://www.asianlemansseries.com/en/season/2026',
+};
+
+const scrapeELMS = () => scrapeLeMansSeries(ELMS_CONFIG);
+const scrapeALMS = () => scrapeLeMansSeries(ALMS_CONFIG);
+
+async function scrapeLeMansSeries(cfg: LeMansSeriesConfig): Promise<Match[]> {
   const client = createClient();
-  const seasonUrl = 'https://www.europeanlemansseries.com/en/season/2026';
+  const { competition, baseUrl, seasonUrl } = cfg;
 
   try {
     // Step 1: Fetch season page and extract race slugs
@@ -794,14 +829,14 @@ async function scrapeELMS(): Promise<Match[]> {
     });
 
     const slugs = Array.from(slugSet).filter(s => !s.includes('official-test'));
-    log(`ELMS: found ${slugs.length} race slugs`);
+    log(`${competition}: found ${slugs.length} race slugs`);
 
     if (slugs.length === 0) return [];
 
     // Step 2: Fetch each race page in parallel
     const raceResults = await Promise.allSettled(
       slugs.map(async (slug) => {
-        const raceUrl = `https://www.europeanlemansseries.com/en/race/${slug}`;
+        const raceUrl = `${baseUrl}/en/race/${slug}`;
         const raceResp = await client.get(raceUrl);
         const $race = cheerio.load(raceResp.data as string);
 
@@ -819,7 +854,7 @@ async function scrapeELMS(): Promise<Match[]> {
         });
 
         if (!jsonLd) {
-          log(`ELMS: no valid JSON-LD found for slug "${slug}"`);
+          log(`${competition}: no valid JSON-LD found for slug "${slug}"`);
           return [];
         }
 
@@ -830,39 +865,38 @@ async function scrapeELMS(): Promise<Match[]> {
 
         const matches: Match[] = [];
 
-        // Find Race sessions ("Race" or "Race - ..." or "Race– ...")
-        const raceSessions = subEvents.filter((se) =>
-          se.name === 'Race' || se.name.toLowerCase().startsWith('race -') || se.name.toLowerCase().startsWith('race–')
-        );
+        // Sessions de course : "Race", "Race - ...", "Race– ...", "Race 1 - ..." (ALMS)
+        const raceSessions = subEvents.filter((se) => RACE_SESSION_RE.test(se.name));
         for (const session of raceSessions) {
+          const raceNum = session.name.match(RACE_SESSION_RE)?.[1];
           matches.push({
-            competition: 'ELMS',
+            competition,
             homeTeam: eventName,
-            awayTeam: 'Race',
+            awayTeam: raceNum ? `Race ${raceNum}` : 'Race',
             date: session.startDate,
             time: extractLocalTime(session.startDate),
             venue: locationName,
-            country: getElmsCountry(slug),
-            homeTeamLogo: 'https://www.europeanlemansseries.com/favicon.ico',
+            country: getLmsCountry(slug),
+            homeTeamLogo: `${baseUrl}/favicon.ico`,
           });
         }
 
         // Toutes les sessions qualifying (chaque classe = une ligne)
         const qualSessions = subEvents
-          .filter((se) => /^qualifying/i.test(se.name))
+          .filter((se) => /^qualif/i.test(se.name))
           .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
         for (const session of qualSessions) {
           const className = extractQualifyingClass(session.name);
           matches.push({
-            competition: 'ELMS',
+            competition,
             homeTeam: eventName,
             awayTeam: `Qualif. ${className}`,
             date: session.startDate,
             time: extractLocalTime(session.startDate),
             venue: locationName,
-            country: getElmsCountry(slug),
-            homeTeamLogo: 'https://www.europeanlemansseries.com/favicon.ico',
+            country: getLmsCountry(slug),
+            homeTeamLogo: `${baseUrl}/favicon.ico`,
           });
         }
 
@@ -877,7 +911,7 @@ async function scrapeELMS(): Promise<Match[]> {
       if (result.status === 'fulfilled') {
         allMatches.push(...result.value);
       } else {
-        logError(`ELMS: failed to scrape slug "${slugs[i]}":`, result.reason);
+        logError(`${competition}: failed to scrape slug "${slugs[i]}":`, result.reason);
       }
     }
 
@@ -892,10 +926,10 @@ async function scrapeELMS(): Promise<Match[]> {
 
     // Filter to current ISO week
     const filtered = deduped.filter((m) => isInCurrentWeek(m.date));
-    log(`ELMS: ${allMatches.length} total sessions → ${deduped.length} after dedup → ${filtered.length} in current week`);
+    log(`${competition}: ${allMatches.length} total sessions → ${deduped.length} after dedup → ${filtered.length} in current week`);
     return filtered;
   } catch (err) {
-    logError('ELMS scraping failed:', err instanceof Error ? err.message : err);
+    logError(`${competition} scraping failed:`, err instanceof Error ? err.message : err);
     return [];
   }
 }
@@ -1235,6 +1269,10 @@ export async function fetchAllMatches(): Promise<{ data: Match[]; lastUpdated: s
     {
       key: 'ELMS',
       fetch: scrapeELMS,
+    },
+    {
+      key: 'ALMS',
+      fetch: scrapeALMS,
     },
     {
       key: 'ESTONIE',

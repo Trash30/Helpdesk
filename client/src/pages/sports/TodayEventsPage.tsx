@@ -141,7 +141,7 @@ export function TodayEventsPage() {
                 <CardContent className="pt-0 divide-y px-2 sm:px-6 overflow-x-hidden">
                   {matches.map((m, idx) => {
                     const key = getMatchKey(m);
-                    return m.competition === 'ELMS' ? (
+                    return (m.competition === 'ELMS' || m.competition === 'ALMS') ? (
                       <ElmsMatchRow
                         key={`${key}-${idx}`}
                         match={m}
