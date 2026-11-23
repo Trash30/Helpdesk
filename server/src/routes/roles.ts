@@ -9,10 +9,14 @@ const router = Router();
 
 router.use(authMiddleware);
 
+const LEGACY_PERMISSION_RE = /^(tickets|clients|comments|surveys)\.|^admin\.clientRoles$/;
+
 const roleSchema = z.object({
   name: z.string().min(1, 'Nom requis'),
   description: z.string().optional().nullable(),
-  permissions: z.array(z.string()).refine(
+  // Les rôles existants peuvent encore porter des permissions du module ticketing supprimé :
+  // on les écarte à l'enregistrement au lieu de bloquer toute modification du rôle.
+  permissions: z.array(z.string()).transform((perms) => perms.filter((p) => !LEGACY_PERMISSION_RE.test(p))).refine(
     (perms) => perms.every((p) => PERMISSIONS_LIST.includes(p)),
     { message: 'Une ou plusieurs permissions sont invalides' }
   ),

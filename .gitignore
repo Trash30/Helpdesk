@@ -47,3 +47,7 @@ Charte graphique VOGO.pdf
 *.xlsx
 *.zip
 helpdesk-usb/
+
+# WhatsApp session
+.wwebjs_auth/
+.wwebjs_cache/

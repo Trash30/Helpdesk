@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle, CheckCircle2, Copy, Download, ExternalLink, FileSpreadsheet, ImageUp,
-  MessageCircle, RefreshCw, RotateCcw, Users,
+  Loader2, LogOut, MessageCircle, Play, RefreshCw, RotateCcw, Users, XCircle,
 } from 'lucide-react';
 import api from '@/lib/axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +56,31 @@ interface GroupState {
 }
 
 type NameSource = 'official' | 'excel';
+
+// ─── API WhatsApp (création automatique) ────────────────────────────────────
+
+interface WaStatus {
+  state: 'DISCONNECTED' | 'STARTING' | 'QR' | 'READY' | 'ERROR';
+  qr: string | null;
+  phone: string | null;
+  name: string | null;
+  error: string | null;
+}
+
+interface WaGroupResult {
+  key: string;
+  name: string;
+  status: 'PENDING' | 'RUNNING' | 'CREATED' | 'EXISTS' | 'FAILED';
+  pictureSet: boolean;
+  participants: { phone: string; ok: boolean; invited: boolean; message: string }[];
+  error: string | null;
+}
+
+interface WaJob {
+  id: string;
+  finishedAt: string | null;
+  results: WaGroupResult[];
+}
 
 async function copy(text: string, label = 'Copié') {
   try {
@@ -119,6 +144,53 @@ export function WhatsAppGroupsPage() {
     });
   }, [planning, weekMatches, state, matchesById]);
 
+  // ── Connexion WhatsApp + création automatique ──
+  const { data: wa } = useQuery({
+    queryKey: ['whatsapp-status'],
+    queryFn: async () => (await api.get('/whatsapp/status')).data as WaStatus,
+    refetchInterval: (q) => (q.state.data?.state === 'STARTING' || q.state.data?.state === 'QR' ? 2000 : 15000),
+  });
+  const connectMutation = useMutation({
+    mutationFn: async () => (await api.post('/whatsapp/connect')).data as WaStatus,
+    onSuccess: (d) => queryClient.setQueryData(['whatsapp-status'], d),
+    onError: (err: any) => {
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.error ?? (status === 404 ? 'route introuvable : redémarrez le serveur' : err?.message);
+      toast.error(`Connexion impossible${status ? ` (${status})` : ''} : ${detail}`);
+    },
+  });
+  const logoutMutation = useMutation({
+    mutationFn: async () => (await api.post('/whatsapp/logout')).data as WaStatus,
+    onSuccess: (d) => queryClient.setQueryData(['whatsapp-status'], d),
+  });
+  const [jobId, setJobId] = useState<string | null>(null);
+  const { data: job } = useQuery({
+    queryKey: ['whatsapp-job', jobId],
+    queryFn: async () => (await api.get(`/whatsapp/groups/jobs/${jobId}`)).data as WaJob,
+    enabled: !!jobId,
+    refetchInterval: (q) => (q.state.data?.finishedAt ? false : 2000),
+  });
+  const resultByKey = useMemo(() => new Map((job?.results ?? []).map((r) => [r.key, r])), [job]);
+
+  // Les groupes créés (ou déjà existants) sont cochés automatiquement
+  useEffect(() => {
+    if (!job) return;
+    const done = job.results.filter((r) => r.status === 'CREATED' || r.status === 'EXISTS');
+    if (done.length === 0) return;
+    setState((s) => {
+      let changed = false;
+      const next = { ...s };
+      for (const r of done) {
+        if (!next[r.key]?.created) {
+          next[r.key] = { ...next[r.key], created: true };
+          changed = true;
+        }
+      }
+      return changed ? next : s;
+    });
+  }, [job]);
+  const jobRunning = !!jobId && !!job && !job.finishedAt;
+
   const groups = plans.map((p) => ({
     plan: p,
     name: state[p.id]?.name ?? buildGroupName(p, nameSource),
@@ -126,6 +198,24 @@ export function WhatsAppGroupsPage() {
   }));
   const createdCount = groups.filter((g) => g.created).length;
   const warningCount = groups.filter((g) => g.plan.warnings.length > 0).length;
+
+  const pending = groups.filter((g) => !g.created && [g.plan.row.ro.phone, g.plan.row.technician.phone].some(Boolean));
+  const createMutation = useMutation({
+    mutationFn: async () =>
+      (await api.post('/whatsapp/groups', {
+        picture: logo,
+        groups: pending.map((g) => ({
+          key: g.plan.id,
+          name: g.name,
+          participants: [g.plan.row.ro.phone, g.plan.row.technician.phone].filter((p): p is string => !!p),
+        })),
+      })).data as WaJob,
+    onSuccess: (j) => {
+      setJobId(j.id);
+      toast.success('Création lancée');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.error ?? 'Création impossible'),
+  });
 
   const patch = (id: string, value: Partial<GroupState>) =>
     setState((s) => ({ ...s, [id]: { ...s[id], ...value } }));
@@ -299,6 +389,43 @@ export function WhatsAppGroupsPage() {
         </Card>
       </div>
 
+      {/* ── Connexion WhatsApp ── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Connexion WhatsApp Business</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {wa?.state === 'READY' ? (
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <span>Connecté{wa.name ? ` : ${wa.name}` : ''}{wa.phone ? ` (${formatPhone(wa.phone)})` : ''}</span>
+              <Button size="sm" variant="ghost" onClick={() => logoutMutation.mutate()} disabled={logoutMutation.isPending}>
+                <LogOut /> Déconnecter
+              </Button>
+            </div>
+          ) : wa?.state === 'QR' && wa.qr ? (
+            <div className="flex flex-wrap items-center gap-4">
+              <img src={wa.qr} alt="QR code WhatsApp" className="h-44 w-44 rounded border bg-white" />
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Sur le téléphone : WhatsApp Business → Paramètres → Appareils connectés → Connecter un appareil, puis scannez ce code.
+              </p>
+            </div>
+          ) : wa?.state === 'STARTING' ? (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Démarrage de la connexion…</p>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button size="sm" onClick={() => connectMutation.mutate()} disabled={connectMutation.isPending}>
+                <MessageCircle /> Connecter WhatsApp
+              </Button>
+              {wa?.error && <span className="text-xs text-amber-700">{wa.error}</span>}
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Le compte connecté est ajouté à chaque groupe avec le RO et le technicien. Un seul scan suffit : la session est conservée sur le serveur.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* ── Étape 3 : groupes ── */}
       {planning && (
         <Card>
@@ -324,6 +451,15 @@ export function WhatsAppGroupsPage() {
                     </button>
                   ))}
                 </div>
+                <Button
+                  size="sm"
+                  onClick={() => createMutation.mutate()}
+                  disabled={wa?.state !== 'READY' || pending.length === 0 || createMutation.isPending || jobRunning}
+                  title={wa?.state !== 'READY' ? "Connectez WhatsApp d'abord" : undefined}
+                >
+                  {jobRunning ? <Loader2 className="animate-spin" /> : <Play />}
+                  {jobRunning ? 'Création en cours…' : `Créer ${pending.length} groupe${pending.length > 1 ? 's' : ''}`}
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => copy(planJson(), 'Plan copié')}>
                   <Copy /> Copier le plan
                 </Button>
@@ -338,6 +474,7 @@ export function WhatsAppGroupsPage() {
                 plan={plan}
                 name={name}
                 created={created}
+                result={resultByKey.get(plan.id)}
                 weekMatches={weekMatches}
                 onName={(v) => patch(plan.id, { name: v })}
                 onResetName={() => patch(plan.id, { name: undefined })}
@@ -358,6 +495,7 @@ interface GroupRowProps {
   plan: GroupPlan;
   name: string;
   created: boolean;
+  result?: WaGroupResult;
   weekMatches: Match[];
   onName: (v: string) => void;
   onResetName: () => void;
@@ -365,7 +503,7 @@ interface GroupRowProps {
   onCreated: (v: boolean) => void;
 }
 
-function GroupRow({ plan, name, created, weekMatches, onName, onResetName, onMatch, onCreated }: GroupRowProps) {
+function GroupRow({ plan, name, created, result, weekMatches, onName, onResetName, onMatch, onCreated }: GroupRowProps) {
   const comp = plan.match?.competition ?? plan.row.competition;
   const candidates = weekMatches.filter((m) => !plan.row.competition || m.competition === plan.row.competition);
   const hasWarnings = plan.warnings.length > 0;
@@ -402,8 +540,19 @@ function GroupRow({ plan, name, created, weekMatches, onName, onResetName, onMat
             <RotateCcw />
           </Button>
         </div>
+        {result?.status === 'RUNNING' && <Loader2 className="h-5 w-5 animate-spin text-[#185FA5]" />}
         {created && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+        {result?.status === 'FAILED' && <XCircle className="h-5 w-5 text-red-600" />}
       </div>
+
+      {result && (result.status === 'FAILED' || result.participants.some((p) => !p.ok)) && (
+        <div className="mt-2 space-y-1">
+          {result.error && <p className="text-xs text-red-600">{result.error}</p>}
+          {result.participants.filter((p) => !p.ok).map((p) => (
+            <p key={p.phone} className="text-xs text-amber-700">{formatPhone(p.phone)} : {p.message}</p>
+          ))}
+        </div>
+      )}
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <MemberLine role="RO" person={plan.row.ro} />
