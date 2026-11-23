@@ -158,12 +158,24 @@ function formatFileSize(bytes: number): string {
   return kb < 1 ? '< 1 Ko' : `${kb} Ko`;
 }
 
-function countryCodeToFlag(code: string): string {
-  return code
-    .toUpperCase()
-    .split('')
-    .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-    .join('');
+const regionNames =
+  typeof Intl !== 'undefined' && 'DisplayNames' in Intl
+    ? new Intl.DisplayNames(['fr'], { type: 'region' })
+    : null;
+
+function CountryLabel({ code }: { code: string }) {
+  let name = code.toUpperCase();
+  try {
+    name = regionNames?.of(name) ?? name;
+  } catch {
+    // code non reconnu : on garde le code brut
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 shrink-0 text-xs text-muted-foreground" title={code}>
+      <span className={`fi fi-${code.toLowerCase()}`} />
+      <span>{name}</span>
+    </span>
+  );
 }
 
 function groupAndSort(matches: Match[]): Map<Competition, Match[]> {
@@ -307,11 +319,7 @@ export function ElmsMatchRow({ match, attachments, existingNote }: ElmsMatchRowP
           />
         )}
         {/* Drapeau pays */}
-        {match.country && (
-          <span className="text-base leading-none shrink-0" title={match.country}>
-            {countryCodeToFlag(match.country)}
-          </span>
-        )}
+        {match.country && <CountryLabel code={match.country} />}
         {/* Nom de l'epreuve */}
         <span className="text-sm font-medium truncate flex-1 min-w-0">{eventName}</span>
         {/* Badge session */}
@@ -519,11 +527,7 @@ export function SkiCrossMatchRow({ match, attachments, existingNote }: SkiCrossM
     <div className="group flex flex-col gap-1.5 sm:gap-1 py-3 sm:py-2.5 px-2 sm:px-3">
       {/* Ligne principale : drapeau + ville + badge discipline */}
       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-        {match.country && (
-          <span className="text-base leading-none shrink-0" title={match.country}>
-            {countryCodeToFlag(match.country)}
-          </span>
-        )}
+        {match.country && <CountryLabel code={match.country} />}
         <span className="text-sm font-semibold truncate flex-1 min-w-0">{match.homeTeam}</span>
         {match.discipline && (
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 max-w-[130px] truncate ${disciplineBadgeClass}`} title={disciplineLabel}>
@@ -538,7 +542,7 @@ export function SkiCrossMatchRow({ match, attachments, existingNote }: SkiCrossM
         {genderLabel && ` · ${genderLabel}`}
       </div>
 
-      {/* Date (pas d'heure publiée par la FIS pour le ski cross) */}
+      {/* Date (heure de Paris affichée si publiée par la FIS) */}
       <div className="text-xs text-muted-foreground pl-0.5">
         {formatMatchDate(match.date, match.time)}
       </div>
@@ -732,11 +736,7 @@ export function SnowboardMatchRow({ match, attachments, existingNote }: Snowboar
     <div className="group flex flex-col gap-1.5 sm:gap-1 py-3 sm:py-2.5 px-2 sm:px-3">
       {/* Ligne principale : drapeau + ville + badge discipline */}
       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-        {match.country && (
-          <span className="text-base leading-none shrink-0" title={match.country}>
-            {countryCodeToFlag(match.country)}
-          </span>
-        )}
+        {match.country && <CountryLabel code={match.country} />}
         <span className="text-sm font-semibold truncate flex-1 min-w-0">{match.homeTeam}</span>
         {disciplineMeta && (
           <span
@@ -754,7 +754,7 @@ export function SnowboardMatchRow({ match, attachments, existingNote }: Snowboar
         {genderLabel && ` · ${genderLabel}`}
       </div>
 
-      {/* Date (pas d'heure publiée par la FIS pour le snowboard) */}
+      {/* Date (heure de Paris affichée si publiée par la FIS) */}
       <div className="text-xs text-muted-foreground pl-0.5">
         {formatMatchDate(match.date, match.time)}
       </div>
@@ -949,11 +949,7 @@ export function FreestyleECMatchRow({ match, attachments, existingNote }: Freest
     <div className="group flex flex-col gap-1.5 sm:gap-1 py-3 sm:py-2.5 px-2 sm:px-3">
       {/* Ligne principale : drapeau + ville + badge discipline */}
       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-        {match.country && (
-          <span className="text-base leading-none shrink-0" title={match.country}>
-            {countryCodeToFlag(match.country)}
-          </span>
-        )}
+        {match.country && <CountryLabel code={match.country} />}
         <span className="text-sm font-semibold truncate flex-1 min-w-0">{match.homeTeam}</span>
         {disciplineMeta && (
           <span
@@ -971,7 +967,7 @@ export function FreestyleECMatchRow({ match, attachments, existingNote }: Freest
         {genderLabel && ` · ${genderLabel}`}
       </div>
 
-      {/* Date (pas d'heure publiée par la FIS pour la Coupe d'Europe freestyle) */}
+      {/* Date (heure de Paris affichée si publiée par la FIS) */}
       <div className="text-xs text-muted-foreground pl-0.5">
         {formatMatchDate(match.date, match.time)}
       </div>
