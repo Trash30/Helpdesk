@@ -1,0 +1,462 @@
+{
+  "_generatedAt": "2026-10-26T15:37:59.273Z",
+  "_source": "postgresql://postgres:***@localhost:5432/helpdesk_dev",
+  "categories": [
+    {
+      "name": "Matériel",
+      "slug": "materiel",
+      "color": "#185FA5",
+      "isActive": true
+    },
+    {
+      "name": "Logiciel",
+      "slug": "logiciel",
+      "color": "#534AB7",
+      "isActive": true
+    },
+    {
+      "name": "Réseau",
+      "slug": "reseau",
+      "color": "#0F6E56",
+      "isActive": true
+    },
+    {
+      "name": "Accès",
+      "slug": "acces",
+      "color": "#854F0B",
+      "isActive": true
+    },
+    {
+      "name": "Autre",
+      "slug": "autre",
+      "color": "#5F5E5A",
+      "isActive": true
+    }
+  ],
+  "ticketTypes": [
+    {
+      "name": "Demande",
+      "isActive": true
+    },
+    {
+      "name": "Réclamation",
+      "isActive": true
+    },
+    {
+      "name": "Conseil",
+      "isActive": true
+    },
+    {
+      "name": "Maintenance Annuelle",
+      "isActive": true
+    },
+    {
+      "name": "Incident",
+      "isActive": true
+    },
+    {
+      "name": "Chaperonnage",
+      "isActive": true
+    }
+  ],
+  "poles": [
+    {
+      "name": "Pôle Technique",
+      "isActive": true
+    },
+    {
+      "name": "Pôle Commercial",
+      "isActive": true
+    },
+    {
+      "name": "Pôle Support",
+      "isActive": true
+    },
+    {
+      "name": "Vogo Helpdesk",
+      "isActive": true
+    },
+    {
+      "name": "Techniciens",
+      "isActive": true
+    }
+  ],
+  "clientRoles": [
+    {
+      "name": "Responsable IT",
+      "isActive": true
+    },
+    {
+      "name": "Stadium Manager",
+      "isActive": true
+    },
+    {
+      "name": "Utilisateur",
+      "isActive": true
+    },
+    {
+      "name": "Direction",
+      "isActive": true
+    },
+    {
+      "name": "Prestataire",
+      "isActive": true
+    },
+    {
+      "name": "Equipe Prod",
+      "isActive": true
+    },
+    {
+      "name": "Autre",
+      "isActive": true
+    },
+    {
+      "name": "Equipe TV",
+      "isActive": true
+    }
+  ],
+  "organisations": [
+    {
+      "name": "Ligue de Paris",
+      "isActive": true
+    },
+    {
+      "name": "Ligue de Lyon",
+      "isActive": true
+    },
+    {
+      "name": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "FFR",
+      "isActive": true
+    },
+    {
+      "name": "ELMS",
+      "isActive": true
+    },
+    {
+      "name": "EJL",
+      "isActive": true
+    }
+  ],
+  "clubs": [
+    {
+      "name": "Club Paris Nord",
+      "organisation": "Ligue de Paris",
+      "isActive": true
+    },
+    {
+      "name": "Club Lyon Centre",
+      "organisation": "Ligue de Lyon",
+      "isActive": true
+    },
+    {
+      "name": "Club Paris Sud",
+      "organisation": "Ligue de Paris",
+      "isActive": true
+    },
+    {
+      "name": "USA Perpignan",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Aviron Bayonnais",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Montpellier Herault Rugby",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "US Montauban",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "RC Toulon",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Castres Olympique",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Stade Toulousain",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Racing 92",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Stade Francais Paris",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Valence Romans",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "SU Agen",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "RC Vannes",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Colomiers Rugby",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "US Dax",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Oyonnax Rugby",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Biarritz Olympique PB",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Soyaux-Angouleme XV",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "US Carcassonnaise",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Stade Montois Rugby",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Stade Aurillacois",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "USON Nevers",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "AS Beziers Herault",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "CA Brive",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Stade Rochelais",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Union Bordeaux-Begles",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "ASM Clermont",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "LOU Rugby",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Section Paloise",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Club athlétique Brive Corrèze Limousin",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Provence Rugby",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Colomiers",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "FC Grenoble Rugby",
+      "organisation": "LNR",
+      "isActive": true
+    },
+    {
+      "name": "Aix",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Cesson-Rennes",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Chambery",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Chartres",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Dijon",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Dunkerque",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Istres",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Limoges",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Montpellier",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Nantes",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Nimes",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Paris",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Saint-Raphael",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Selestat",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Toulouse",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "Tremblay",
+      "organisation": "LNH",
+      "isActive": true
+    },
+    {
+      "name": "MHB",
+      "organisation": "LNH",
+      "isActive": true
+    }
+  ],
+  "agents": [
+    {
+      "firstName": "agent",
+      "lastName": "agent",
+      "email": "agent@agent.com"
+    },
+    {
+      "firstName": "Sophie",
+      "lastName": "Bernard",
+      "email": "agent3@helpdesk.com"
+    },
+    {
+      "firstName": "Nicolas",
+      "lastName": "Broutin",
+      "email": "n.broutin@vogo-group.com"
+    },
+    {
+      "firstName": "Marie",
+      "lastName": "Dupont",
+      "email": "agent1@helpdesk.com"
+    },
+    {
+      "firstName": "Loic",
+      "lastName": "Four",
+      "email": "l.four@vogo-group.com"
+    },
+    {
+      "firstName": "Thomas",
+      "lastName": "Martin",
+      "email": "agent2@helpdesk.com"
+    },
+    {
+      "firstName": "Rojo",
+      "lastName": "Razafimahefa",
+      "email": "r.eazafimahefa@vogo-group.com"
+    },
+    {
+      "firstName": "Admin",
+      "lastName": "Système",
+      "email": "admin@helpdesk.com"
+    },
+    {
+      "firstName": "Benjamin",
+      "lastName": "Turc",
+      "email": "b.turc@vogo-group.com"
+    },
+    {
+      "firstName": "Quentin",
+      "lastName": "Vaisala",
+      "email": "q.vaisala@vogo-group.com"
+    }
+  ]
+}
