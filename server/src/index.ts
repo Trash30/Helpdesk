@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { prisma } from './lib/prisma';
 import { startMatchAttachmentPurgeJob } from './jobs/matchAttachmentPurgeJob';
+import { resumeIfSessionExists } from './services/whatsappService';
 import app from './app';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -17,6 +18,7 @@ async function main() {
 
   // Start background jobs
   startMatchAttachmentPurgeJob();
+  void resumeIfSessionExists();
 }
 
 main().catch((err) => {
