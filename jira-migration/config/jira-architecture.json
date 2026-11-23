@@ -1,0 +1,178 @@
+{
+  "$comment": "Architecture cible du ticket Helpdesk VOGO dans Jira Service Management (Cloud). Consommee par scripts/provision-jira.mjs. Les listes de valeurs viennent de options.generated.json (genere par extract-options.js).",
+  "target": "jira-cloud",
+
+  "priorities": [
+    { "name": "Critique", "description": "Service totalement indisponible — anciennement CRITICAL", "sourceEnum": "CRITICAL", "statusColor": "#CD1316" },
+    { "name": "Haute",    "description": "Impact fort sur l'exploitation — anciennement HIGH",      "sourceEnum": "HIGH",     "statusColor": "#E9730C" },
+    { "name": "Moyenne",  "description": "Impact limite — anciennement MEDIUM (defaut)",            "sourceEnum": "MEDIUM",   "statusColor": "#185FA5" },
+    { "name": "Basse",    "description": "Sans urgence — anciennement LOW",                         "sourceEnum": "LOW",      "statusColor": "#5F5E5A" }
+  ],
+
+  "statuses": [
+    { "name": "Ouvert",     "statusCategory": "TODO",        "sourceEnum": "OPEN",        "description": "Ticket cree, pas encore pris en charge" },
+    { "name": "En cours",   "statusCategory": "IN_PROGRESS", "sourceEnum": "IN_PROGRESS", "description": "Pris en charge par un agent" },
+    { "name": "En attente", "statusCategory": "IN_PROGRESS", "sourceEnum": "PENDING",     "description": "Suspendu — motif de mise en attente obligatoire" },
+    { "name": "Ferme",      "statusCategory": "DONE",        "sourceEnum": "CLOSED",      "description": "Resolu et clos — note de fermeture obligatoire" }
+  ],
+
+  "workflow": {
+    "$comment": "Non provisionnable de bout en bout par API : a construire dans l'UI Jira. Decrit ici pour reproduire les regles de server/src/routes/tickets.ts.",
+    "name": "VOGO Helpdesk — Workflow ticket",
+    "initialStatus": "Ouvert",
+    "transitions": [
+      {
+        "name": "Prendre en charge",
+        "from": ["Ouvert", "En attente"],
+        "to": "En cours",
+        "screen": null,
+        "required": []
+      },
+      {
+        "name": "Mettre en attente",
+        "from": ["Ouvert", "En cours"],
+        "to": "En attente",
+        "screen": "Mise en attente",
+        "required": ["Motif de mise en attente"],
+        "validator": "Champ Motif de mise en attente obligatoire (equivalent du 400 'Un motif de mise en attente est obligatoire')"
+      },
+      {
+        "name": "Fermer",
+        "from": ["Ouvert", "En cours", "En attente"],
+        "to": "Ferme",
+        "screen": "Fermeture",
+        "required": ["Note de fermeture"],
+        "validator": "Champ Note de fermeture obligatoire (equivalent du 400 'Une note de fermeture est obligatoire')",
+        "postFunctions": [
+          "Renseigner Resolu si vide (reproduit: if (!existing.resolvedAt) extra.resolvedAt = new Date())",
+          "Renseigner Date de fermeture"
+        ]
+      },
+      {
+        "name": "Reouvrir",
+        "from": ["Ferme"],
+        "to": "Ouvert",
+        "screen": null,
+        "required": [],
+        "postFunctions": ["Vider Date de fermeture"]
+      }
+    ],
+    "notes": [
+      "L'app autorise toute transition entre les 4 statuts (PATCH /tickets/:id/status accepte n'importe quel Status). Le workflow ci-dessus est volontairement plus strict ; mettre 'Tous' en origine pour une equivalence exacte.",
+      "closingNote et pendingNote sont stockes en commentaire interne par l'app. Jira n'a pas de post-function native pour cela : prevoir une regle d'automatisation qui recopie le champ en commentaire interne apres la transition."
+    ]
+  },
+
+  "requestTypes": {
+    "$comment": "TicketType de l'app → request types du portail JSM. Noms lus dans options.generated.json#ticketTypes.",
+    "optionsFrom": "ticketTypes",
+    "issueTypeMapping": {
+      "Incident": "Incident",
+      "_default": "Demande de service"
+    },
+    "groupName": "Support VOGO"
+  },
+
+  "customFields": [
+    {
+      "name": "Reference VOGO",
+      "type": "com.atlassian.jira.plugin.system.customfieldtypes:readonlyfield",
+      "searcherKey": "com.atlassian.jira.plugin.system.customfieldtypes:textsearcher",
+      "description": "Numero de ticket historique de l'app (format VG{annee}{0000}). Conserve pour la tracabilite — la cle Jira devient l'identifiant courant.",
+      "source": "Ticket.ticketNumber"
+    },
+    {
+      "name": "Categorie",
+      "type": "com.atlassian.jira.plugin.system.customfieldtypes:select",
+      "searcherKey": "com.atlassian.jira.plugin.system.customfieldtypes:multiselectsearcher",
+      "description": "Categorie du ticket (ex-table Category).",
+      "source": "Ticket.categoryId -> Category.name",
+      "optionsFrom": "categories"
+    },
+    {
+      "name": "Pole",
+      "type": "com.atlassian.jira.plugin.system.customfieldtypes:select",
+      "searcherKey": "com.atlassian.jira.plugin.system.customfieldtypes:multiselectsearcher",
+      "description": "Pole de rattachement du ticket (ex-table ClientPole).",
+      "source": "Ticket.poleId -> ClientPole.name",
+      "optionsFrom": "poles"
+    },
+    {
+      "name": "Role client",
+      "type": "com.atlassian.jira.plugin.system.customfieldtypes:select",
+      "searcherKey": "com.atlassian.jira.plugin.system.customfieldtypes:multiselectsearcher",
+      "description": "Role du demandeur chez le client (ex-table ClientRole).",
+      "source": "Client.roleId -> ClientRole.name",
+      "optionsFrom": "clientRoles"
+    },
+    {
+      "name": "Club",
+      "type": "com.atlassian.jira.plugin.system.customfieldtypes:select",
+      "searcherKey": "com.atlassian.jira.plugin.system.customfieldtypes:multiselectsearcher",
+      "description": "Club du demandeur (ex-table ClientClub). L'organisation parente est portee par les Organizations JSM.",
+      "source": "Client.clubId -> ClientClub.name",
+      "optionsFrom": "clubs"
+    },
+    {
+      "name": "Agent createur",
+      "type": "com.atlassian.jira.plugin.system.customfieldtypes:userpicker",
+      "searcherKey": "com.atlassian.jira.plugin.system.customfieldtypes:userpickergroupsearcher",
+      "description": "Agent ayant saisi le ticket. Dans JSM le Reporter est le client : ce champ conserve l'auteur interne.",
+      "source": "Ticket.createdById"
+    },
+    {
+      "name": "Date de fermeture",
+      "type": "com.atlassian.jira.plugin.system.customfieldtypes:datetime",
+      "searcherKey": "com.atlassian.jira.plugin.system.customfieldtypes:datetimerange",
+      "description": "Horodatage de fermeture, distinct de la date de resolution native.",
+      "source": "Ticket.closedAt"
+    },
+    {
+      "name": "Note de fermeture",
+      "type": "com.atlassian.jira.plugin.system.customfieldtypes:textarea",
+      "searcherKey": "com.atlassian.jira.plugin.system.customfieldtypes:textsearcher",
+      "description": "Obligatoire au passage en Ferme. Max 2000 caracteres dans l'app.",
+      "source": "PATCH /tickets/:id/status closingNote",
+      "transitionScreen": "Fermeture"
+    },
+    {
+      "name": "Motif de mise en attente",
+      "type": "com.atlassian.jira.plugin.system.customfieldtypes:textarea",
+      "searcherKey": "com.atlassian.jira.plugin.system.customfieldtypes:textsearcher",
+      "description": "Obligatoire au passage en En attente. Max 2000 caracteres dans l'app.",
+      "source": "PATCH /tickets/:id/status pendingNote",
+      "transitionScreen": "Mise en attente"
+    }
+  ],
+
+  "organizations": {
+    "$comment": "ClientOrganisation -> Organizations JSM (natif). Creees uniquement avec --with-organizations.",
+    "optionsFrom": "organisations"
+  },
+
+  "nativeFieldMapping": {
+    "Ticket.title": "Summary",
+    "Ticket.description": "Description (ADF)",
+    "Ticket.status": "Statut (workflow)",
+    "Ticket.priority": "Priority",
+    "Ticket.assignedToId": "Assignee",
+    "Ticket.clientId": "Reporter (customer JSM)",
+    "Ticket.typeId": "Request type",
+    "Ticket.createdAt": "Created",
+    "Ticket.updatedAt": "Updated",
+    "Ticket.resolvedAt": "Resolved",
+    "Comment.content": "Commentaire",
+    "Comment.isInternal": "Commentaire interne (visibilite JSM)",
+    "Attachment.*": "Attachment",
+    "ActivityLog.*": "Historique de la demande (partiel)"
+  },
+
+  "notMigratable": {
+    "Ticket.deletedAt": "Pas de soft delete en Jira — la corbeille projet n'est pas un equivalent fonctionnel. Choisir : archivage d'issue (plan Premium) ou statut 'Annule'.",
+    "tickets.viewAll": "Jira n'a pas de permission 'ne voir que mes tickets assignes'. Les Issue Security Levels sont statiques et ne ciblent pas assignee = currentUser. Contournement : queues/filtres 'Mes tickets' — restriction d'affichage, pas de securite.",
+    "Category.color / Category.icon": "Pas d'equivalent sur une option de select. Perdu a l'affichage.",
+    "Category.position / isActive": "Ordre des options manuel ; isActive=false se traduit par une option desactivee.",
+    "SurveyTemplate / SurveySend / SurveyResponse": "CSAT JSM natif = 1 note + 1 commentaire. Templates multi-questions et NPS sans equivalent.",
+    "KbArticle": "Cible = Confluence lie au projet JSM, pas Jira."
+  }
+}
