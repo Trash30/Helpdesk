@@ -79,7 +79,7 @@ JWT_SECRET="remplacez-par-une-chaine-aleatoire-longue"
 # Environnement
 NODE_ENV="development"   # ou "production"
 
-# SMTP pour les emails (reset password, enquêtes)
+# SMTP pour les emails (reset password)
 SMTP_HOST="smtp.votre-serveur.fr"
 SMTP_PORT=587
 SMTP_USER="helpdesk@vogo.fr"
@@ -88,6 +88,10 @@ SMTP_FROM="Helpdesk VOGO <helpdesk@vogo.fr>"
 
 # URL du frontend (pour les liens dans les emails)
 FRONTEND_URL="http://192.168.x.x:5173"
+
+# WhatsApp (optionnel) — session persistée sur disque et navigateur Chrome/Chromium pour whatsapp-web.js
+# WHATSAPP_SESSION_DIR="/opt/helpdesk/server/.wwebjs_auth"   # défaut : ./.wwebjs_auth
+# WHATSAPP_CHROME_PATH="/usr/bin/chromium-browser"
 
 # Origines CORS autorisées en production (séparées par virgule)
 # Obligatoire en NODE_ENV=production — sans cette variable, toutes les requêtes cross-origin sont refusées
@@ -109,34 +113,29 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 server/src/
 ├── index.ts              # Point d'entrée — démarre Express
 ├── app.ts                # Configuration Express (middlewares, routes)
-├── routes/               # Un fichier par ressource (21 fichiers)
+├── routes/               # Un fichier par ressource (13 fichiers)
 │   ├── auth.ts           # Authentification + préférences compétitions
-│   ├── tickets.ts        # Gestion des tickets
-│   ├── clients.ts        # Gestion des clients
-│   ├── comments.ts       # Commentaires
-│   ├── attachments.ts    # Pièces jointes tickets
-│   ├── categories.ts     # Catégories tickets
-│   ├── clientRoles.ts / organisations.ts / clubs.ts / poles.ts / ticketTypes.ts  # Référentiels
+│   ├── categories.ts     # Catégories de la base de connaissance
 │   ├── users.ts          # Agents
 │   ├── roles.ts          # Rôles et permissions
-│   ├── dashboard.ts      # Statistiques
-│   ├── sports.ts         # Matchs de la semaine + refresh
+│   ├── sports.ts         # Matchs de la semaine + refresh + calendrier de saison
 │   ├── matchNotes.ts     # Notes de match + images + rapport hebdo
 │   ├── matchAttachments.ts  # PDF joints aux matchs (purge H+6)
+│   ├── matchReports.ts   # Archivage des CR hebdomadaires (.docx en base)
+│   ├── whatsapp.ts       # Connexion WhatsApp + création de groupes
 │   ├── commercialEvents.ts  # Missions Support terrain
 │   ├── bmcCards.ts       # Cartes BMC des serveurs LNR
 │   ├── kb.ts             # Base de connaissances
-│   ├── surveys.ts        # Enquêtes satisfaction
-│   └── settings.ts       # Paramètres système
+│   └── settings.ts       # Paramètres système (nom, logo)
 ├── middleware/
 │   ├── auth.ts           # Vérifie le token JWT
 │   └── permissions.ts    # Vérifie les permissions RBAC
 ├── config/
 │   └── permissions.ts    # Définition de toutes les permissions
 ├── services/
-│   └── sportsScraper.ts  # Scraping calendriers sportifs
+│   ├── sportsScraper.ts  # Scraping calendriers sportifs
+│   └── whatsappService.ts # Session whatsapp-web.js + jobs de création de groupes
 └── jobs/
-    ├── surveyJob.ts           # Envoi automatique enquêtes
     └── matchAttachmentPurgeJob.ts  # Nettoyage PDFs matchs (H+6)
 ```
 
@@ -147,23 +146,24 @@ client/src/
 ├── main.tsx              # Point d'entrée React
 ├── App.tsx               # Router principal (React Router v6)
 ├── pages/                # Une page = une route
-│   ├── LoginPage.tsx
+│   ├── LoginPage.tsx / ChangePasswordPage.tsx / ResetPasswordPage.tsx
 │   ├── DashboardPage.tsx
-│   ├── tickets/          # Liste, détail, création
-│   ├── clients/          # Liste, détail
-│   ├── admin/            # Panneau administration
-│   └── sports/           # Événements du jour
+│   ├── ProfilePage.tsx   # Préférences de compétitions
+│   ├── BmcCardsPage.tsx
+│   ├── admin/            # Agents, rôles, catégories, paramètres
+│   ├── commercial/       # Missions Support
+│   ├── kb/               # Base de connaissances
+│   └── sports/           # Événements du jour, groupes WhatsApp
 ├── components/
 │   ├── ui/               # Composants de base (shadcn/ui)
-│   ├── common/           # Composants partagés
-│   ├── sports/           # Widget calendrier sportif
-│   └── clients/          # SlideOver client
+│   ├── common/ / auth/   # Composants partagés
+│   └── sports/           # Widget calendrier, éditeur de notes, export CR, calendrier de saison
 ├── hooks/
-│   ├── useAuth.ts        # Utilisateur courant
-│   └── usePermissions.ts # Vérification des droits
+│   ├── usePermissions.ts # Vérification des droits
+│   └── useBranding.ts / useDebounce.ts
 └── lib/
     ├── axios.ts           # Client HTTP configuré
-    ├── colors.ts          # Source de vérité des tokens couleur (PRIORITY_TOKENS, STATUS_TOKENS)
+    ├── whatsappGroups.ts  # Préparation des groupes WhatsApp (import planning)
     └── utils.ts           # Fonctions utilitaires
 ```
 
@@ -173,19 +173,20 @@ client/src/
 
 ### 5.1 Ajouter un champ à un modèle de données
 
-Exemple : ajouter un champ `phone2` à la table `Client`.
+Exemple : ajouter un champ `notes` à la table `BmcCard`.
 
 ```bash
 # 1. Modifier server/prisma/schema.prisma
-# Ajouter dans le model Client :
-#   phone2   String?
+# Ajouter dans le model BmcCard :
+#   notes   String?
 
 # 2. Créer la migration
 cd server
-npx prisma migrate dev --name add-phone2-to-client
+npx prisma migrate dev --name add-notes-to-bmc-card
 
-# 3. Adapter la route backend (server/src/routes/clients.ts)
-# 4. Adapter le formulaire frontend (client/src/pages/clients/)
+# 3. Adapter la route backend (server/src/routes/bmcCards.ts)
+# 4. Adapter la page frontend (client/src/pages/BmcCardsPage.tsx)
+# 5. En production : pg_dump puis `npx prisma migrate deploy` (voir §5.5)
 ```
 
 ### 5.2 Ajouter une nouvelle permission
@@ -221,7 +222,7 @@ export const PERMISSIONS_LIST: string[] = [
 
 Puis `requirePermission('reporting.view')` sur les routes concernées, et assigner la permission aux rôles via l'interface d'administration.
 
-> État actuel : **28 permissions**, 8 groupes (Tickets, Clients, Commentaires, Enquêtes, Admin, Base de connaissance, Missions Support, Cartes BMC).
+> État actuel : **13 permissions**, 6 groupes (Administration, Base de connaissance, Calendrier sportif, Missions Support, Cartes BMC, Groupes WhatsApp). Le module ticketing (tickets, clients, commentaires, enquêtes) a été supprimé en novembre 2026 ; `tickets.create` est devenu `sports.edit`.
 
 ### 5.3 Ajouter une compétition sportive
 
@@ -348,19 +349,28 @@ curl -s https://www.lnh.fr/daikin-starligue/calendrier | grep -o 'name="key" val
 
 **Méthode recommandée (sur le serveur, via git) :**
 
-Le serveur de test est configuré comme repo git — récupérer les changements directement :
+Le serveur est configuré comme repo git — récupérer les changements directement. **Accès web : `http://<ip-serveur>:5173`** (Nginx en HTTP sur 5173 ; le port 3001 est l'API seule et répond « Route introuvable » sur `/`).
 
 ```bash
 cd /opt/helpdesk
 git pull origin main
 
+# Si la release contient une migration destructive (DROP, suppression de colonne…) :
+sudo -u postgres pg_dump -Fc helpdesk_prod > ~/helpdesk_prod_$(date +%F_%H%M).dump
+
 cd server && npm ci && npx prisma migrate deploy && npm run build
-cd ../client && npm run build
+cd ../client && npm ci && npm run build
 sudo pm2 restart helpdesk-server       # toujours sudo pm2 sur ce serveur
 sudo chmod -R 755 /opt/helpdesk/client/dist
 ```
 
-> **Important :** utiliser `sudo pm2` pour toutes les opérations PM2 — le process tourne en `root`. Un `pm2` sans sudo crée une double instance et un conflit de port.
+Vérifier ensuite : `sudo pm2 logs helpdesk-server --lines 30 --nostream` doit afficher `[SERVER] Running on http://localhost:3001` une seule fois, sans `EADDRINUSE`.
+
+> **Important :** utiliser `sudo pm2` pour toutes les opérations PM2 — le process tourne en `root`. Un `pm2` sans sudo crée une double instance et un conflit de port. Seule l'unité `pm2-root.service` doit être activée ; `pm2-supportadmin.service` doit rester **désactivée** (`sudo systemctl disable --now pm2-supportadmin`), sinon une instance parasite est relancée au reboot.
+
+> **Droits PostgreSQL :** toutes les tables doivent appartenir au rôle de `DATABASE_URL` (`hduser`). Sinon une migration échoue avec `42501 doit être le propriétaire de la table …`. Contrôle : `sudo -u postgres psql -d helpdesk_prod -c "SELECT tableowner, count(*) FROM pg_tables WHERE schemaname='public' GROUP BY 1;"`. Correction : `ALTER TABLE/SEQUENCE/TYPE … OWNER TO hduser` sur chaque objet du schéma `public`.
+
+> **Migration échouée (P3018) :** PostgreSQL annule la migration entière (DDL transactionnel). Corriger la cause, puis `npx prisma migrate resolve --rolled-back <nom_migration>` et relancer `npx prisma migrate deploy`. Historique : la baseline `20260403150600_baseline_init` a été marquée appliquée en prod le 2026-11-23 (`migrate resolve --applied`).
 
 **Vérifications post-mise à jour selon le type de changement :**
 
@@ -407,7 +417,7 @@ nano /opt/helpdesk/server/.env
 ```
 
 ```env
-FRONTEND_URL=http://<nouvelle-ip>    # liens dans les emails (reset password, enquêtes)
+FRONTEND_URL=http://<nouvelle-ip>    # liens dans les emails (reset password)
 ```
 
 ```bash
@@ -467,9 +477,9 @@ Désormais l'IP peut changer (DHCP) — le nom `helpdesk.local` continue de fonc
 
 ---
 
-### 5.8 Missions Support & Cartes BMC
+### 5.8 Missions Support, Cartes BMC, Rapports CR & Groupes WhatsApp
 
-Deux modules récents, tous deux 100 % CRUD REST + page React dédiée.
+Modules récents : Missions Support et Cartes BMC (100 % CRUD REST + page React dédiée), puis rapports CR archivés et groupes WhatsApp.
 
 **Missions Support** (`/evenements/commercial`, ex-« événements commerciaux ») :
 - Modèle `CommercialEvent`, routes `server/src/routes/commercialEvents.ts`, page `client/src/pages/commercial/CommercialEventsPage.tsx`.
@@ -482,6 +492,15 @@ Deux modules récents, tous deux 100 % CRUD REST + page React dédiée.
 - **Règle de sécurité** : `ip` doit être une IPv4 privée RFC 1918 (regex `PRIVATE_IPV4_RE` dans `bmcCards.ts`, même esprit que `PRIVATE_IP_RE` du CORS). `division` ∈ `{ TOP14, PRO_D2 }`.
 - Pas de migration à prévoir hors ajout de champ — suivre la procédure §5.1.
 
+**Rapports CR hebdomadaires** :
+- Le `.docx` est généré côté client (`MatchReportExport.tsx`) puis archivé via `POST /api/sports/reports` (modèle `MatchReport`, contenu en BYTEA, 25 Mo max). Permission `sports.edit` ; suppression réservée à `admin.access`.
+
+**Groupes WhatsApp** (page `client/src/pages/sports/WhatsAppGroupsPage.tsx`) :
+- Permission `whatsapp.groups`. Routes `server/src/routes/whatsapp.ts`, service `server/src/services/whatsappService.ts` (whatsapp-web.js + Puppeteer).
+- La session WhatsApp est persistée sur disque (`WHATSAPP_SESSION_DIR`, défaut `./.wwebjs_auth`) et reprise automatiquement au démarrage du serveur. Un navigateur Chrome/Chromium doit être disponible (`WHATSAPP_CHROME_PATH` si besoin).
+- La création de groupes est un job asynchrone (`POST /api/whatsapp/groups` → 202, suivi via `GET /api/whatsapp/groups/jobs/:id`), un seul à la fois.
+- Si la connexion se perd : reconnecter depuis la page WhatsApp (nouveau QR code) ; en dernier recours supprimer le dossier de session et redémarrer.
+
 ---
 
 ## 6. Débogage
@@ -489,9 +508,9 @@ Deux modules récents, tous deux 100 % CRUD REST + page React dédiée.
 ### Voir les logs en production
 
 ```bash
-pm2 logs helpdesk-server          # Temps réel
-pm2 logs helpdesk-server --lines 200  # 200 dernières lignes
-cat /opt/helpdesk/logs/server-error.log
+sudo pm2 logs helpdesk-server          # Temps réel
+sudo pm2 logs helpdesk-server --lines 200 --nostream  # 200 dernières lignes
+cat /opt/helpdesk/logs/server-error-0.log
 ```
 
 ### Requêter la base de données directement
@@ -510,7 +529,7 @@ curl -c cookies.txt -X POST http://localhost:3001/api/auth/login \
   -d '{"email":"admin@vogo.fr","password":"MonMotDePasse1"}'
 
 # Requête authentifiée
-curl -b cookies.txt http://localhost:3001/api/tickets
+curl -b cookies.txt http://localhost:3001/api/sports/match-notes
 ```
 
 ### Erreurs fréquentes
@@ -522,6 +541,9 @@ curl -b cookies.txt http://localhost:3001/api/tickets
 | Matchs sportifs absents | Cache scraper / compétition down | Redémarrer le serveur |
 | `ECONNREFUSED 5432` | PostgreSQL arrêté | `sudo service postgresql start` |
 | Emails non reçus | Config SMTP incorrecte | Vérifier `.env` SMTP_* |
+| `EADDRINUSE :::3001` en boucle | Instance PM2 parasite (utilisateur sans sudo) | `pm2 list` (sans sudo) puis `pm2 delete all` ; voir §5.5 |
+| « Route introuvable » dans le navigateur | Accès direct au port 3001 | Utiliser `http://<ip>:5173` |
+| Migration : `42501 doit être le propriétaire` | Tables appartenant à `postgres` | Transférer à `hduser` (voir §5.5) |
 | Note de match disparue le lendemain | Scraper LNR — voir ci-dessous | Ghost match reconstruit automatiquement |
 | Note absente sur match scrapé | Heure ISO différente entre scraper et DB | Lookup fuzzy par fingerprint date-only |
 | Matchs en doublon dans le widget | Ghost + scrapé même match heure différente | Déduplication par fingerprint date-only |
@@ -618,10 +640,10 @@ UPLOADS_PATH/
 
 ```typescript
 // Route : validation Zod → logique métier → réponse JSON
-router.post('/', requirePermission('tickets.create'), async (req, res) => {
-  const body = CreateTicketSchema.parse(req.body);  // Valide ou throw 400
-  const ticket = await prisma.ticket.create({ data: body });
-  res.status(201).json(ticket);
+router.post('/bmc-cards', requirePermission('bmc.manage'), async (req, res) => {
+  const body = bmcCardSchema.parse(req.body);  // Valide ou renvoie 400
+  const card = await prisma.bmcCard.create({ data: { ...body, createdById: req.user!.id } });
+  res.status(201).json({ data: card });
 });
 
 // Toujours utiliser try/catch ou un wrapper async
@@ -632,34 +654,24 @@ router.post('/', requirePermission('tickets.create'), async (req, res) => {
 ```typescript
 // TanStack Query v5 pour les données serveur
 const { data, isLoading } = useQuery({
-  queryKey: ['tickets', filters],
-  queryFn: async () => (await api.get('/tickets', { params: filters })).data,
+  queryKey: ['bmc-cards'],
+  queryFn: async () => (await api.get('/bmc-cards')).data,
   staleTime: 1000 * 60,  // 1 minute
 });
 
 // Vérification des permissions
 const { can } = usePermissions();
-{can('tickets.create') && <Button>Nouveau ticket</Button>}
+{can('bmc.manage') && <Button>Nouvelle carte</Button>}
 ```
 
-### Couleurs — ne jamais coder de hex en dur
-
-Toutes les couleurs fonctionnelles (statuts, priorités) sont centralisées dans `client/src/lib/colors.ts`. Ne jamais écrire de valeur hex en dur dans les composants — importer depuis ce fichier.
-
-```typescript
-import { PRIORITY_TOKENS, STATUS_TOKENS, type PriorityKey } from '@/lib/colors';
-
-// Utilisation dans un composant
-const token = PRIORITY_TOKENS[priority as PriorityKey];
-// → token.bg (fond), token.fg (texte), token.solid (Recharts charts)
-```
+### Couleurs
 
 La couleur primaire VOGO (`#185FA5`) est définie via le token CSS `--primary` dans `client/src/index.css`. Utiliser `bg-primary`, `text-primary`, `border-primary` (classes Tailwind) ou `hsl(var(--primary))` en CSS.
 
 ### Commits
 
 ```
-feat(tickets): ajouter filtre par pôle
+feat(sports): ajouter filtre par compétition
 fix(scraper): corriger scraping TOP14 après refonte LNR
 refactor(auth): simplifier middleware validation token
 ```
@@ -696,6 +708,6 @@ refactor(auth): simplifier middleware validation token
 - [ ] Lu `docs/ARCHITECTURE.md` pour comprendre la structure globale
 - [ ] Lu `docs/API_REFERENCE.md` pour comprendre les endpoints
 - [ ] Lu `docs/SECURITE.md` pour comprendre le modèle d'accès
-- [ ] Créé un ticket de test complet (création → assignation → clôture)
-- [ ] Testé l'upload d'un fichier
+- [ ] Créé une note de match de test avec une image collée, puis exporté le CR
+- [ ] Testé l'upload d'un PDF sur un match
 - [ ] Consulté Prisma Studio (`npx prisma studio`) pour visualiser la BDD

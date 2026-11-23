@@ -1,7 +1,7 @@
 # Documentation Sécurité — Helpdesk VOGO
 
-**Version :** 1.1  
-**Date :** Août 2026  
+**Version :** 1.2  
+**Date :** Novembre 2026  
 **Auteur :** Équipe technique VOGO
 
 ---
@@ -98,36 +98,23 @@ L'application utilise un contrôle d'accès basé sur les rôles (**RBAC — Rol
 
 | Groupe | Permission | Description |
 |--------|-----------|-------------|
-| Tickets | `tickets.view` | Consulter les tickets |
-| Tickets | `tickets.create` | Créer des tickets |
-| Tickets | `tickets.edit` | Modifier les champs |
-| Tickets | `tickets.close` | Fermer un ticket |
-| Tickets | `tickets.delete` | Supprimer (soft) |
-| Tickets | `tickets.assign` | Assigner à un agent |
-| Tickets | `tickets.viewAll` | Voir tous les tickets (pas seulement assignés) |
-| Clients | `clients.view` | Voir la liste clients |
-| Clients | `clients.create` | Créer des clients |
-| Clients | `clients.edit` | Modifier les clients |
-| Clients | `clients.delete` | Supprimer des clients |
-| Commentaires | `comments.create` | Poster des commentaires |
-| Commentaires | `comments.delete` | Supprimer ses propres commentaires |
-| Commentaires | `comments.deleteAny` | Supprimer n'importe quel commentaire |
-| Enquêtes | `surveys.view` | Voir les résultats CSAT/NPS |
-| Enquêtes | `surveys.configure` | Configurer les templates |
 | Administration | `admin.access` | Accéder au panneau admin |
 | Administration | `admin.users` | Gérer les agents |
 | Administration | `admin.roles` | Gérer les rôles |
-| Administration | `admin.categories` | Gérer les catégories |
-| Administration | `admin.clientRoles` | Gérer les rôles clients |
-| Administration | `admin.settings` | Modifier les paramètres système |
+| Administration | `admin.categories` | Gérer les catégories de la base de connaissance |
+| Administration | `admin.settings` | Modifier les paramètres système (nom, logo) |
 | Base de connaissances | `kb.read` | Lire les articles |
-| Base de connaissances | `kb.write` | Créer/modifier des articles |
+| Base de connaissances | `kb.write` | Créer/modifier/supprimer des articles |
+| Calendrier sportif | `sports.edit` | Notes de match, PDF, rapports CR, actualisation du calendrier |
 | Missions Support | `events.create` | Enregistrer et consulter ses propres missions Support |
 | Cartes BMC | `bmc.view` | Consulter les cartes BMC des serveurs LNR |
 | Cartes BMC | `bmc.manage` | Créer et modifier des cartes BMC |
 | Cartes BMC | `bmc.delete` | Supprimer définitivement une carte BMC |
+| Groupes WhatsApp | `whatsapp.groups` | Préparer et créer les groupes WhatsApp des matchs |
 
-> Total : **28 permissions** réparties en 8 groupes.
+> Total : **13 permissions** réparties en 6 groupes (source : `PERMISSION_GROUPS` dans `server/src/config/permissions.ts`).
+
+> **Module ticketing supprimé (novembre 2026).** Les permissions `tickets.*`, `clients.*`, `comments.*`, `surveys.*` et `admin.clientRoles` n'existent plus. La migration `20261117120000_remove_ticketing` les a retirées de tous les rôles existants et a converti `tickets.create` en `sports.edit` (qui gardait les notes et PDF de matchs). Par sécurité, `roles.ts` filtre aussi ces anciennes clés à l'enregistrement d'un rôle au lieu de bloquer la modification.
 
 ### 4.2 Rôles système
 
@@ -135,8 +122,8 @@ Deux rôles système non supprimables :
 
 | Rôle | Permissions |
 |------|------------|
-| **Admin** | Toutes les permissions (28) |
-| **Agent** | tickets.* (sauf delete), clients.view/create/edit, comments.create/delete, bmc.view, bmc.manage |
+| **Admin** | Toutes les permissions (13) |
+| **Agent** | `sports.edit`, `bmc.view`, `bmc.manage` |
 
 Des rôles personnalisés peuvent être créés et configurés librement.
 
@@ -163,13 +150,14 @@ Les fichiers sont renommés avec un **UUID v4** à l'upload. Le nom original est
 
 | Type de fichier | Limite |
 |----------------|--------|
-| Pièces jointes tickets | 5 Mo par fichier, max 5 fichiers |
 | PDFs matchs sportifs | 10 Mo par fichier |
+| Images des notes de match | 10 Mo par fichier (JPEG, PNG, GIF, WebP) |
+| Rapports CR hebdomadaires (.docx) | 25 Mo, signature ZIP (`PK`) vérifiée, stockés en base |
 | Logo entreprise | Limité par configuration Multer |
 
 ### 5.4 Validation des types MIME
 
-Les routes de pièces jointes valident le type MIME côté serveur. Pour les matchs sportifs, seuls les PDFs sont acceptés.
+Les routes d'upload valident le type MIME côté serveur : PDF pour les pièces jointes de match, images (JPEG/PNG/GIF/WebP) pour les notes et la KB, et signature de fichier pour les `.docx` des rapports CR.
 
 ---
 
@@ -212,7 +200,8 @@ Conséquence pratique : un changement d'IP locale du serveur ne nécessite **auc
 **Toutes** les entrées utilisateur sont validées avec la bibliothèque **Zod** avant traitement :
 - Format email (regex RFC 5322)
 - UUIDs (format strict)
-- Enums (statuts, priorités — seules valeurs connues acceptées)
+- Enums (statut de note de match, division BMC… — seules valeurs connues acceptées)
+- Numéros WhatsApp au format E.164 (`+` suivi de 8 à 15 chiffres, 10 participants max par groupe)
 - Longueurs de chaînes
 - Types de données
 
@@ -254,16 +243,12 @@ Les cartes BMC désignent les interfaces d'administration matérielle (iDRAC / i
 
 ## 11. Audit et traçabilité
 
-### 11.1 Logs d'activité tickets
+### 11.1 Traçabilité des créations
 
-Chaque modification d'un ticket génère un enregistrement `ActivityLog` en base de données contenant :
-- L'utilisateur auteur de la modification
-- L'action effectuée
-- L'ancienne valeur
-- La nouvelle valeur
-- L'horodatage exact
-
-Ces logs sont immuables et servent de piste d'audit.
+Le module de logs d'activité des tickets (`ActivityLog`) a été supprimé avec le ticketing. La traçabilité repose désormais sur :
+- `createdById` sur les cartes BMC, missions Support et rapports CR ;
+- l'auteur enregistré sur chaque note de match ;
+- les logs serveur (§11.2).
 
 ### 11.2 Logs serveur
 
@@ -271,7 +256,7 @@ Morgan est configuré pour journaliser toutes les requêtes HTTP avec horodatage
 
 ### 11.3 Suppressions douces
 
-Les tickets et articles KB ne sont jamais vraiment supprimés — un champ `deletedAt` est renseigné. L'historique est toujours consultable en base de données par un administrateur.
+Les articles KB ne sont jamais vraiment supprimés — un champ `deletedAt` est renseigné. L'historique est toujours consultable en base de données par un administrateur.
 
 ---
 
@@ -279,10 +264,13 @@ Les tickets et articles KB ne sont jamais vraiment supprimés — un champ `dele
 
 | Aspect | Mesure |
 |--------|--------|
-| Processus | PM2 en mode fork, redémarrage automatique |
+| Processus | PM2 en mode fork, redémarrage automatique. **Une seule instance, lancée avec `sudo` (root)** : l'unité `pm2-supportadmin` doit rester désactivée, sinon double instance et conflit de port 3001 |
 | Mémoire max | 512 Mo (protection contre les fuites mémoire) |
 | Variables d'environnement | Fichier `.env` non versionné (gitignore) |
-| Base de données | Accès uniquement depuis localhost (connexion Prisma) |
+| Base de données | Accès uniquement depuis localhost (connexion Prisma). Toutes les tables appartiennent au rôle applicatif `hduser` (requis pour que les migrations s'appliquent) |
+| Accès web | Nginx sert le client et relaie `/api` sur le port **5173** (HTTP, réseau interne) ; l'API Node écoute sur 3001 |
+| Sauvegarde | `pg_dump -Fc` obligatoire avant toute migration destructive |
+| Session WhatsApp | Session persistée sur disque côté serveur ; accès aux routes `/api/whatsapp/*` limité à `whatsapp.groups` |
 | Réseau | Application interne, non exposée sur Internet |
 
 ---
@@ -304,3 +292,4 @@ Les tickets et articles KB ne sont jamais vraiment supprimés — un champ `dele
 | Origine non autorisée | Requêtes cross-origin avec credentials | CORS allowlist via ALLOWED_ORIGINS en production |
 | Enumération token | Reset password brute force | Token haché SHA-256, one-time, 24h |
 | Permissions obsolètes | Token avec droits révoqués | Vérification `roleUpdatedAt` à chaque requête |
+| Abus des groupes WhatsApp | Création massive de groupes / spam | Permission dédiée `whatsapp.groups`, 40 groupes et 10 participants max, numéros E.164 validés, un seul job à la fois (409) |

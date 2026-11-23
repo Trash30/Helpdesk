@@ -1,6 +1,6 @@
 # Référence API — Helpdesk VOGO
 
-**Dernière mise à jour :** août 2026 (ajout Missions Support + Cartes BMC, renommage Daikin Starligue)
+**Dernière mise à jour :** novembre 2026 (suppression du module ticketing, ajout Rapports CR hebdomadaires et Groupes WhatsApp)
 
 **Base URL :** `http://<serveur>:3001`  
 **Authentification :** Cookie `helpdesk_token` (httpOnly) **ou** header `Authorization: Bearer <token>`  
@@ -27,7 +27,7 @@ Connexion et obtention du token JWT.
     "lastName": "Broutin",
     "email": "agent@vogo.fr",
     "sportCompetitions": ["TOP14", "ESTONIE"],
-    "role": { "name": "Admin", "permissions": ["tickets.view", "admin.access"] }
+    "role": { "name": "Admin", "permissions": ["sports.edit", "admin.access"] }
   }
 }
 ```
@@ -85,6 +85,11 @@ Met à jour les préférences de compétitions sportives de l'utilisateur connec
 
 ---
 
+### GET /api/auth/validate-reset-token/:token
+Vérifie qu'un token de réinitialisation est valide et non expiré (rate limit auth).
+
+---
+
 ### POST /api/auth/reset-password
 Réinitialise le mot de passe via token email.
 
@@ -95,166 +100,15 @@ Réinitialise le mot de passe via token email.
 
 ---
 
-## Tickets
-
-### GET /api/tickets
-Liste paginée des tickets. Les agents voient uniquement leurs tickets assignés (sauf permission `tickets.viewAll`).
-
-**Query params**
-| Paramètre | Type | Description |
-|-----------|------|-------------|
-| `page` | number | Page (défaut 1) |
-| `limit` | number | Par page (défaut 20) |
-| `status[]` | string | OPEN, IN_PROGRESS, PENDING, CLOSED |
-| `priority[]` | string | LOW, MEDIUM, HIGH, CRITICAL |
-| `categoryId` | uuid | Filtrer par catégorie |
-| `assignedToId` | uuid | Filtrer par agent assigné |
-| `assignedToMe` | boolean | Mes tickets uniquement |
-| `staleDays` | number | Tickets sans mise à jour depuis N jours |
-| `search` | string | Recherche dans titre/description |
-
-**Réponse 200**
-```json
-{
-  "data": [{ "id": "uuid", "ticketNumber": "TK-0042", "title": "...", "status": "OPEN", "priority": "HIGH", ... }],
-  "total": 150,
-  "page": 1,
-  "totalPages": 8
-}
-```
-
----
-
-### POST /api/tickets
-Crée un nouveau ticket. Permission requise : `tickets.create`
-
-**Body**
-```json
-{
-  "title": "Problème de connexion",
-  "description": "...",
-  "clientId": "uuid",
-  "categoryId": "uuid",
-  "typeId": "uuid",
-  "priority": "MEDIUM",
-  "poleId": "uuid"
-}
-```
-
----
-
-### GET /api/tickets/:id
-Détail complet d'un ticket (commentaires, pièces jointes, logs d'activité).
-
----
-
-### PUT /api/tickets/:id
-Met à jour les champs d'un ticket. Permission requise : `tickets.edit`
-
-**Body** (tous les champs sont optionnels)
-```json
-{
-  "title": "...",
-  "description": "...",
-  "categoryId": "uuid",
-  "priority": "HIGH",
-  "assignedToId": "uuid"
-}
-```
-
----
-
-### PATCH /api/tickets/:id/status
-Change le statut d'un ticket.
-
-**Body**
-```json
-{ "status": "CLOSED", "closingNote": "Résolu après redémarrage serveur." }
-```
-
-> `closingNote` obligatoire pour le statut `CLOSED`.
-
-**Transitions valides :** OPEN → IN_PROGRESS → PENDING → CLOSED
-
----
-
-### DELETE /api/tickets/:id
-Suppression douce (champ `deletedAt`). Permission requise : `tickets.delete`
-
----
-
-## Commentaires
-
-### POST /api/tickets/:id/comments
-Ajoute un commentaire. Supporte jusqu'à 5 fichiers joints (multipart/form-data).
-
-**Body (form-data)**
-```
-content     : "Texte du commentaire"
-isInternal  : false    (note interne cachée aux clients)
-files[]     : <fichier>
-```
-
----
-
-### DELETE /api/comments/:id
-Supprime un commentaire. Permission `comments.deleteAny` pour supprimer celui d'un autre utilisateur.
-
----
-
-## Pièces jointes
-
-### POST /api/tickets/:id/attachments
-Upload de fichiers (multipart/form-data, max 5 fichiers, 5 Mo chacun). Permission : `tickets.edit`
-
-### GET /api/attachments/:id/download
-Télécharge un fichier. Protection anti path-traversal intégrée.
-
-### DELETE /api/attachments/:id
-Supprime le fichier du disque et de la base.
-
----
-
-## Clients
-
-### GET /api/clients
-**Query params :** `page`, `limit`, `search`, `roleId`, `organisationId`, `clubId`, `hasOpenTickets`
-
-### POST /api/clients
-**Body**
-```json
-{
-  "firstName": "Jean",
-  "lastName": "Dupont",
-  "email": "jean@club.fr",
-  "phone": "0600000000",
-  "company": "Club Rugby Bayonne",
-  "roleId": "uuid",
-  "organisationId": "uuid",
-  "clubId": "uuid"
-}
-```
-
-### GET /api/clients/:id
-Détail client avec statistiques : total tickets, ouverts, résolus, temps moyen de résolution.
-
-### PUT /api/clients/:id
-Met à jour les informations du client.
-
-### DELETE /api/clients/:id
-Suppression en cascade (tickets fermés + historique).
-
----
-
 ## Administration
 
 ### Catégories — /api/admin/categories
 | Méthode | Route | Description |
 |---------|-------|-------------|
-| GET | /api/admin/categories | Liste avec compteurs tickets |
+| GET | /api/admin/categories | Liste avec compteurs d'articles KB |
 | POST | /api/admin/categories | Créer (slug auto-généré) |
 | PUT | /api/admin/categories/:id | Modifier |
-| DELETE | /api/admin/categories/:id | Supprimer (si aucun ticket actif) |
+| DELETE | /api/admin/categories/:id | Supprimer (catégories de la base de connaissance) |
 | PATCH | /api/admin/categories/reorder | Réordonner `[{id, position}]` |
 
 ### Rôles agents — /api/admin/roles
@@ -273,7 +127,7 @@ Suppression en cascade (tickets fermés + historique).
 | POST | /api/admin/users | Créer agent |
 | PUT | /api/admin/users/:id | Modifier agent |
 | POST | /api/admin/users/:id/send-reset-email | Email reset (token 24h) |
-| DELETE | /api/admin/users/:id | Supprimer (bloqué si tickets ouverts) |
+| DELETE | /api/admin/users/:id | Supprimer un agent |
 
 ### Paramètres — /api/admin/settings
 | Méthode | Route | Description |
@@ -282,39 +136,23 @@ Suppression en cascade (tickets fermés + historique).
 | PUT | /api/admin/settings | Mettre à jour |
 | POST | /api/admin/settings/logo | Uploader logo |
 
-**Paramètres disponibles :** `company_name`, `default_priority`, `auto_close_days`, `survey_delay_hours`
-
----
-
-## Dashboard
-
-### GET /api/dashboard/stats
-Statistiques agrégées.
-
-**Réponse 200**
-```json
-{
-  "openCount": 12,
-  "inProgressCount": 5,
-  "closedToday": 3,
-  "staleTickets": 2,
-  "byPriority": { "CRITICAL": 1, "HIGH": 4, "MEDIUM": 6, "LOW": 1 },
-  "byCategory": [{ "name": "Informatique", "count": 7 }],
-  "byAgent": [{ "name": "Nicolas B.", "count": 3 }]
-}
-```
-
-### GET /api/dashboard/trends
-Tendance tickets créés sur les 30 derniers jours (tableau de points date/count).
+**Paramètres disponibles :** `company_name`, `logo_url` (toute autre clé est rejetée en 400). `GET /api/settings/public` (sans authentification) expose uniquement `logo_url` et `company_name`.
 
 ---
 
 ## Base de connaissances
 
 ### GET /api/kb
-**Query params :** `search`, `categoryId`, `status` (DRAFT/PUBLISHED), `tags[]`, `page`, `limit`
+Permission : `kb.read`.
+
+**Query params :** `search`, `categoryId`, `status` (DRAFT/PUBLISHED), `tag`, `page`, `limit` (max 100)
+
+### GET /api/kb/:id
+Détail d'un article. Permission : `kb.read`.
 
 ### POST /api/kb
+Permission : `kb.write`.
+
 **Body**
 ```json
 {
@@ -326,8 +164,11 @@ Tendance tickets créés sur les 30 derniers jours (tableau de points date/count
 }
 ```
 
-### POST /api/kb/from-ticket/:ticketId
-Crée un brouillon KB pré-rempli depuis un ticket et ses commentaires.
+### PUT /api/kb/:id  ·  DELETE /api/kb/:id
+Modification et suppression douce (`deletedAt`) d'un article. Permission : `kb.write`.
+
+### POST /api/kb/:id/images
+Upload d'une image inline pour l'éditeur TipTap (multipart, champ `file`). Permission : `kb.write`.
 
 ---
 
@@ -490,7 +331,7 @@ Retourne **toutes** les notes de match (avec auteur et technicien chaperon), tri
 Liste des agents pouvant être désignés comme technicien chaperon d'un match. Route authentifiée.
 
 ### PUT /api/sports/match-notes/:matchKey
-Crée ou met à jour la note d'un match (upsert). Permission requise : `tickets.create`
+Crée ou met à jour la note d'un match (upsert). Permission requise : `sports.edit`
 
 **Body**
 ```json
@@ -512,7 +353,7 @@ Crée ou met à jour la note d'un match (upsert). Permission requise : `tickets.
 > `broadcasterLogo` doit être une URL valide (`https://...`). Il est persisté en base à la création et mis à jour à chaque save. Il est ensuite inclus dans le CR exporté.
 
 ### POST /api/sports/match-notes/upload-image
-Upload d'une image collée ou insérée dans l'éditeur de notes TipTap. Permission requise : `tickets.create`
+Upload d'une image collée ou insérée dans l'éditeur de notes TipTap. Permission requise : `sports.edit`
 
 **Content-Type :** `multipart/form-data`  
 **Champ :** `image` (fichier unique, max 10 Mo, formats : JPEG, PNG, GIF, WebP)
@@ -546,11 +387,17 @@ Sert une image précédemment uploadée. Route authentifiée — le cookie JWT e
 
 ---
 
+### GET /api/sports/season-calendar
+Vue annuelle (projection) : instantané statique de la saison, indépendant du scraper hebdomadaire. Route authentifiée.
+
+### GET /api/sports/match-notes/proxy-image
+Proxy d'image distante utilisé pour l'export du CR (évite les blocages CORS). Route authentifiée.
+
 ### GET /api/sports/match-notes/report/week
 Notes de la semaine ISO courante avec bornes lundi/dimanche. Chaque note inclut `broadcasterLogo` si disponible.
 
 ### POST /api/sports/refresh
-Vide le cache scraper et relance la collecte de tous les matchs de la semaine. Permission requise : `tickets.create`
+Vide le cache scraper et relance la collecte de tous les matchs de la semaine. Permission requise : `sports.edit` **ou** `whatsapp.groups`.
 
 **Rate limit :** cooldown de 30 secondes. Si appelé avant la fin du cooldown, retourne `HTTP 429` avec le délai restant :
 ```json
@@ -561,7 +408,7 @@ Vide le cache scraper et relance la collecte de tous les matchs de la semaine. P
 Supprime la note d'un match. Route authentifiée.
 
 ### POST /api/sports/match-attachments
-Upload PDF pour un match (max 10 Mo, champ `file`). Permission requise : `tickets.create`. Dédoublonnage par matchKey + nom de fichier.
+Upload PDF pour un match (max 10 Mo, champ `file`). Permission requise : `sports.edit`. Dédoublonnage par matchKey + nom de fichier.
 
 ### POST /api/sports/match-attachments/query
 Liste les pièces jointes de plusieurs matchs. Body `{ "matchKeys": ["...", "..."] }` (array, max 200 — évite les limites de longueur d'URL). Route authentifiée.
@@ -576,21 +423,57 @@ Suppression d'une pièce jointe. Permission requise : `admin.access`.
 
 ---
 
-## Enquêtes de satisfaction
+---
 
-### GET /api/survey/:token *(public)*
-Page enquête accessible sans authentification (token 30 jours).
+## Rapports CR hebdomadaires
 
-### POST /api/survey/:token/respond *(public)*
-Soumettre les réponses (scores NPS et CSAT extraits automatiquement).
+Archivage des comptes rendus de la semaine, générés côté client en `.docx` et stockés en base (BYTEA, 25 Mo max). Toutes les routes exigent l'authentification.
 
-### GET /api/admin/surveys/csat-live
-CSAT en temps réel : global, mois courant, mois précédent, tendance.
+### POST /api/sports/reports
+Archive un CR. Permission requise : `sports.edit`.
 
-### GET /api/admin/surveys/results
-Résultats paginés avec calcul NPS et graphique hebdomadaire.
+**Corps :** le fichier `.docx` brut (`application/octet-stream`, signature ZIP `PK` vérifiée). **Métadonnées en query string :** `year`, `weekNumber` (1-53), `startOfWeek`, `endOfWeek`, `noteCount`. Le nom de fichier est généré côté serveur (`CR_S45_2026.docx`).
+
+| Code | Message |
+|------|---------|
+| 201 | `{ "data": { id, year, weekNumber, filename, size, createdBy, ... } }` |
+| 400 | Paramètres invalides / Fichier .docx invalide |
+
+### GET /api/sports/reports
+Historique (200 derniers, sans le contenu des fichiers), du plus récent au plus ancien.
+
+### GET /api/sports/reports/:id/download
+Télécharge le `.docx` archivé. 404 si introuvable.
+
+### DELETE /api/sports/reports/:id
+Supprime un rapport. Permission requise : `admin.access`.
 
 ---
+
+## Groupes WhatsApp
+
+Préparation des groupes WhatsApp des matchs. Toutes les routes exigent la permission `whatsapp.groups`.
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | /api/whatsapp/status | État de la session WhatsApp (connectée, QR code à scanner…) |
+| POST | /api/whatsapp/connect | Démarre la connexion / génère le QR code |
+| POST | /api/whatsapp/logout | Déconnecte la session |
+| POST | /api/whatsapp/groups | Lance un job de création de groupes (202 + job) |
+| GET | /api/whatsapp/groups/jobs/:id | Suivi d'un job (404 si inconnu) |
+
+**Body de `POST /api/whatsapp/groups`**
+```json
+{
+  "groups": [
+    { "key": "TOP14-2026-11-22-ASM-RCT", "name": "ASM - RCT", "participants": ["+33612345678"] }
+  ],
+  "picture": "data:image/png;base64,..."
+}
+```
+- 1 à 40 groupes ; `participants` : numéros E.164 (`+` suivi de 8 à 15 chiffres), 10 maximum par groupe.
+- `picture` (optionnel) : data URL PNG/JPEG, 3 Mo max.
+- Un seul job à la fois : un second lancement renvoie **409**.
 
 ## Codes d'erreur standards
 
