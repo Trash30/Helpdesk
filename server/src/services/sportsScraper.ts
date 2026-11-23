@@ -1062,14 +1062,39 @@ interface FisIcalScrapeOptions {
 }
 
 /**
+ * Récupère l'horaire d'une épreuve FIS (heure de Paris, "HH:mm") depuis sa page
+ * de résultats. La page expose `data-iso-date` (ex. "2025-12-13T11:00:00+08:00")
+ * uniquement quand la FIS a publié le programme détaillé ; sinon l'attribut est
+ * vide. Retourne '' si l'heure est absente ou si la requête échoue : un échec
+ * ne doit jamais casser le scraper.
+ */
+async function fetchFisRaceTime(raceId: string, sectorCode: string): Promise<string> {
+  try {
+    const client = createClient();
+    const resp = await client.get(
+      `https://www.fis-ski.com/DB/general/results.html?sectorcode=${sectorCode}&raceid=${raceId}`,
+      { responseType: 'text', timeout: 10000 },
+    );
+    const iso = String(resp.data).match(/data-iso-date="(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}[^"]*)"/);
+    if (!iso) return '';
+    const d = new Date(iso[1]);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+  } catch {
+    return '';
+  }
+}
+
+/**
  * Scrape générique d'un flux iCal Coupe du Monde FIS (data.fis-ski.com).
  * Le flux est parsé manuellement (pas de librairie iCal externe), comme
  * scrapeEstonie(). Le format est identique d'un secteur à l'autre (ski
  * freestyle, snowboard…), seuls l'URL et le mapping des disciplines changent.
  *
  * Particularités du flux FIS :
- *  - DTSTART;VALUE=DATE:YYYYMMDD → date pure, sans heure (épreuve "toute la
- *    journée", les horaires dépendent de la météo) → `time` reste vide.
+ *  - DTSTART;VALUE=DATE:YYYYMMDD → date pure, sans heure. L'horaire éventuel
+ *    est lu sur la page de l'épreuve (raceid) via fetchFisRaceTime() ; il reste
+ *    vide tant que la FIS ne l'a pas publié.
  *  - SUMMARY : "{Ville} ({PAYS_3}) - {Secteur} World Cup".
  *  - DESCRIPTION : contient "Gender: Men|Women" et "Event: {libellé}". Le
  *    libellé est le seul marqueur fiable pour identifier la discipline (la FIS
@@ -1084,6 +1109,7 @@ async function scrapeFisIcalFeed(opts: FisIcalScrapeOptions): Promise<Match[]> {
     const ical = Buffer.from(resp.data as ArrayBuffer).toString('utf-8');
 
     const matches: Match[] = [];
+    const raceIds: string[] = [];
     const eventBlocks = ical.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
 
     for (const block of eventBlocks) {
@@ -1139,7 +1165,17 @@ async function scrapeFisIcalFeed(opts: FisIcalScrapeOptions): Promise<Match[]> {
         discipline,
         gender,
       });
+      raceIds.push(description.match(/raceid=(\d+)/)?.[1] ?? '');
     }
+
+    // Horaires : une requête par épreuve de la semaine, en tolérant les échecs.
+    const sectorCode = opts.url.match(/sectorcode=([A-Z]+)/)?.[1] ?? '';
+    const times = await Promise.allSettled(
+      raceIds.map((id) => (id && sectorCode ? fetchFisRaceTime(id, sectorCode) : Promise.resolve(''))),
+    );
+    times.forEach((r, i) => {
+      if (r.status === 'fulfilled') matches[i].time = r.value;
+    });
 
     log(`${opts.competition}: season ${opts.seasonCode}, ${eventBlocks.length} events → ${matches.length} in current week`);
     return matches;
